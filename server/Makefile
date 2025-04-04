@@ -27,7 +27,7 @@ $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(@D)
 	${CC} -MMD $(CFLAGS) -Isrcs/parse_arg -Isrcs/server -c $< -o $@
 
-all: .gitignore
+all: .gitignore certs
 	$(MAKE) $(NAME)
 
 $(NAME): $(OBJ) Makefile
@@ -46,6 +46,7 @@ clean:
 
 fclean: clean
 	$(RM) $(NAME)
+	$(RM) -r certs
 	@echo "EVERYTHING REMOVED   "
 
 re: fclean
@@ -57,11 +58,22 @@ re: fclean
 		echo ".gitignore" >> .gitignore; \
 		echo "$(NAME)" >> .gitignore; \
 		echo "$(OBJ_DIR)/" >> .gitignore; \
+		echo "*.pem" >> .gitignore; \
 		echo ".gitignore created and updated with entries."; \
 	else \
 		echo ".gitignore already exists."; \
 	fi
 
-.PHONY: all clean fclean re release .gitignore
+certs:
+	@if [ ! -f certs/cert.pem ]; then \
+		echo "Certificates not found, creating them..."; \
+		mkdir -p certs; \
+		openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/key.pem -out certs/cert.pem -subj "/CN=localhost"; \
+		echo "Certificates created."; \
+	else \
+		echo "Certificates already exist."; \
+	fi
+
+.PHONY: all clean fclean re release .gitignore certs
 
 -include $(DEP)
