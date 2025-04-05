@@ -69,6 +69,7 @@ re: fclean
 		echo ".gitignore" >> .gitignore; \
 		echo "$(NAME)" >> .gitignore; \
 		echo "$(OBJ_DIR)/" >> .gitignore; \
+		echo "*.pem" >> .gitignore; \
 		echo ".gitignore created and updated with entries."; \
 	else \
 		echo ".gitignore already exists."; \

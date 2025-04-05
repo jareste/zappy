@@ -65,6 +65,81 @@ static void websocket_handshake(SSL *ssl, const char *request)
     SSL_write(ssl, response, strlen(response));
 }
 
+int ws_read(int fd, void *buf, size_t bufsize, int flags)
+{
+    unsigned char header[14]; /* Max header size: 2 + 8 + 4 */
+    int offset = 0;
+    SSL* ssl;
+    size_t payload_len;
+    int r;
+    unsigned char mask[4];
+    size_t received = 0;
+    unsigned char *dest;
+    size_t i;
+
+    (void)flags;
+    ssl = ssl_table_get(fd);
+    if (!ssl)
+        return ERROR;
+
+    while (offset < 2)
+    {
+        int r = SSL_read(ssl, header + offset, 2 - offset);
+        if (r <= 0)
+            return ERROR;
+        offset += r;
+    }
+
+    payload_len = header[1] & 0x7F;
+    offset = 2;
+
+    if (payload_len == 126)
+    {
+        r = SSL_read(ssl, header + offset, 2);
+        if (r != 2)
+            return ERROR;
+
+        payload_len = (header[offset] << 8) | header[offset + 1];
+        offset += 2;
+    }
+    else if (payload_len == 127)
+    {
+        r = SSL_read(ssl, header + offset, 8);
+        if (r != 8)
+            return ERROR;
+
+        payload_len = 0;
+        for (int i = 0; i < 8; ++i)
+            payload_len = (payload_len << 8) | header[offset + i];
+        offset += 8;
+    }
+
+    if (payload_len > bufsize)
+    {
+        fprintf(stderr, "Payload too large for buffer: %zu > %zu\n", payload_len, bufsize);
+        return ERROR;
+    }
+
+    
+    if (SSL_read(ssl, mask, 4) != 4)
+        return ERROR;
+
+    dest = buf;
+    while (received < payload_len)
+    {
+        r = SSL_read(ssl, dest + received, payload_len - received);
+        if (r <= 0)
+            return ERROR;
+
+        received += r;
+    }
+
+    for (i = 0; i < payload_len; ++i)
+        dest[i] ^= mask[i % 4];
+
+    return (int)payload_len;
+}
+
 int ws_send(int fd, const void *buf, size_t len, int flags)
 {
     SSL* ssl;
@@ -73,10 +148,9 @@ int ws_send(int fd, const void *buf, size_t len, int flags)
     size_t offset;
     int ret;
 
+    (void)flags;
     ssl = ssl_table_get(fd);
     if (!ssl) return -1;
-
-    (void)flags;
 
     frame_size = 2; /* At least 2 bytes for header */
     if (len < 126)
@@ -294,12 +368,9 @@ int ssl_al_accept_client()
 int socket_main()
 {
     int ret;
-    unsigned char *data;
-    unsigned char *mask;
-    unsigned char buffer[1024];
+    unsigned char buffer[4096*4];
     SSL* ssl;
-    int bytes;
-    int payload_len;
+    // int bytes;
 
     ret = init_ssl_al("certs/cert.pem", "certs/key.pem");
     if (ret == ERROR)
@@ -309,7 +380,6 @@ int socket_main()
     }
 
     m_sock_server = ret;
-
     while (1)
     {
         ssl = ssl_table_get(ssl_al_accept_client());
@@ -321,34 +391,16 @@ int socket_main()
 
         while (1)
         {
-            bytes = SSL_read(ssl, buffer, sizeof(buffer));
-            if (bytes == 0)
+            ret = ws_read(SSL_get_fd(ssl), buffer, sizeof(buffer), 0);
+            if (ret <= 0)
             {
-                printf("Client disconnected\n");
+                fprintf(stderr, "Failed to read from client\n");
                 break;
             }
-            else if (bytes < 0)
-            {
-                ERR_print_errors_fp(stderr);
-                break;
-            }
-        
-            if ((buffer[0] & 0x0F) == 0x1)
-            {
-                payload_len = buffer[1] & 0x7F;
-                mask = &buffer[2];
-                data = &buffer[6];
-        
-                for (int i = 0; i < payload_len; i++)
-                {
-                    data[i] ^= mask[i % 4];
-                }
-
-                printf("Client says: %.*s\n", payload_len, data);
-                ws_send(SSL_get_fd(ssl), data, payload_len, 0);
-                ws_send(SSL_get_fd(ssl), "Message received!", strlen("Message received!"), 0);
-                // send_ws_message(ssl, "Message received!");
-            }
+            buffer[ret] = '\0';
+            printf("Client says (%d bytes): %s\n", ret, buffer);
+            ws_send(SSL_get_fd(ssl), buffer, ret, 0);
+            ws_send(SSL_get_fd(ssl), "Message received!", strlen("Message received!"), 0);
         }
 
         close(SSL_get_fd(ssl));

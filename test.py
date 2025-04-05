@@ -1,6 +1,8 @@
 import asyncio
 import ssl
 import websockets
+import random
+import string
 
 async def test_wss():
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -18,6 +20,11 @@ async def test_wss():
             if message.lower() == 'exit':
                 print("Exiting...")
                 break
+
+            if message.lower() == 'rand':
+                # Generate a random string with more than 10,000 characters
+                message = ''.join(random.choices(string.ascii_letters + string.digits, k=10001))
+                print("Generated random string with more than 10,000 characters")
 
             # Send the message
             await websocket.send(message)
