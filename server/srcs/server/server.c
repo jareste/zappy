@@ -42,7 +42,16 @@ int socket_main()
             buffer[ret] = '\0';
             printf("Client says (%d bytes): %s\n", ret, buffer);
     
-    
+
+            cJSON *root2 = cJSON_Parse((char*)buffer);
+            if (!root2)
+            {
+                printf("Failed to parse JSON!\n");
+                break;
+            }
+
+
+
             cJSON *root = cJSON_CreateObject();
             cJSON_AddStringToObject(root, "hello", "Message received!");
             cJSON_AddStringToObject(root, "your_msg", (char*)buffer);

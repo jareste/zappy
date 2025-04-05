@@ -85,6 +85,8 @@ re: fclean
 		echo "$(OPENSSL_SRC_DIR)/" >> .gitignore; \
 		echo "*.a" >> .gitignore; \
 		echo "*.pem" >> .gitignore; \
+		echo ".vscode/" >> ../.gitignore; \
+		echo ".gitignore" >> ../.gitignore; \
 		echo ".gitignore created and updated with entries."; \
 	else \
 		echo ".gitignore already exists."; \
