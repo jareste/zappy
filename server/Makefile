@@ -9,7 +9,7 @@ RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
 
 #########
-FILES = main parse_arg ssl_al ssl_table
+FILES = main parse_arg ssl_al ssl_table server
 
 SRC = $(addsuffix .c, $(FILES))
 

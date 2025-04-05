@@ -1,4 +1,3 @@
-// wss_server.c
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,7 +8,6 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include "ssl_table.h"
-// #include "ssl_al.h"
 
 #define PORT 8674
 
@@ -365,49 +363,7 @@ int ssl_al_accept_client()
     return client;
 }
 
-int socket_main()
+void set_server_socket(int sock)
 {
-    int ret;
-    unsigned char buffer[4096*4];
-    SSL* ssl;
-    // int bytes;
-
-    ret = init_ssl_al("certs/cert.pem", "certs/key.pem");
-    if (ret == ERROR)
-    {
-        fprintf(stderr, "Failed to initialize SSL\n");
-        return ERROR;
-    }
-
-    m_sock_server = ret;
-    while (1)
-    {
-        ssl = ssl_table_get(ssl_al_accept_client());
-        if (!ssl)
-        {
-            fprintf(stderr, "Failed to get SSL from table\n");
-            continue;
-        }
-
-        while (1)
-        {
-            ret = ws_read(SSL_get_fd(ssl), buffer, sizeof(buffer), 0);
-            if (ret <= 0)
-            {
-                fprintf(stderr, "Failed to read from client\n");
-                break;
-            }
-            buffer[ret] = '\0';
-            printf("Client says (%d bytes): %s\n", ret, buffer);
-            ws_send(SSL_get_fd(ssl), buffer, ret, 0);
-            ws_send(SSL_get_fd(ssl), "Message received!", strlen("Message received!"), 0);
-        }
-
-        close(SSL_get_fd(ssl));
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
-    }
-
-    cleanup_ssl_al();
-    return 0;
+    m_sock_server = sock;
 }

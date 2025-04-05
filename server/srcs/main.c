@@ -1,5 +1,5 @@
 #include <parse_arg.h>
-#include <ssl_al.h>
+#include <server.h>
 
 int main(int argc, char **argv)
 {
