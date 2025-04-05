@@ -8,22 +8,25 @@
 #include <openssl/sha.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include "ssl_table.h"
+// #include "ssl_al.h"
 
 #define PORT 8674
+
 #define ERROR -1
 #define SUCCESS 0
 
 static SSL_CTX *m_ctx = NULL;
 static int m_sock_server = -1;
 
-void base64_encode(const unsigned char *input, int len, char *output)
+static void base64_encode(const unsigned char *input, int len, char *output)
 {
     BIO *b64 = BIO_new(BIO_f_base64());
     BIO *bio = BIO_new(BIO_s_mem());
     b64 = BIO_push(b64, bio);
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL); // No newlines
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
     BIO_write(b64, input, len);
-    BIO_flush(b64);
+    (void)BIO_flush(b64);
     BUF_MEM *buffer_ptr;
     BIO_get_mem_ptr(b64, &buffer_ptr);
     memcpy(output, buffer_ptr->data, buffer_ptr->length);
@@ -31,27 +34,28 @@ void base64_encode(const unsigned char *input, int len, char *output)
     BIO_free_all(b64);
 }
 
-void websocket_handshake(SSL *ssl, const char *request)
+static void websocket_handshake(SSL *ssl, const char *request)
 {
     char sec_websocket_key[256] = {0};
-    const char *key_header = strstr(request, "Sec-WebSocket-Key: ");
+    char response[512];
+    const char *key_header;
+    char key_guid[300];
+    unsigned char sha1_hash[SHA_DIGEST_LENGTH];
+    char accept_key[128];
+
+    key_header = strstr(request, "Sec-WebSocket-Key: ");
     if (!key_header) return;
     sscanf(key_header, "Sec-WebSocket-Key: %255s", sec_websocket_key);
 
-    // Combine key + magic GUID
-    char key_guid[300];
+    /* Combine key + magic GUID */
     snprintf(key_guid, sizeof(key_guid), "%s258EAFA5-E914-47DA-95CA-C5AB0DC85B11", sec_websocket_key);
 
-    // SHA1 hash
-    unsigned char sha1_hash[SHA_DIGEST_LENGTH];
+    /* SHA1 hash */
     SHA1((unsigned char*)key_guid, strlen(key_guid), sha1_hash);
 
-    // Base64 encode
-    char accept_key[128];
+    /* Base64 encode */
     base64_encode(sha1_hash, SHA_DIGEST_LENGTH, accept_key);
 
-    // Send response
-    char response[512];
     snprintf(response, sizeof(response),
         "HTTP/1.1 101 Switching Protocols\r\n"
         "Upgrade: websocket\r\n"
@@ -61,47 +65,90 @@ void websocket_handshake(SSL *ssl, const char *request)
     SSL_write(ssl, response, strlen(response));
 }
 
-void send_ws_message(SSL *ssl, const char *msg)
+int ws_send(int fd, const void *buf, size_t len, int flags)
 {
-    size_t len = strlen(msg);
-    unsigned char frame[1024] = {0};
-    frame[0] = 0x81; // FIN + text frame
+    SSL* ssl;
+    size_t frame_size;
+    unsigned char *frame;
+    size_t offset;
+    int ret;
+
+    ssl = ssl_table_get(fd);
+    if (!ssl) return -1;
+
+    (void)flags;
+
+    frame_size = 2; /* At least 2 bytes for header */
+    if (len < 126)
+        frame_size += len;
+    else if (len <= 0xFFFF)
+        frame_size += 2 + len; /* 2 for extended 16-bit length */
+    else
+        frame_size += 8 + len; /* 8 for extended 64-bit length */
+
+    frame = malloc(frame_size);
+    if (!frame) return -1;
+
+    offset = 0;
+    frame[offset++] = 0x81; /* FIN = 1, text frame = 0x1 */
+
     if (len < 126)
     {
-        frame[1] = len;
-        memcpy(&frame[2], msg, len);
-        SSL_write(ssl, frame, len + 2);
+        frame[offset++] = len;
     }
+    else if (len <= 0xFFFF)
+    {
+        frame[offset++] = 126;
+        frame[offset++] = (len >> 8) & 0xFF;
+        frame[offset++] = len & 0xFF;
+    }
+    else
+    {
+        frame[offset++] = 127;
+        for (int i = 7; i >= 0; --i)
+        {
+            frame[offset++] = (len >> (8 * i)) & 0xFF;
+        }
+    }
+
+    memcpy(frame + offset, buf, len);
+
+    ret = SSL_write(ssl, frame, offset + len);
+    free(frame);
+    return ret;
 }
 
 static int init_server()
 {
-    m_sock_server = socket(AF_INET, SOCK_STREAM, 0);
-    if (m_sock_server == -1)
+    struct sockaddr_in addr = {0};
+    int sockfd;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1)
     {
         perror("socket");
         return ERROR;
     }
-    struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(m_sock_server, (struct sockaddr*)&addr, sizeof(addr)) == -1)
+    if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
     {
         fprintf(stderr, "bind failed\n");
-        close(m_sock_server);
+        close(sockfd);
         return ERROR;
     }
-    if (listen(m_sock_server, 1) == -1)
+
+    if (listen(sockfd, 1) == -1)
     {
         fprintf(stderr, "listen failed\n");
-        close(m_sock_server);
+        close(sockfd);
         return ERROR;
     }
 
     printf("WSS server listening on port %d...\n", PORT);
-    return m_sock_server;
+    return sockfd;
 }
 
 static int stop_server()
@@ -114,7 +161,7 @@ static int stop_server()
     return SUCCESS;
 }
 
-int init_ssl_al()
+int init_ssl_al(char* cert, char* key)
 {
     int server_sock;
     const SSL_METHOD *method;
@@ -125,12 +172,16 @@ int init_ssl_al()
     method = TLS_server_method();
     m_ctx = SSL_CTX_new(method);
 
-    if (SSL_CTX_use_certificate_file(m_ctx, "cert.pem", SSL_FILETYPE_PEM) <= 0 ||
-        SSL_CTX_use_PrivateKey_file(m_ctx, "key.pem", SSL_FILETYPE_PEM) <= 0)
+    if (SSL_CTX_use_certificate_file(m_ctx, cert, SSL_FILETYPE_PEM) <= 0 ||
+        SSL_CTX_use_PrivateKey_file(m_ctx, key, SSL_FILETYPE_PEM) <= 0)
     {
         ERR_print_errors_fp(stderr);
         return ERROR;
     }
+
+    /* On failure will simply exit. 
+    */
+    ssl_table_init();
 
     server_sock = init_server();
     if (server_sock == ERROR)
@@ -153,89 +204,158 @@ int cleanup_ssl_al()
     return SUCCESS;
 }
 
-SSL *ssl_al_accept_client()
+int ws_close(int fd)
 {
+    SSL* ssl;
+
+    ssl = ssl_table_get(fd);
+    if (ssl)
+    {
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        ssl_table_remove(fd);
+    }
+    close(fd);
+    return SUCCESS;
+}
+
+int ssl_al_accept_client()
+{
+    char buf[4096] = {0};
+    struct sockaddr_in client_addr;
+    SSL* ssl;
+    socklen_t len;
+    int client;
+    int ret;
+
     if (m_sock_server == -1)
     {
         fprintf(stderr, "Server socket not initialized\n");
-        return NULL;
+        return ERROR;
     }
 
-    struct sockaddr_in client_addr;
-    socklen_t len = sizeof(client_addr);
-    int client = accept(m_sock_server, (struct sockaddr*)&client_addr, &len);
+    len = sizeof(client_addr);
+    printf("Waiting for client connection...\n");
+    client = accept(m_sock_server, (struct sockaddr*)&client_addr, &len);
     if (client == -1)
     {
         perror("accept");
-        return NULL;
+        return ERROR;
     }
 
-    SSL *ssl = SSL_new(m_ctx);
-    SSL_set_fd(ssl, client);
+    printf("Client connected: %s:%d\n",
+           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    ssl = SSL_new(m_ctx);
+    if (!ssl)
+    {
+        fprintf(stderr, "Failed to create SSL object\n");
+        close(client);
+        return ERROR;
+    }
+    if (SSL_set_fd(ssl, client) == 0)
+    {
+        fprintf(stderr, "Failed to set file descriptor for SSL\n");
+        SSL_free(ssl);
+        close(client);
+        return ERROR;
+    }
+    
+    ret = ssl_table_add(client, ssl);
+    if (ret == ERROR)
+    {
+        fprintf(stderr, "Failed to add SSL to table\n");
+        SSL_free(ssl);
+        close(client);
+        return ERROR;
+    }
 
     if (SSL_accept(ssl) <= 0)
     {
         ERR_print_errors_fp(stderr);
         SSL_free(ssl);
         close(client);
-        return NULL;
+        return ERROR;
     }
 
     printf("Client connected: %s:%d\n",
            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-
-    char buf[4096] = {0};
     SSL_read(ssl, buf, sizeof(buf) - 1);
     printf("Got handshake request:\n%s\n", buf);
 
     websocket_handshake(ssl, buf);
     printf("Handshake done. Sending welcome message.\n");
 
-    send_ws_message(ssl, "Welcome to WSS WebSocket server!");
+    ws_send(client, "Welcome to WSS WebSocket server!", strlen("Welcome to WSS WebSocket server!"), 0);
 
-    return ssl;
+    return client;
 }
 
 int socket_main()
 {
-    init_ssl_al();
+    int ret;
+    unsigned char *data;
+    unsigned char *mask;
+    unsigned char buffer[1024];
+    SSL* ssl;
+    int bytes;
+    int payload_len;
+
+    ret = init_ssl_al("certs/cert.pem", "certs/key.pem");
+    if (ret == ERROR)
+    {
+        fprintf(stderr, "Failed to initialize SSL\n");
+        return ERROR;
+    }
+
+    m_sock_server = ret;
+
     while (1)
     {
-        SSL* ssl = ssl_al_accept_client();
-        if (!ssl) {
-            fprintf(stderr, "Failed to accept client\n");
+        ssl = ssl_table_get(ssl_al_accept_client());
+        if (!ssl)
+        {
+            fprintf(stderr, "Failed to get SSL from table\n");
             continue;
         }
 
-        unsigned char buffer[1024];
-        while (1) {
-            int bytes = SSL_read(ssl, buffer, sizeof(buffer));
-            if (bytes <= 0) break;
+        while (1)
+        {
+            bytes = SSL_read(ssl, buffer, sizeof(buffer));
+            if (bytes == 0)
+            {
+                printf("Client disconnected\n");
+                break;
+            }
+            else if (bytes < 0)
+            {
+                ERR_print_errors_fp(stderr);
+                break;
+            }
         
-            // Decode very basic frame (just text frame with small payload)
-            if ((buffer[0] & 0x0F) == 0x1) { // Text frame
-                int payload_len = buffer[1] & 0x7F;
-                unsigned char *mask = &buffer[2];
-                unsigned char *data = &buffer[6];
+            if ((buffer[0] & 0x0F) == 0x1)
+            {
+                payload_len = buffer[1] & 0x7F;
+                mask = &buffer[2];
+                data = &buffer[6];
         
-                for (int i = 0; i < payload_len; i++) {
-                    data[i] ^= mask[i % 4]; // Unmask
+                for (int i = 0; i < payload_len; i++)
+                {
+                    data[i] ^= mask[i % 4];
                 }
-        
+
                 printf("Client says: %.*s\n", payload_len, data);
-                send_ws_message(ssl, "Message received!");
+                ws_send(SSL_get_fd(ssl), data, payload_len, 0);
+                ws_send(SSL_get_fd(ssl), "Message received!", strlen("Message received!"), 0);
+                // send_ws_message(ssl, "Message received!");
             }
         }
 
-
-
+        close(SSL_get_fd(ssl));
         SSL_shutdown(ssl);
         SSL_free(ssl);
     }
 
-
-    printf("Handshake done. Waiting for messages...\n");
-
+    cleanup_ssl_al();
     return 0;
 }
