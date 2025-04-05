@@ -26,5 +26,7 @@ async def test_wss():
             # Receive response
             response = await websocket.recv()
             print("Received:", response)
+            response = await websocket.recv()
+            print("Received:", response)
 
 asyncio.run(test_wss())
