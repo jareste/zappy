@@ -33,7 +33,7 @@ if [ ! -f ".gitignore" ]; then
     touch .gitignore
     echo ".gitignore" >> .gitignore
     echo "$TRUSTSTORE" >> .gitignore
-    echo "client/target/" >> .gitignore
+    echo "target/" >> .gitignore
 fi
 
 # Now, run the Maven command with the appropriate truststore settings
