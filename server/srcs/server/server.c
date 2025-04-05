@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <cJSON.h>
+#include <sys/select.h>
 #include "ssl_table.h"
 #include "ssl_al.h"
-#include <cJSON.h>
 
 #define ERROR -1
 #define SUCCESS 0
@@ -13,6 +14,8 @@ int socket_main()
     int client;
     struct sockaddr_in client_addr;
     socklen_t len;
+    FD_SET read_fds;
+    int max_fd = 0;
 
     ret = init_ssl_al("certs/cert.pem", "certs/key.pem");
     if (ret == ERROR)
@@ -22,6 +25,7 @@ int socket_main()
     }
 
     set_server_socket(ret);
+    max_fd = ret;
     while (1)
     {
         client = accept(ret, (struct sockaddr*)&client_addr, &len);

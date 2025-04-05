@@ -17,19 +17,21 @@ async def test_wss():
 
         response = await websocket.recv()
         print("Received:", response)
-        while True:
+        while True:        
             message = input("Enter message to send (or 'exit' to quit): ")
             if message.lower() == 'exit':
                 print("Exiting...")
                 break
-
+            
             if message.lower() == 'rand':
                 message = ''.join(random.choices(string.ascii_letters + string.digits, k=10001))
                 print("Generated random string with more than 10,000 characters")
-
-            await websocket.send(message)
-            print("Sent:", message)
             
+            # Wrap the message in a JSON object
+            json_message = json.dumps({"message": message})
+            
+            await websocket.send(json_message)
+            print("Sent (as JSON):", json_message)
             response = await websocket.recv()
             try:
                 parsed_response = json.loads(response)
