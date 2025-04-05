@@ -3,7 +3,7 @@ NAME = zappy
 #########
 RM = rm -rf
 CC = cc
-CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include
+CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON
 LDFLAGS = -L$(OPENSSL_BUILD_DIR)/lib -lssl -lcrypto -lm
 RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
@@ -16,6 +16,8 @@ SRC = $(addsuffix .c, $(FILES))
 vpath %.c srcs srcs/parse_arg srcs/server
 #########
 
+OBJ_DIR = objs
+
 #########
 THIRD_PARTY_PATH = third_party
 
@@ -24,10 +26,14 @@ OPENSSL_INSTALL_DIR := third_party/openssl_install
 
 OPENSSL_BUILD_DIR := third_party/openssl_build
 OPENSSL_BUILD_DONE := $(OPENSSL_INSTALL_DIR)/lib/libssl.a
+
+CJSON_DIR := $(THIRD_PARTY_PATH)/cJSON
+CJSON_SRC := $(CJSON_DIR)/cJSON.c
+CJSON_OBJ := $(OBJ_DIR)/cJSON.o
+CJSON_LIB := $(OBJ_DIR)/libcjson.a
 #########
 
 #########
-OBJ_DIR = objs
 OBJ = $(addprefix $(OBJ_DIR)/, $(SRC:.c=.o))
 DEP = $(addsuffix .d, $(basename $(OBJ)))
 #########
@@ -40,10 +46,17 @@ $(OBJ_DIR)/%.o: %.c
 all: .gitignore create_cert
 	$(MAKE) $(NAME)
 
-$(NAME): $(OBJ) Makefile
-	$(CC) $(CFLAGS) $(OBJ) -lssl -lcrypto -o $(NAME) $(LDFLAGS)
+$(NAME): $(OBJ) $(CJSON_LIB) Makefile
+	$(CC) $(CFLAGS) $(OBJ) $(CJSON_LIB) -lssl -lcrypto -o $(NAME) $(LDFLAGS)
 	@echo "EVERYTHING DONE  "
 #	@./.add_path.sh
+
+$(CJSON_OBJ): $(CJSON_SRC)
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(CJSON_LIB): $(CJSON_OBJ)
+	ar rcs $@ $<
 
 release: CFLAGS = $(RELEASE_CFLAGS)
 release: re
@@ -69,6 +82,8 @@ re: fclean
 		echo ".gitignore" >> .gitignore; \
 		echo "$(NAME)" >> .gitignore; \
 		echo "$(OBJ_DIR)/" >> .gitignore; \
+		echo "$(OPENSSL_SRC_DIR)/" >> .gitignore; \
+		echo "*.a" >> .gitignore; \
 		echo "*.pem" >> .gitignore; \
 		echo ".gitignore created and updated with entries."; \
 	else \

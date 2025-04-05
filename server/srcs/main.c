@@ -1,5 +1,6 @@
 #include <parse_arg.h>
 #include <server.h>
+#include <cJSON.h>
 
 int main(int argc, char **argv)
 {

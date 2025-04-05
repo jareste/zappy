@@ -3,6 +3,7 @@ import ssl
 import websockets
 import random
 import string
+import json
 
 async def test_wss():
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -14,26 +15,27 @@ async def test_wss():
     async with websockets.connect(uri, ssl=ssl_context) as websocket:
         print("Connected to WSS server")
 
+        response = await websocket.recv()
+        print("Received:", response)
         while True:
-            # Wait for user input
             message = input("Enter message to send (or 'exit' to quit): ")
             if message.lower() == 'exit':
                 print("Exiting...")
                 break
 
             if message.lower() == 'rand':
-                # Generate a random string with more than 10,000 characters
                 message = ''.join(random.choices(string.ascii_letters + string.digits, k=10001))
                 print("Generated random string with more than 10,000 characters")
 
-            # Send the message
             await websocket.send(message)
             print("Sent:", message)
+            
+            response = await websocket.recv()
+            try:
+                parsed_response = json.loads(response)
+                print("Received (parsed as JSON):", parsed_response)
+            except json.JSONDecodeError:
+                print("Received (not a valid JSON):", response)
 
-            # Receive response
-            response = await websocket.recv()
-            print("Received:", response)
-            response = await websocket.recv()
-            print("Received:", response)
 
 asyncio.run(test_wss())

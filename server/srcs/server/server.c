@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "ssl_table.h"
 #include "ssl_al.h"
+#include <cJSON.h>
 
 #define ERROR -1
 #define SUCCESS 0
@@ -40,8 +41,21 @@ int socket_main()
             }
             buffer[ret] = '\0';
             printf("Client says (%d bytes): %s\n", ret, buffer);
-            send(client, buffer, ret, 0);
-            send(client, "Message received!", strlen("Message received!"), 0);
+    
+    
+            cJSON *root = cJSON_CreateObject();
+            cJSON_AddStringToObject(root, "hello", "Message received!");
+            cJSON_AddStringToObject(root, "your_msg", (char*)buffer);
+
+            char *json = cJSON_Print(root);
+            printf("JSON: %s\n", json);
+            send(client, json, strlen(json), 0);
+
+            cJSON_Delete(root);
+            free(json);
+
+            // send(client, buffer, ret, 0);
+            // send(client, "Message received!", strlen("Message received!"), 0);
         }
 
         close(client);
