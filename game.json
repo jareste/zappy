@@ -1,0 +1,120 @@
+{
+    "map": {
+      "width": 2,
+      "height": 2,
+      "tiles": [
+        {
+          "x": 0, "y": 0,
+          "resources": {
+            "nourriture": 1, "linemate": 0, "deraumere": 0,
+            "sibur": 1, "mendiane": 0, "phiras": 0, "thystame": 0
+          },
+          "players": [1, 2],
+          "eggs": []
+        },
+        {
+          "x": 1, "y": 0,
+          "resources": {
+            "nourriture": 0, "linemate": 1, "deraumere": 0,
+            "sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+          },
+          "players": [],
+          "eggs": [10]
+        },
+        {
+          "x": 0, "y": 1,
+          "resources": {
+            "nourriture": 2, "linemate": 0, "deraumere": 1,
+            "sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+          },
+          "players": [3],
+          "eggs": []
+        },
+        {
+          "x": 1, "y": 1,
+          "resources": {
+            "nourriture": 0, "linemate": 0, "deraumere": 0,
+            "sibur": 0, "mendiane": 1, "phiras": 0, "thystame": 0
+          },
+          "players": [],
+          "eggs": []
+        }
+      ]
+    },
+    "players": [
+      {
+        "id": 1,
+        "position": { "x": 0, "y": 0 },
+        "orientation": 1,
+        "level": 2,
+        "team": "Alpha",
+        "inventory": {
+          "nourriture": 5, "linemate": 1, "deraumere": 0,
+          "sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+        },
+        "status": "normal"
+      },
+      {
+        "id": 2,
+        "position": { "x": 0, "y": 0 },
+        "orientation": 3,
+        "level": 1,
+        "team": "Alpha",
+        "inventory": {
+          "nourriture": 2, "linemate": 0, "deraumere": 1,
+          "sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+        },
+        "status": "incantation"
+      },
+      {
+        "id": 3,
+        "position": { "x": 0, "y": 1 },
+        "orientation": 2,
+        "level": 4,
+        "team": "Beta",
+        "inventory": {
+          "nourriture": 8, "linemate": 0, "deraumere": 0,
+          "sibur": 1, "mendiane": 0, "phiras": 2, "thystame": 0
+        },
+        "status": "broadcasting"
+      }
+    ],
+    "eggs": [
+      {
+        "id": 10,
+        "position": { "x": 1, "y": 0 },
+        "status": "laid",
+        "parent_id": 1,
+        "team": "Alpha"
+      }
+    ],
+    "broadcasts": [
+      { "message": "Hello", "direction": 5, "target_id": 1 },
+      { "message": "Hello", "direction": 1, "target_id": 2 },
+      { "message": "Hello", "direction": 0, "target_id": 3 }
+    ],
+    "game": {
+      "tick": 150,
+      "time_unit": 100,
+      "teams": [
+        { "name": "Alpha", "player_count": 2, "remaining_connections": 0 },
+        { "name": "Beta",  "player_count": 1, "remaining_connections": 2 }
+      ]
+    },
+    "events": [
+      {
+        "type": "incantation",
+        "position": { "x": 0, "y": 0 },
+        "players": [1, 2],
+        "level": 2,
+        "status": "in_progress",
+        "sound": "incantation_start"
+      },
+      {
+        "type": "pickup",
+        "player_id": 3,
+        "resource": "sibur",
+        "position": { "x": 0, "y": 1 }
+      }
+    ]
+  }
