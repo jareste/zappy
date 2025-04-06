@@ -1,3 +1,16 @@
+/* SSL opcodes:
+    * 0x0: Continuation frame
+    * 0x1: Text frame
+    * 0x2: Binary frame
+    * 0x8: Connection close
+    * 0x9: Ping
+    * 0xA: Pong
+    * 0xB: Reserved for future use
+    * 0xC: Reserved for future use
+    * 0xD: Reserved for future use
+    * 0xE: Reserved for future use
+    * 0xF: Reserved for future use
+ */
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -63,6 +76,52 @@ static void websocket_handshake(SSL *ssl, const char *request)
     SSL_write(ssl, response, strlen(response));
 }
 
+static int ws_send_close(int fd, uint16_t code, const char *reason)
+{
+    SSL *ssl = ssl_table_get(fd);
+    if (!ssl) return -1;
+
+    unsigned char frame[2 + 125];
+    size_t len = 0;
+
+    /* Payload: 2-byte close code (network byte order) + optional reason */
+    frame[len++] = (code >> 8) & 0xFF;
+    frame[len++] = code & 0xFF;
+
+    if (reason)
+    {
+        size_t reason_len = strlen(reason);
+        if (reason_len > 123) reason_len = 123;
+        memcpy(frame + len, reason, reason_len);
+        len += reason_len;
+    }
+
+    unsigned char header[4];
+    header[0] = 0x88; /* FIN = 1, opcode = 0x8 (close) */
+    header[1] = len;
+
+    /* Send header + payload */
+    SSL_write(ssl, header, 2);
+    if (len > 0)
+        SSL_write(ssl, frame, len);
+
+    return 0;
+}
+
+static int m_ws_send_control_frame(SSL *ssl, uint8_t opcode, const void *data, size_t len)
+{
+    unsigned char frame[2 + 125];
+    size_t offset = 0;
+
+    if (len > 125) return -1; /* RFC: control frame payload must be <126 */
+
+    frame[offset++] = 0x80 | opcode; /* FIN = 1, opcode = 0xA (Pong) */
+    frame[offset++] = len;
+    memcpy(frame + offset, data, len);
+
+    return SSL_write(ssl, frame, offset + len);
+}
+
 int ws_read(int fd, void *buf, size_t bufsize, int flags)
 {
     unsigned char header[14]; /* Max header size: 2 + 8 + 4 */
@@ -74,28 +133,89 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
     size_t received = 0;
     unsigned char *dest;
     size_t i;
+    int opcode = 0;
+    unsigned char ping_payload[125]; /* RFC: ping max size = 125 */
 
     (void)flags;
     ssl = ssl_table_get(fd);
     if (!ssl)
+    {
+        fprintf(stderr, "SSL not found for fd %d\n", fd);
         return ERROR;
+    }
 
     while (offset < 2)
     {
-        int r = SSL_read(ssl, header + offset, 2 - offset);
+        r = SSL_read(ssl, header + offset, 2 - offset);
         if (r <= 0)
-            return ERROR;
+        {
+            if (SSL_get_error(ssl, r) == SSL_ERROR_WANT_READ)
+            {
+                fprintf(stderr, "SSL_read would block\n");
+                return ERROR;
+            }
+            else if (SSL_get_error(ssl, r) == SSL_ERROR_SYSCALL)
+            {
+                fprintf(stderr, "SSL_read syscall error\n");
+                return ERROR;
+            }
+            else
+            {
+                fprintf(stderr, "SSL_read error: %d\n", r);
+                return ERROR;
+            }
+        }
+
         offset += r;
     }
 
     payload_len = header[1] & 0x7F;
     offset = 2;
 
+    /* Check for ping 
+     */
+    opcode = header[0] & 0x0F;
+    if (opcode == 0x8)
+    {
+        ws_send_close(fd, 1000, "Bye!");
+        return SUCCESS;
+    }
+    else if (opcode == 0x9)
+    {
+        /* Ping received, so lets answer with PONG (0xA) */
+        r = 0;
+        if (payload_len > 0 && payload_len <= sizeof(ping_payload))
+        {
+            r = SSL_read(ssl, ping_payload, payload_len);
+            if (r != (int)payload_len)
+            {
+                fprintf(stderr, "Failed to read ping payload\n");
+                /* try sending empty PONG frame */
+                m_ws_send_control_frame(ssl, 0xA, NULL, 0);
+                return 1;
+            }
+            m_ws_send_control_frame(ssl, 0xA, ping_payload, payload_len);
+        }
+        else
+            m_ws_send_control_frame(ssl, 0xA, NULL, 0);
+
+        return 1; /* Indicate that we handled the ping */
+    }
+    else if (opcode != 0x1) /* 2 would mean binary data */
+    {
+        fprintf(stderr, "Unsupported opcode: 0x%x — closing connection\n", opcode);
+        ws_send_close(fd, 1002, "Protocol error: unsupported opcode");
+        return 0; /* 0 will fall into a disconnect */
+    }
+
     if (payload_len == 126)
     {
         r = SSL_read(ssl, header + offset, 2);
         if (r != 2)
+        {
+            fprintf(stderr, "Failed to read extended payload length\n");
             return ERROR;
+        }
 
         payload_len = (header[offset] << 8) | header[offset + 1];
         offset += 2;
@@ -104,10 +224,13 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
     {
         r = SSL_read(ssl, header + offset, 8);
         if (r != 8)
+        {
+            fprintf(stderr, "Failed to read extended payload length\n");
             return ERROR;
+        }
 
         payload_len = 0;
-        for (int i = 0; i < 8; ++i)
+        for (i = 0; i < 8; ++i)
             payload_len = (payload_len << 8) | header[offset + i];
         offset += 8;
     }
@@ -117,17 +240,37 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         fprintf(stderr, "Payload too large for buffer: %zu > %zu\n", payload_len, bufsize);
         return ERROR;
     }
-
     
-    if (SSL_read(ssl, mask, 4) != 4)
-        return ERROR;
+    r = SSL_read(ssl, mask, 4);
+    if (r != 4)
+    {
+        fprintf(stderr, "Failed to read mask: read %d bytes\n", r);
+        ws_send_close(fd, 1002, "Malformed frame");
+        return 0; /* 0 will fall into a disconnect */
+    }
 
     dest = buf;
     while (received < payload_len)
     {
         r = SSL_read(ssl, dest + received, payload_len - received);
         if (r <= 0)
-            return ERROR;
+        {
+            if (SSL_get_error(ssl, r) == SSL_ERROR_WANT_READ)
+            {
+                fprintf(stderr, "SSL_read would block\n");
+                return ERROR;
+            }
+            else if (SSL_get_error(ssl, r) == SSL_ERROR_SYSCALL)
+            {
+                fprintf(stderr, "SSL_read syscall error\n");
+                return ERROR;
+            }
+            else
+            {
+                fprintf(stderr, "SSL_read error: %d\n", r);
+                return ERROR;
+            }
+        }
 
         received += r;
     }
@@ -208,6 +351,7 @@ static int init_server()
     if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
     {
         fprintf(stderr, "bind failed\n");
+        perror("bind");
         close(sockfd);
         return ERROR;
     }
@@ -280,6 +424,8 @@ int ws_close(int fd)
 {
     SSL* ssl;
 
+    if (fd == -1) return ERROR;
+    ws_send_close(fd, 1000, "Normal closure"); /* Send close message */
     ssl = ssl_table_get(fd);
     if (ssl)
     {
