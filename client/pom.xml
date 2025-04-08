@@ -64,7 +64,8 @@
                 <source>17</source> <!-- Specify the Java version -->
                 <target>17</target> <!-- Specify the target Java version -->
                 <!-- <mainClass>com.example.App</mainClass>  -->
-                <mainClass>com.example.WebSocketClient</mainClass> 
+                <!-- <mainClass>com.example.WebSocketClient</mainClass>  -->
+                <mainClass>com.example.Main</mainClass>
             </configuration>
             <executions>
                 <execution>
