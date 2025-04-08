@@ -1,0 +1,54 @@
+#!/bin/bash
+
+TRUSTSTORE=Truststore.jks
+CERT_PATH="../server/certs/cert.pem"
+STOREPASS=zappycert
+ALIAS="zappyserver"  # alias for the certificate in the keystore
+
+
+# Check if the truststore file exists
+if [ ! -f "$TRUSTSTORE" ]; then
+    echo "Truststore does not exist. Creating truststore..."
+    # Create an empty truststore by generating a dummy entry
+    keytool -genkey -alias dummy -keystore $TRUSTSTORE -storepass $STOREPASS -dname "CN=dummy" -keyalg RSA -noprompt
+else
+    echo "Truststore exists."
+fi
+
+# # Print the keystore contents to help with debugging
+# echo "Checking keystore contents:"
+# keytool -list -keystore $TRUSTSTORE -storepass $STOREPASS
+
+# Check if the certificate alias already exists
+if keytool -list -keystore $TRUSTSTORE -storepass $STOREPASS | grep -q "$ALIAS"; then
+    echo "Certificate already in truststore."
+else
+    echo "Importing certificate into truststore..."
+    keytool -import -alias $ALIAS -file $CERT_PATH -keystore $TRUSTSTORE -storepass $STOREPASS -noprompt
+fi
+
+# Check if .gitignore exists, if not, create it
+if [ ! -f ".gitignore" ]; then
+    echo ".gitignore file does not exist. Creating .gitignore..."
+    touch .gitignore
+    echo ".gitignore" >> .gitignore
+    echo "$TRUSTSTORE" >> .gitignore
+    echo "target/" >> .gitignore
+fi
+
+# Now, run the Maven command with the appropriate truststore settings
+mvn -q exec:java -Dexec.args="$*" -Djavax.net.ssl.trustStore=$TRUSTSTORE -Djavax.net.ssl.trustStorePassword=$STOREPASS
+
+
+
+# #!/bin/bash
+
+# # Just pass all arguments to Maven
+# mvn -q exec:java -Dexec.args="$*" -Djavax.net.ssl.trustStore=myTruststore.jks -Djavax.net.ssl.trustStorePassword=changeit
+
+# maybe is needed to do chmod +x client
+# to add a certificate to my custom truststore:
+# keytool -import -alias zappyServer -file server/certs/cert.pem -keystore myTruststore.jks -storepass changeit
+# to run the client with a custom truststore, use:
+# -Djavax.net.ssl.trustStore=path/to/myTruststore.jks -Djavax.net.ssl.trustStorePassword=changeit
+
