@@ -3,17 +3,17 @@ NAME = zappy
 #########
 RM = rm -rf
 CC = cc
-CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON
+CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL
 LDFLAGS = -L$(OPENSSL_BUILD_DIR)/lib -lssl -lcrypto -lm
 RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
 
 #########
-FILES = main parse_arg ssl_al ssl_table server
+FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game
 
 SRC = $(addsuffix .c, $(FILES))
 
-vpath %.c srcs srcs/parse_arg srcs/server
+vpath %.c srcs srcs/parse_arg srcs/server inc srcs/game
 #########
 
 OBJ_DIR = objs

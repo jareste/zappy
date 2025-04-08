@@ -3,10 +3,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <error_codes.h>
+#include <ft_malloc.h>
 
 #define INITIAL_BUCKET_COUNT 128
-#define ERROR -1
-#define SUCCESS 0
 
 typedef struct ssl_entry
 {

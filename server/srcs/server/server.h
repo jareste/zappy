@@ -1,6 +1,8 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-int socket_main();
+int server_select();
+void init_server();
+void cleanup_server();
 
 #endif /* SERVER_H */

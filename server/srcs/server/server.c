@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <cJSON.h>
 #include <sys/select.h>
+#include <ft_malloc.h>
+#include <error_codes.h>
 #include "ssl_table.h"
 #include "ssl_al.h"
-
-#define ERROR -1
-#define SUCCESS 0
 
 static int m_sock_server = -1;
 static int m_max_fd = -1;
@@ -84,7 +83,7 @@ static int m_handle_client_event(int fd)
     return SUCCESS;
 }
 
-static int m_server_select()
+int server_select()
 {
     fd_set read_fds;
     struct timeval timeout;
@@ -131,15 +130,13 @@ static int m_server_select()
     return SUCCESS;
 }
 
-
-
-int socket_main()
+void init_server(int port)
 {
-    m_sock_server = init_ssl_al("certs/cert.pem", "certs/key.pem");
+    m_sock_server = init_ssl_al("certs/cert.pem", "certs/key.pem", port);
     if (m_sock_server == ERROR)
     {
         fprintf(stderr, "Failed to initialize SSL\n");
-        return ERROR;
+        exit(EXIT_FAILURE);
     }
 
     set_server_socket(m_sock_server);
@@ -147,11 +144,18 @@ int socket_main()
     FD_ZERO(&m_read_fds);
     printf("Server socket initialized: fd=%d\n", m_sock_server);
     FD_SET(m_sock_server, &m_read_fds);
-    while (1)
-    {
-        m_server_select();
-    }
-
-    cleanup_ssl_al();
-    return 0;
 }
+
+void cleanup_server()
+{
+    for (int fd = 0; fd <= m_max_fd; ++fd)
+    {
+        if (FD_ISSET(fd, &m_read_fds))
+        {
+            close(fd);
+            FD_CLR(fd, &m_read_fds);
+        }
+    }
+    cleanup_ssl_al();
+}
+

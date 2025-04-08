@@ -20,12 +20,9 @@
 #include <openssl/sha.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include <ft_malloc.h>
+#include <error_codes.h>
 #include "ssl_table.h"
-
-#define PORT 8674
-
-#define ERROR -1
-#define SUCCESS 0
 
 static SSL_CTX *m_ctx = NULL;
 static int m_sock_server = -1;
@@ -333,7 +330,7 @@ int ws_send(int fd, const void *buf, size_t len, int flags)
     return ret;
 }
 
-static int init_server()
+static int init_server(int port)
 {
     struct sockaddr_in addr = {0};
     int sockfd;
@@ -345,7 +342,7 @@ static int init_server()
         return ERROR;
     }
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(PORT);
+    addr.sin_port = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
@@ -363,7 +360,7 @@ static int init_server()
         return ERROR;
     }
 
-    printf("WSS server listening on port %d...\n", PORT);
+    printf("WSS server listening on port %d...\n", port);
     return sockfd;
 }
 
@@ -377,7 +374,7 @@ static int stop_server()
     return SUCCESS;
 }
 
-int init_ssl_al(char* cert, char* key)
+int init_ssl_al(char* cert, char* key, int port)
 {
     int server_sock;
     const SSL_METHOD *method;
@@ -399,7 +396,7 @@ int init_ssl_al(char* cert, char* key)
     */
     ssl_table_init();
 
-    server_sock = init_server();
+    server_sock = init_server(port);
     if (server_sock == ERROR)
     {
         fprintf(stderr, "Failed to initialize server socket\n");

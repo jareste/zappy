@@ -1,7 +1,7 @@
 #ifndef SSL_AL_H
 #define SSL_AL_H
 
-#define USE_SSL
+#include <error_codes.h>
 
 #define ERROR -1
 #define SUCCESS 0
@@ -29,7 +29,7 @@
     #endif
 
     /* functions that only make sense with SSL */
-    int init_ssl_al(char* cert, char* key);
+    int init_ssl_al(char* cert, char* key, int port);
     int cleanup_ssl_al();
     void set_server_socket(int sock);
 
