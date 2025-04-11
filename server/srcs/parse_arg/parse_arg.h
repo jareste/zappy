@@ -32,7 +32,8 @@ typedef struct s_args
     char**      teams; /* this will be a list while parsing, no sense to be reallocating or whatever. */
     uint16_t    nb_clients; /* no sense to have more than 65535 clients being honest, even 65535 are way too many. */
     time_t      time_unit;
-    FILE*       cert; /* cert for SSL */
+    char*       cert; /* cert for SSL */
+    char*       key; /* key for SSL */
 } t_args;
 
 void parse_args(int argc, char *argv[], t_args* args);

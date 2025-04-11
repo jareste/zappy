@@ -9,11 +9,11 @@ RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
 
 #########
-FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game
+FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api
 
 SRC = $(addsuffix .c, $(FILES))
 
-vpath %.c srcs srcs/parse_arg srcs/server inc srcs/game
+vpath %.c srcs srcs/parse_arg srcs/server inc srcs/game srcs/time_api
 #########
 
 OBJ_DIR = objs

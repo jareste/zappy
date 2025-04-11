@@ -4,16 +4,13 @@
 #include "server/ssl_al.h"
 #include "server/server.h"
 #include "game/game.h"
+#include "time_api/time_api.h"
 
 #define PORT 8674
 
 int main_loop()
 {
     int ret;
-
-    /* On failure will simply exit soooo :)
-    */
-    init_server(PORT);
 
     while (1)
     {
@@ -38,17 +35,39 @@ int main_loop()
     return 0;
 }
 
+char* teams[] = {"team1", "team2", NULL};
+
 int main(int argc, char **argv)
 {
-    // t_args args;
-    (void)argv;
+    t_args args = {
+        .port = PORT,
+        .width = 10,
+        .height = 10,
+        .teams = teams,
+        .nb_clients = 3,
+        .time_unit = 1,
+        .cert = "certs/cert.pem",
+        .key = "certs/key.pem",
+    };
 
     if (argc < 2)
     {
         ZAPPY_USAGE(EXIT_FAILURE);
     }
+    parse_args(argc, argv, &args);
 
-    // parse_args(argc, argv, &args);
+    /* On failure will simply exit soooo :)
+    */
+    init_server(args.port, args.cert, args.key);
+
+    time_api_init_local(args.time_unit);
+
+    if (init_game(&args) == ERROR)
+    {
+        fprintf(stderr, "Failed to initialize game\n");
+        cleanup_server();
+        return ERROR;
+    }
 
     main_loop();
 

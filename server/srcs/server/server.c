@@ -130,9 +130,9 @@ int server_select()
     return SUCCESS;
 }
 
-void init_server(int port)
+void init_server(int port, char* cert, char* key)
 {
-    m_sock_server = init_ssl_al("certs/cert.pem", "certs/key.pem", port);
+    m_sock_server = init_ssl_al(cert, key, port);
     if (m_sock_server == ERROR)
     {
         fprintf(stderr, "Failed to initialize SSL\n");

@@ -55,7 +55,9 @@ void check_params(t_args* args)
 void parse_args(int argc, char *argv[], t_args* args)
 {
     int         opt;
-    (void)args;
+
+    return;
+
     static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"file", required_argument, 0, 'f'},

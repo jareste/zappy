@@ -1,6 +1,8 @@
 #ifndef GAME_STRUCTS_H
 #define GAME_STRUCTS_H
 
+#define MAX_EVENTS 10
+
 typedef enum
 {
     NORTH,
@@ -54,10 +56,25 @@ typedef struct
 
 typedef struct
 {
+    int exec_time;
+    void (*callback)(void *);
+    void* data;
+} event;
+
+typedef struct 
+{
+    event events[MAX_EVENTS];
+    int count;
+    int head;
+    int tail;
+} event_buffer;
+
+typedef struct
+{
     int socket_fd;
     player* player;
-
     char buffer[1024]; /* not sure if i need that */
+    event_buffer event_buffer;
 } client;
 
 typedef struct
@@ -66,13 +83,6 @@ typedef struct
     int delay;
     void (*callback)(void *);
 } command;
-
-typedef struct
-{
-    int execute_at;
-    void (*callback)(void *);
-    void* data;
-} event;
 
 typedef struct
 {
