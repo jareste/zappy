@@ -13,6 +13,11 @@ static long get_current_time_ms()
     return tv.tv_sec * 1000L + tv.tv_usec / 1000;
 }
 
+time_api *time_api_get_local()
+{
+    return m_time;
+}
+
 time_api *time_api_init(int t)
 {
     time_api *api = malloc(sizeof(time_api));
@@ -31,14 +36,17 @@ void time_api_init_local(int t)
 /* Compute and return the current game time (in time units) */
 int time_get_current_time_units(time_api *_api)
 {
-    time_api *api = _api ? _api : m_time;
+    time_api *api;
+    long now;
+
+    api= _api ? _api : m_time;
     if (!api)
     {
         fprintf(stderr, "Time API not initialized.\n");
         return -1;
     }
 
-    long now = get_current_time_ms();
+    now = get_current_time_ms();
     /* Each time unit lasts 1000/t milliseconds */
     return (int)((now - api->start_time_ms) * api->t / 1000);
 }
@@ -46,7 +54,9 @@ int time_get_current_time_units(time_api *_api)
 /* Update the current game time stored in the API */
 int time_api_update(time_api *_api)
 {
-    time_api *api = _api ? _api : m_time;
+    time_api *api;
+
+    api= _api ? _api : m_time;
     if (!api)
     {
         fprintf(stderr, "Time API not initialized.\n");
@@ -67,7 +77,10 @@ int m_is_event_buffer_full(event_buffer *buffer)
  */
 int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int delay, void (*callback)(void *), void *data)
 {
-    time_api *api = _api ? _api : m_time;
+    event new_event;
+    time_api *api;
+
+    api= _api ? _api : m_time;
     if (!api)
     {
         fprintf(stderr, "Time API not initialized.\n");
@@ -80,7 +93,6 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
         return -1;
     }
     
-    event new_event;
     new_event.exec_time = _api->current_time_units + delay;
     new_event.callback = callback;
     new_event.data = data;
@@ -97,7 +109,10 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
  */
 int time_api_process_client_events(time_api *_api, event_buffer *buffer)
 {
-    time_api *api = _api ? _api : m_time;
+    time_api *api;
+    event *ev;
+
+    api = _api ? _api : m_time;
     if (!api)
     {
         fprintf(stderr, "Time API not initialized.\n");
@@ -106,7 +121,7 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
 
     while (buffer->count > 0)
     {
-        event *ev = &buffer->events[buffer->head];
+        ev = &buffer->events[buffer->head];
         if (ev->exec_time <= _api->current_time_units)
         {
             if (ev->callback)

@@ -39,6 +39,7 @@ char* teams[] = {"team1", "team2", NULL};
 
 int main(int argc, char **argv)
 {
+    /* DEBUG */
     t_args args = {
         .port = PORT,
         .width = 10,
@@ -49,6 +50,7 @@ int main(int argc, char **argv)
         .cert = "certs/cert.pem",
         .key = "certs/key.pem",
     };
+    /* DEBUG_END */
 
     if (argc < 2)
     {
@@ -62,12 +64,7 @@ int main(int argc, char **argv)
 
     time_api_init_local(args.time_unit);
 
-    if (init_game(&args) == ERROR)
-    {
-        fprintf(stderr, "Failed to initialize game\n");
-        cleanup_server();
-        return ERROR;
-    }
+    init_game(args.width, args.height, args.teams, args.nb_clients);
 
     main_loop();
 

@@ -94,7 +94,6 @@ typedef struct
     int team_count;
     client** clients;
     int client_count;
-
 } server;
 
 #endif /* GAME_STRUCTS_H */
