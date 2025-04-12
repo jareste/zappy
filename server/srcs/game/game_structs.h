@@ -51,7 +51,7 @@ typedef struct
     char* name;
     int max_players;
     int current_players;
-    player** players;
+    int* players; /* index of the player in 'server.clients' */
 } team;
 
 typedef struct

@@ -93,7 +93,7 @@ int server_select()
     memcpy(&read_fds, &m_read_fds, sizeof(m_read_fds));
 
     timeout.tv_sec = 0;
-    timeout.tv_usec = 100; // 100 microseconds
+    timeout.tv_usec = 0; /* Non-blocking select at all. */
 
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
@@ -122,7 +122,7 @@ int server_select()
             {
                 fprintf(stderr, "Failed to handle client event\n");
                 fprintf(stderr, "##################################\n");
-                return ERROR;
+                /* remove client */
             }
         }
     }

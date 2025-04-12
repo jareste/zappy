@@ -3,7 +3,7 @@
 
 #include "game_structs.h"
 
-int play();
-int init_game(/*parser info*/);
+int game_play();
+int game_init(int width, int height, char **teams, int nb_clients);
 
 #endif /* GAME_H */

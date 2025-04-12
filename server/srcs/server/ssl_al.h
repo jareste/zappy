@@ -43,9 +43,9 @@
     #define close(sockfd) ws_close(sockfd)
 #else
     #include <sys/socket.h>
-    #define init_ssl_al(cert, key) SUCCESS
+    #define init_ssl_al(cert, key, port) SUCCESS
     #define cleanup_ssl_al() SUCCESS
-    #define set_server_socket(sock) (void)(sock)
+    #define set_server_socket(sock) SUCCESS
 #endif
 
 

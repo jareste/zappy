@@ -17,6 +17,7 @@ typedef struct
  * Returns a pointer to an allocated time_api or NULL on failure.
  */
 time_api *time_api_init(int t);
+time_api *time_api_get_local();
 
 /* Initializes the local time_api with the time divider 't'.
  * This function should be called once at the start of the program.
@@ -29,7 +30,7 @@ int time_get_current_time_units(time_api *api);
 /* Updates the API's notion of current game time.
  * Should be called periodically in the main loop.
  */
- int time_api_update(time_api *_api);
+int time_api_update(time_api *_api);
 
 /* Schedules a client event into the given fixed-size event buffer.
  * delay: number of time units from now when the event must trigger.

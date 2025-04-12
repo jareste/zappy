@@ -6,14 +6,24 @@
 #include "game/game.h"
 #include "time_api/time_api.h"
 
+/*debug*/
+#include <time.h>
+
 #define PORT 8674
 
 int main_loop()
 {
     int ret;
+#ifdef DEBUG
+    struct timeval start_time;
+    struct timeval end_time;
+#endif
 
     while (1)
     {
+#ifdef DEBUG
+        gettimeofday(&start_time, NULL);
+#endif
 
         ret = server_select();
         if (ret == ERROR)
@@ -22,12 +32,19 @@ int main_loop()
             break;
         }
 
-        ret = play();
+        ret = game_play();
         if (ret == ERROR)
         {
             fprintf(stderr, "Failed to play\n");
             break;
         }
+
+#ifdef DEBUG
+        gettimeofday(&end_time, NULL);
+        long elapsed_us = (end_time.tv_sec - start_time.tv_sec) * 1000000L + 
+                      (end_time.tv_usec - start_time.tv_usec);
+        printf("Loop completed in: %ld microseconds\n", elapsed_us);
+#endif
     }
 
     cleanup_server();
@@ -64,7 +81,9 @@ int main(int argc, char **argv)
 
     time_api_init_local(args.time_unit);
 
-    init_game(args.width, args.height, args.teams, args.nb_clients);
+    // int game_init(int width, int height, int nb_clients, char **teams, int time_unit)
+
+    game_init(args.width, args.height, args.teams, args.nb_clients);
 
     main_loop();
 
