@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.IOException;
 
 @ClientEndpoint
 public class WebSocketClient {
@@ -14,6 +15,9 @@ public class WebSocketClient {
     private int port;
     private String hostname;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private String bienvenue = "Welcome to WSS WebSocket server!";
+    private Session session;
+    private CommandManager cmdManager;
 
     public WebSocketClient(String teamName, int port, String hostname) {
         this.teamName = teamName;
@@ -23,24 +27,19 @@ public class WebSocketClient {
 
     @OnOpen
     public void onOpen(Session session) {
+        this.session = session;
         System.out.println("Connected to server");
-        // Send the first message to the server immediately
-        try {
-            session.getBasicRemote().sendText("Hello from Java client!");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        // Schedule messages to be sent every 1000ms
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                String message = createJsonMessage();
-                session.getBasicRemote().sendText(message);
-                System.out.println("Sent: " + message);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }, 0, 1000, TimeUnit.MILLISECONDS); // Starts immediately and sends every 1000ms
+        Player player = new Player(this.teamName);
+        CommandManager cmdManager = new CommandManager(this::send, player);
+        player.setCommandManager(cmdManager);
+        this.cmdManager = cmdManager;
+
+        // // FOR DEBUG
+        // String msg1 = createJsonMessage1();
+        // String msg2 = createJsonMessage2();
+        // this.cmdManager.handleResponse(msg1);
+        // this.cmdManager.handleResponse(msg2);
     }
 
     private String createJsonMessage() {
@@ -51,15 +50,44 @@ public class WebSocketClient {
         return jsonMessage.toString();
     }
 
+    private String createJsonMessage1() {
+        JsonObject jsonMessage = new JsonObject();
+        jsonMessage.addProperty("type", "bienvenue");
+        jsonMessage.addProperty("msg", "Whoa! Knock knock, whos there?");
+
+        return jsonMessage.toString();
+    }
+
+    private String createJsonMessage2() {
+        JsonObject jsonMessage = new JsonObject();
+        jsonMessage.addProperty("type", "welcome");
+        jsonMessage.addProperty("remaining_clients", 3);
+        JsonObject mapSize = new JsonObject();
+        mapSize.addProperty("x", 10);
+        mapSize.addProperty("y", 10);
+        jsonMessage.add("map_size", mapSize);
+
+        return jsonMessage.toString();
+    }
+
     @OnMessage
     public void onMessage(String message) {
         System.out.println("Received message: " + message);
+        this.cmdManager.handleResponse(message);
     }
 
     @OnClose
     public void onClose() {
         System.out.println("Connection closed");
         scheduler.shutdown();  // Clean up the scheduler when the connection is closed
+    }
+
+    private void send(String msg) {
+        try {
+            this.session.getBasicRemote().sendText(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void startConnection() {

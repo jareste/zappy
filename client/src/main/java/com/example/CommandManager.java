@@ -1,0 +1,140 @@
+package com.example;
+
+import java.util.function.Consumer;
+import java.util.LinkedList;
+import java.util.Queue;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+public class CommandManager {
+    // private String teamName;
+    private final Consumer<String> sendToServerFunction;
+    private final Queue<Command> commandQueue = new LinkedList<>();
+    private final Player player;
+    private int pendingResponses = 0;
+
+    public CommandManager(Consumer<String> sendFunction, Player player) {
+        this.sendToServerFunction = sendFunction;
+        this.player = player;
+    }
+
+    public void sendMsg(String msg) {
+        sendToServerFunction.accept(msg);
+    }
+
+    public void handleResponse(String response) {
+        // Handle the response from the server
+        System.out.println("Received response: " + response);
+        if (response.equals("Welcome to WSS WebSocket server!")) {
+            // System.out.println("hereee");
+            sendCommand(new Command("avance"));
+            return;
+        }
+        if (response.equals("Message received!")) {
+            return;
+        }
+        JsonObject jsonResponse = parseJson(response);
+        String type = jsonResponse.has("type") ? jsonResponse.get("type").getAsString() : "response"; // only for debug
+
+        switch (type) {
+            case "bienvenue":
+                System.out.println("BIENVENUE message received: " + jsonResponse.get("msg").getAsString());
+                String loginMessage = createLoginJsonMessage();
+                sendMsg(loginMessage);
+                break;
+            case "welcome":
+                handleWelcomeMsg(jsonResponse);
+                break;
+            case "response":
+                System.out.println("Response received");
+                pendingResponses--;
+                this.player.handleResponse(jsonResponse);
+                break;
+            case "message":
+                // from broadcasting
+                System.out.println("Message received: " + jsonResponse.get("msg").getAsString());
+                break;
+            case "error":
+                System.out.println("Error received");
+                break;
+            case "cmd": // for debug
+                this.player.handleResponse(jsonResponse);
+                break;
+            default:
+                System.out.println("Unknown message type: " + type);
+        }        
+
+        if (!commandQueue.isEmpty()) {
+            Command nextCommand = commandQueue.poll();
+            sendCommand(nextCommand);
+        }
+
+        // // If there are no pending responses, process the next command
+        // if (pendingResponses == 0 && !commandQueue.isEmpty()) {
+        //     String nextCommand = commandQueue.poll();
+        //     sendMsg(nextCommand);
+        //     pendingResponses++;
+        // }
+    }
+
+    private String createLoginJsonMessage() {
+        JsonObject jsonMessage = new JsonObject();
+        jsonMessage.addProperty("type", "login");
+        jsonMessage.addProperty("key", "SOME_KEY");
+        jsonMessage.addProperty("role", "player");
+        jsonMessage.addProperty("team-name", this.player.getTeamName());
+
+        return jsonMessage.toString();
+    }
+
+    private void handleWelcomeMsg(JsonObject jsonResponse) {
+        System.out.println("Welcome message received");
+        int remaining_clients = jsonResponse.get("remaining_clients").getAsInt();
+        System.out.println("Remaining clients: " + remaining_clients); // Integer.toString(remaining_clients)
+        if (jsonResponse.has("map_size") && jsonResponse.get("map_size").isJsonObject()) {
+            JsonObject mapSize = jsonResponse.getAsJsonObject("map_size");
+            int x = mapSize.get("x").getAsInt();
+            int y = mapSize.get("y").getAsInt();
+            System.out.println("Map size: " + x + "x" + y);
+            // this.player.setWorldSize(x, y);
+        }
+        // send voir command instead:
+        // sendCommand(new Command("voir"));
+        sendCommand(new Command("avance"));
+    }
+
+    private JsonObject parseJson(String message) {
+        JsonObject jsonMessage = JsonParser.parseString(message).getAsJsonObject();
+        return jsonMessage;
+    }
+
+
+
+    public void addCommand(Command command) {
+        commandQueue.add(command);
+        // if (pendingResponses == 0) {
+        //     sendCommand(command.name + " " + command.argument);
+        //     pendingResponses++;
+        // }
+    }
+
+    private void sendCommand(Command command) {
+        String cmdStr = createCommandJsonMessage(command);
+        sendMsg(cmdStr);
+        pendingResponses++;
+    }
+
+    private String createCommandJsonMessage(Command cmd) {
+        JsonObject jsonMessage = new JsonObject();
+        String commandName = cmd.getName();
+        String argument = cmd.getArgument();
+
+        jsonMessage.addProperty("type", "cmd");
+        jsonMessage.addProperty("cmd", commandName);
+        if (argument != null && !argument.isEmpty()) {
+            jsonMessage.addProperty("arg", argument);
+        }
+
+        return jsonMessage.toString();
+    }
+}
