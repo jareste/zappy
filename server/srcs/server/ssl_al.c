@@ -158,7 +158,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
             }
             else
             {
-                fprintf(stderr, "SSL_read error: %d\n", r);
+                fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
                 return ERROR;
             }
         }
@@ -264,7 +264,8 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
             }
             else
             {
-                fprintf(stderr, "SSL_read error: %d\n", r);
+                fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
+                fprintf(stderr, "Received %zu bytes\n", received);
                 return ERROR;
             }
         }
@@ -443,54 +444,32 @@ int ssl_al_accept_client()
     int client;
     int ret;
 
+    ssl = NULL;
+    client = -1;
     if (m_sock_server == -1)
-    {
-        fprintf(stderr, "Server socket not initialized\n");
-        return ERROR;
-    }
+        goto error;
 
     len = sizeof(client_addr);
     printf("Waiting for client connection...\n");
     client = accept(m_sock_server, (struct sockaddr*)&client_addr, &len);
     if (client == -1)
-    {
-        perror("accept");
-        return ERROR;
-    }
+        goto error;
 
     printf("Client connected: %s:%d\n",
            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     ssl = SSL_new(m_ctx);
     if (!ssl)
-    {
-        fprintf(stderr, "Failed to create SSL object\n");
-        close(client);
-        return ERROR;
-    }
+        goto error;
+
     if (SSL_set_fd(ssl, client) == 0)
-    {
-        fprintf(stderr, "Failed to set file descriptor for SSL\n");
-        SSL_free(ssl);
-        close(client);
-        return ERROR;
-    }
+        goto error;
     
     ret = ssl_table_add(client, ssl);
     if (ret == ERROR)
-    {
-        fprintf(stderr, "Failed to add SSL to table\n");
-        SSL_free(ssl);
-        close(client);
-        return ERROR;
-    }
+        goto error;
 
     if (SSL_accept(ssl) <= 0)
-    {
-        ERR_print_errors_fp(stderr);
-        SSL_free(ssl);
-        close(client);
-        return ERROR;
-    }
+        goto error;
 
     printf("Client connected: %s:%d\n",
            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
@@ -504,6 +483,19 @@ int ssl_al_accept_client()
     // ws_send(client, "Welcome to WSS WebSocket server!", strlen("Welcome to WSS WebSocket server!"), 0);
 
     return client;
+
+error:
+    if (ssl)
+    {
+        ERR_print_errors_fp(stderr);
+        SSL_free(ssl);
+    }
+    if (client != -1)
+    {
+        close(client);
+    }
+    return ERROR;
+
 }
 
 void set_server_socket(int sock)

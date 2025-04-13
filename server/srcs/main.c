@@ -14,7 +14,8 @@
 
 int main_loop()
 {
-    int ret;
+    int sel_ret;
+    int game_ret;
 #ifdef DEBUG
     struct timeval start_time;
     struct timeval end_time;
@@ -26,15 +27,15 @@ int main_loop()
         gettimeofday(&start_time, NULL);
 #endif
 
-        ret = server_select();
-        if (ret == ERROR)
+        sel_ret = server_select();
+        if (sel_ret == ERROR)
         {
             fprintf(stderr, "Failed to select\n");
             break;
         }
 
-        ret = game_play();
-        if (ret == ERROR)
+        game_ret = game_play();
+        if (game_ret == ERROR)
         {
             fprintf(stderr, "Failed to play\n");
             break;
@@ -46,6 +47,12 @@ int main_loop()
                       (end_time.tv_usec - start_time.tv_usec);
         printf("Loop completed in: %ld microseconds\n", elapsed_us);
 #endif
+
+        if (sel_ret == 0 && game_ret == 0)
+        {
+            /* Release some CPU time or computer slows down :) */
+            usleep(5);
+        }
     }
 
     cleanup_server();

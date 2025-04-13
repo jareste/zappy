@@ -8,7 +8,7 @@
 #include "../game/game.h"
 
 /* defines */
-#define SERVER_KEY "Hola caracola!"
+#define SERVER_KEY "SOME_KEY"
 
 /* Typedefs */
 typedef enum
@@ -136,6 +136,39 @@ static int m_handle_cmd(int fd, cJSON *root)
     else
         ret = game_execute_command(fd, key_value->valuestring, NULL);
 
+    /* DEBUG */
+    cJSON* response = cJSON_CreateObject();
+    if (!response)
+        return ERROR;
+    
+    cJSON_AddStringToObject(response, "type", "response");
+    cJSON_AddStringToObject(response, "cmd", key_value->valuestring);
+    cJSON_AddStringToObject(response, "status", "ok");
+
+    char* json = cJSON_Print(response);
+    if (!json)
+    {
+        cJSON_Delete(response);
+        return ERROR;
+    }
+    send(fd, json, strlen(json), 0);
+    free(json);
+    cJSON_Delete(response);
+
+    cJSON *current_element = NULL;
+    cJSON_ArrayForEach(current_element, root)
+    {
+        if (cJSON_IsString(current_element))
+        {
+            printf("Key: %s, Value: %s\n", current_element->string, current_element->valuestring);
+        }
+        else if (cJSON_IsNumber(current_element))
+        {
+            printf("Key: %s, Value: %lf\n", current_element->string, current_element->valuedouble);
+        }
+    }
+    /* DEBUG_END */
+
     /* game execute_command must inform to the client if something would happen. */
     return ret;
 }
@@ -147,6 +180,9 @@ static int m_handle_login(int fd, cJSON *root)
     cJSON*  map_size;
     char*   json;
     int     ret;
+
+    printf("Handling login...\n");
+    printf("Buffer: %s\n", cJSON_Print(root));
 
     key_value = cJSON_GetObjectItem(root, "key");
     if (!key_value || !cJSON_IsString(key_value))
@@ -161,7 +197,20 @@ static int m_handle_login(int fd, cJSON *root)
     }
 
     /**/
-    key_value = cJSON_GetObjectItem(root, "team");
+    key_value = cJSON_GetObjectItem(root, "role");
+    if (!key_value || !cJSON_IsString(key_value))
+    {
+        m_create_json_response(fd, "error", "Invalid team name", NULL);
+        return ERROR;
+    }
+    if (strcmp(key_value->valuestring, "player") != 0)
+    {
+        m_create_json_response(fd, "error", "Invalid role", NULL);
+        return ERROR;
+    }
+
+    /**/
+    key_value = cJSON_GetObjectItem(root, "team-name");
     if (!key_value || !cJSON_IsString(key_value))
     {
         m_create_json_response(fd, "error", "Invalid team name", NULL);
@@ -253,30 +302,7 @@ static int m_handle_client_message(int fd, char *buffer, int bytes)
         return ERROR;
     }
 
-    cJSON *current_element = NULL;
-    cJSON_ArrayForEach(current_element, root)
-    {
-        if (cJSON_IsString(current_element))
-        {
-            printf("Key: %s, Value: %s\n", current_element->string, current_element->valuestring);
-        }
-        else if (cJSON_IsNumber(current_element))
-        {
-            printf("Key: %s, Value: %lf\n", current_element->string, current_element->valuedouble);
-        }
-    }
-    
     cJSON_Delete(root);
-
-    cJSON *response = cJSON_CreateObject();
-    cJSON_AddStringToObject(response, "hello", "Message received!");
-    cJSON_AddStringToObject(response, "your_msg", buffer);
-
-    char *json = cJSON_Print(response);
-    send(fd, json, strlen(json), 0);
-
-    cJSON_Delete(response);
-    free(json);
 
     return SUCCESS;
 }

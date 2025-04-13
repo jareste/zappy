@@ -2,6 +2,8 @@
 #include <error_codes.h>
 #include <ft_list.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdbool.h>
 #include "game_structs.h"
 #include "../time_api/time_api.h"
 
@@ -47,6 +49,12 @@ int game_init(int width, int height, char **teams, int nb_clients)
     while (teams[i])
     {
         ret = m_game_init_team(&m_server.teams[team_number], teams[i], m_server.team_count / nb_clients);
+        if (ret == ERROR)
+        {
+            fprintf(stderr, "Failed to initialize team %s\n", teams[i]);
+            return ERROR;
+        }
+
         team_number++;
         i++;
     }
@@ -82,17 +90,19 @@ void game_player_die(client *c)
     /* and remove the player from the event buffer */
     (void)c;
 }
-#include <stdio.h>
+
 int game_play()
 {
     int i;
     time_api* t_api;
     client* c;
+    bool has_played;
 
     time_api_update(NULL);
     t_api = time_api_get_local();
-    printf("Current time units: %d\n", t_api->current_time_units);
+    // printf("Current time units: %d\n", t_api->current_time_units);
     i = 0;
+    has_played = false;
     while (i < m_server.client_count)
     {
         c = m_server.clients[i];
@@ -103,13 +113,21 @@ int game_play()
             continue; /* No client */
 
         if (!PLAYER_IS_ALIVE(c, t_api->current_time_units))
+        {    
             game_player_die(c); /* Player not ready */
+            continue;
+        }
 
         if (CLIENT_HAS_ACTIONS(c, t_api->current_time_units))
+        {
             time_api_process_client_events(NULL, &c->event_buffer);
+            has_played = true;
+        }       
     }
 
 
     /* check if players can play and then make them play */
+    if (!has_played)
+        return 0;
     return SUCCESS;
 }
