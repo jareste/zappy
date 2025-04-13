@@ -1,0 +1,14 @@
+1. Client connects to the server
+2. Server sends some kind of weird hello message
+3. Client sends a hello message back with a key:
+    - Key is a hardcoded string into code.
+    - If ok, server answers properly, either, server disconnects you.
+4. Client has to state:
+    - If he is a player or a spectator
+    - If he is a spectator nothing else
+5. If he is a player, he has to send the following:
+    - The team he wants to join
+6. The server sends a message back with the following:
+    - If he has been accepted, if rejected, client has to disconnect
+7. Server sends the number of clients can still join his team.
+8. Server sends map dimensions.

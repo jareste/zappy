@@ -1,0 +1,5 @@
+{
+    "type": "command",
+    "command": "broadcast",
+    "message": "Let's level up!"
+}

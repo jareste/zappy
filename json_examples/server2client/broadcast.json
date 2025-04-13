@@ -1,0 +1,5 @@
+{
+    "type": "broadcast",
+    "source_direction": 3,
+    "message": "Come to position 2,2!"
+}
