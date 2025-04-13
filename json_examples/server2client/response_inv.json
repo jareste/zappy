@@ -1,6 +1,6 @@
 {
     "type": "response",
-    "command": "inventaire",
+    "cmd": "inventaire",
     "inventory": {
       "nourriture": 345,
       "sibur": 3,

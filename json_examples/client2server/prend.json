@@ -1,5 +1,5 @@
 {
-    "type": "command",
-    "command": "prend",
+    "type": "cmd",
+    "cmd": "prend",
     "object": "phiras"
 }

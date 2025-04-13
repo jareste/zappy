@@ -1,4 +1,4 @@
 {
-    "type": "command",
-    "command": "voir"
+    "type": "cmd",
+    "cmd": "voir"
 }

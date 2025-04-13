@@ -1,6 +1,6 @@
 {
     "type": "response",
-    "command": "voir",
+    "cmd": "voir",
     "view": ["nourriture", "player sibur", "phiras phiras"]
 }
   

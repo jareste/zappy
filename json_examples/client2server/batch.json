@@ -1,14 +1,14 @@
 {
     "type": "batch",
-    "commands": [
+    "cmds": [
       {
-        "command": "voir"
+        "cmd": "voir"
       },
       {
-        "command": "inventaire"
+        "cmd": "inventaire"
       },
       {
-        "command": "avance"
+        "cmd": "avance"
       }
     ]
 }
