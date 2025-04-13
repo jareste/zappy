@@ -8,6 +8,7 @@
 #define PLAYER_CAN_PLAY(x) (x->player->life_units > 0 && x->player->level > 0)
 #define CLIENT_HAS_ACTIONS(x, current_time) \
     ((x->event_buffer.count > 0) && (x->event_buffer.events[x->event_buffer.head].exec_time <= current_time))
+
 server m_server = {0};
 
 int m_game_init_team(team *team, char *name, int max_players)

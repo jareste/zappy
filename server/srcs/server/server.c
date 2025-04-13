@@ -5,14 +5,105 @@
 #include <error_codes.h>
 #include "ssl_table.h"
 #include "ssl_al.h"
+#include "../game/game.h"
+
+/* defines */
+#define SERVER_KEY "Hola caracola!"
+
+/* Typedefs */
+typedef enum
+{
+    type_cmd = 0,
+    type_event,
+    type_message,
+    type_login,
+    type_unknown
+} client_message_type;
+
+typedef struct
+{
+    client_message_type type;
+    const char *name;
+} client_message;
+
+typedef int (*client_message_handler)(int fd, cJSON *root);
+
+/* Prototypes */
+static int m_handle_login(int fd, cJSON *root);
+
+/* Locals */
+const client_message client_messages[] =
+{
+    {type_cmd, "cmd"},
+    {type_event, "event"},
+    {type_message, "message"},
+    {type_login, "login"},
+    {type_unknown, "unknown"}
+};
+
+static client_message_handler m_handlers[type_unknown] =
+{
+    NULL, /* type_cmd */
+    NULL, /* type_event */
+    NULL, /* type_message */
+    m_handle_login,
+};
 
 static int m_sock_server = -1;
 static int m_max_fd = -1;
 static fd_set m_read_fds;
 
+/* Definitions */
+static client_message_type m_get_message_type(const char *str)
+{
+    size_t i;
+
+    for (i = 0; i < sizeof(client_messages) / sizeof(client_messages[0]) - 1; ++i)
+    {
+        if (strcmp(client_messages[i].name, str) == 0)
+            return client_messages[i].type;
+    }
+
+    return type_unknown;
+}
+
+static int m_create_json_response(int fd, char* type, char* msg, char* args)
+{
+    cJSON *response;
+    char *json;
+
+    response = cJSON_CreateObject();
+    if (!response)
+        return ERROR;
+
+    cJSON_AddStringToObject(response, "type", type);
+    cJSON_AddStringToObject(response, "msg", msg);
+    if (args)
+        cJSON_AddStringToObject(response, "args", args);
+
+    json = cJSON_Print(response);
+    if (!json)
+    {
+        cJSON_Delete(response);
+        return ERROR;
+    }
+
+    send(fd, json, strlen(json), 0);
+
+    fprintf(stderr, "Sent JSON response: %s\n", json);
+
+    cJSON_Delete(response);
+    free(json);
+
+    return SUCCESS;
+}
+
 static int m_handle_new_client(int fd)
 {
-    int new_client = accept(fd, NULL, NULL);
+    int new_client;
+    int ret;
+
+    new_client = accept(fd, NULL, NULL);
     if (new_client == ERROR)
     {
         perror("accept");
@@ -23,21 +114,143 @@ static int m_handle_new_client(int fd)
     if (new_client > m_max_fd)
         m_max_fd = new_client;
 
-    printf("New client accepted: fd=%d\n", new_client);
+    /**/
+    ret = m_create_json_response(new_client, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
+    if (ret == ERROR)
+    {
+        return ERROR;
+    }
+
+    return SUCCESS;
+}
+
+static int m_handle_login(int fd, cJSON *root)
+{
+    cJSON*  key_value;
+    cJSON*  response;
+    cJSON*  map_size;
+    char*   json;
+    int     ret;
+
+    key_value = cJSON_GetObjectItem(root, "key");
+    if (!key_value || !cJSON_IsString(key_value))
+        return ERROR;
+
+    if (strcmp(key_value->valuestring, SERVER_KEY) != 0)
+    {
+        /* Ignore rc as it's already an error
+        */
+        m_create_json_response(fd, "error", "Invalid key", NULL);
+        return ERROR;
+    }
+
+    /**/
+    key_value = cJSON_GetObjectItem(root, "team");
+    if (!key_value || !cJSON_IsString(key_value))
+    {
+        m_create_json_response(fd, "error", "Invalid team name", NULL);
+        return ERROR;
+    }
+
+    /**/
+    ret = game_register_player(fd, key_value->valuestring);    
+    if (ret == ERROR)
+    {
+        m_create_json_response(fd, "error", "Failed to register player", NULL);
+        return ERROR;
+    }
+
+    /**/
+    response = cJSON_CreateObject();
+    if (!response)
+        return ERROR;
+    
+    cJSON_AddStringToObject(response, "type", "welcome");
+    cJSON_AddNumberToObject(response, "remaining_clients", 3);
+    
+    map_size = cJSON_CreateObject();
+    if (!map_size)
+    {
+        cJSON_Delete(response);
+        return ERROR;
+    }
+    
+    cJSON_AddNumberToObject(map_size, "x", 10);
+    cJSON_AddNumberToObject(map_size, "y", 10);
+    
+    cJSON_AddItemToObject(response, "map_size", map_size);
+    
+    json = cJSON_Print(response);
+    if (!json)
+    {
+        cJSON_Delete(response);
+        return ERROR;
+    }
+    
+    send(fd, json, strlen(json), 0);
+
+    free(json);
+    cJSON_Delete(response);
+
     return SUCCESS;
 }
 
 static int m_handle_client_message(int fd, char *buffer, int bytes)
 {
-    buffer[bytes] = '\0';
-    // printf("Received from fd=%d: %s\n", fd, buffer);
+    client_message_type type;
+    cJSON *key_value;
+    cJSON *root;
+    int ret;
 
-    cJSON *root = cJSON_Parse(buffer);
+    buffer[bytes] = '\0';
+
+    root = cJSON_Parse(buffer);
     if (!root)
     {
         printf("Failed to parse JSON!\n");
+        printf("Error before: %s\n", cJSON_GetErrorPtr());
+        printf("Buffer: %s\n", buffer);
         return ERROR;
     }
+    
+    key_value = cJSON_GetObjectItem(root, "type");
+    if (!key_value || !cJSON_IsString(key_value))
+    {
+        cJSON_Delete(root);
+        m_create_json_response(fd, "error", "Invalid JSON format", NULL);
+        return ERROR;
+    }
+
+    type = m_get_message_type(key_value->valuestring);
+    if (type == type_unknown)
+    {
+        cJSON_Delete(root);
+        m_create_json_response(fd, "error", "Unknown message type", NULL);
+        return ERROR;
+    }
+
+    ret = m_handlers[type](fd, root);
+    if (ret == ERROR)
+    {
+        cJSON_Delete(root);
+        m_create_json_response(fd, "error", "Failed to handle message", NULL);
+        return ERROR;
+    }
+
+    cJSON *current_element = NULL;
+    cJSON_ArrayForEach(current_element, root)
+    {
+        if (cJSON_IsString(current_element))
+        {
+            printf("Key: %s, Value: %s\n", current_element->string, current_element->valuestring);
+        }
+        else if (cJSON_IsNumber(current_element))
+        {
+            printf("Key: %s, Value: %lf\n", current_element->string, current_element->valuedouble);
+        }
+    }
+    
+    cJSON_Delete(root);
 
     cJSON *response = cJSON_CreateObject();
     cJSON_AddStringToObject(response, "hello", "Message received!");
@@ -71,6 +284,7 @@ static int m_handle_client_event(int fd)
     ret = m_handle_client_message(fd, buffer, bytes);
     if (ret == ERROR)
     {
+        return ERROR;
         printf("Received '%s' from fd=%d\n", buffer, fd);
         send(fd, buffer, bytes, 0);
         send(fd, "Message Received!!", strlen("Message Received!!"), 0);
@@ -123,6 +337,11 @@ int server_select()
                 fprintf(stderr, "Failed to handle client event\n");
                 fprintf(stderr, "##################################\n");
                 /* remove client */
+                /* by doing FD_CLR we will just ignore him so he will
+                 * be disconnected by his side when tcp timeout occurs
+                 */
+                FD_CLR(fd, &m_read_fds);
+                printf("Client fd=%d disconnected\n", fd);
             }
         }
     }

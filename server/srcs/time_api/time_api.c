@@ -93,7 +93,15 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
         return -1;
     }
     
-    new_event.exec_time = _api->current_time_units + delay;
+    if (buffer->count > 0)
+    {
+        new_event.exec_time = buffer->events[buffer->tail].exec_time + delay;
+    }
+    else
+    {
+        new_event.exec_time = _api->current_time_units + delay;
+    }
+
     new_event.callback = callback;
     new_event.data = data;
     
@@ -125,9 +133,7 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
         if (ev->exec_time <= _api->current_time_units)
         {
             if (ev->callback)
-            {
                 ev->callback(ev->data);
-            }
 
             buffer->head = (buffer->head + 1) % MAX_EVENTS;
             buffer->count--;

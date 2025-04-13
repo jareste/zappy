@@ -501,7 +501,7 @@ int ssl_al_accept_client()
     websocket_handshake(ssl, buf);
     printf("Handshake done. Sending welcome message.\n");
 
-    ws_send(client, "Welcome to WSS WebSocket server!", strlen("Welcome to WSS WebSocket server!"), 0);
+    // ws_send(client, "Welcome to WSS WebSocket server!", strlen("Welcome to WSS WebSocket server!"), 0);
 
     return client;
 }
