@@ -14,8 +14,6 @@
 typedef enum
 {
     type_cmd = 0,
-    type_event,
-    type_message,
     type_login,
     type_unknown
 } client_message_type;
@@ -30,22 +28,19 @@ typedef int (*client_message_handler)(int fd, cJSON *root);
 
 /* Prototypes */
 static int m_handle_login(int fd, cJSON *root);
+static int m_handle_cmd(int fd, cJSON *root);
 
 /* Locals */
 const client_message client_messages[] =
 {
     {type_cmd, "cmd"},
-    {type_event, "event"},
-    {type_message, "message"},
     {type_login, "login"},
     {type_unknown, "unknown"}
 };
 
 static client_message_handler m_handlers[type_unknown] =
 {
-    NULL, /* type_cmd */
-    NULL, /* type_event */
-    NULL, /* type_message */
+    m_handle_cmd, /* type_cmd */
     m_handle_login,
 };
 
@@ -122,6 +117,27 @@ static int m_handle_new_client(int fd)
     }
 
     return SUCCESS;
+}
+
+static int m_handle_cmd(int fd, cJSON *root)
+{
+    cJSON*  key_value;
+    cJSON*  arg;
+    int     ret;
+
+    key_value = cJSON_GetObjectItem(root, "cmd");
+    if (!key_value || !cJSON_IsString(key_value))
+        return ERROR;
+
+    arg = cJSON_GetObjectItem(root, "arg");
+
+    if (arg && cJSON_IsString(arg))
+        ret = game_execute_command(fd, key_value->valuestring, arg->valuestring);
+    else
+        ret = game_execute_command(fd, key_value->valuestring, NULL);
+
+    /* game execute_command must inform to the client if something would happen. */
+    return ret;
 }
 
 static int m_handle_login(int fd, cJSON *root)

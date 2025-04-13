@@ -5,7 +5,7 @@
 #include "game_structs.h"
 #include "../time_api/time_api.h"
 
-#define PLAYER_CAN_PLAY(x) (x->player->life_units > 0 && x->player->level > 0)
+#define PLAYER_IS_ALIVE(x, current_time) ((x->player->die_time > current_time))
 #define CLIENT_HAS_ACTIONS(x, current_time) \
     ((x->event_buffer.count > 0) && (x->event_buffer.events[x->event_buffer.head].exec_time <= current_time))
 
@@ -62,6 +62,27 @@ int game_register_player(int fd, char *team_name)
     return SUCCESS;
 }
 
+int game_execute_command(int fd, char *cmd, char *arg)
+{
+    /* this must queue the command to be executed later on */
+    (void)fd;
+    (void)cmd;
+    (void)arg;
+    return SUCCESS;
+}
+
+void game_player_die(client *c)
+{
+    /* this must remove the player from the game */
+    /* and free the memory */
+    /* and send a message to the client */
+    /* and remove the player from the team */
+    /* and remove the player from the map */
+    /* and remove the player from the server */
+    /* and remove the player from the event buffer */
+    (void)c;
+}
+#include <stdio.h>
 int game_play()
 {
     int i;
@@ -70,6 +91,7 @@ int game_play()
 
     time_api_update(NULL);
     t_api = time_api_get_local();
+    printf("Current time units: %d\n", t_api->current_time_units);
     i = 0;
     while (i < m_server.client_count)
     {
@@ -80,8 +102,8 @@ int game_play()
         if (c == NULL)
             continue; /* No client */
 
-        if (!PLAYER_CAN_PLAY(c))
-            continue; /* Player not ready */
+        if (!PLAYER_IS_ALIVE(c, t_api->current_time_units))
+            game_player_die(c); /* Player not ready */
 
         if (CLIENT_HAS_ACTIONS(c, t_api->current_time_units))
             time_api_process_client_events(NULL, &c->event_buffer);

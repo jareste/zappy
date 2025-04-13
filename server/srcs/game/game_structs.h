@@ -43,7 +43,7 @@ typedef struct
     position pos;
     direction dir;
     inventory inv;
-    int life_units;
+    int die_time; /* life units (1260 time units) */
 } player;
 
 typedef struct

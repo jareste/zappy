@@ -92,6 +92,8 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
         fprintf(stderr, "Client event buffer is full. Event not scheduled.\n");
         return -1;
     }
+
+    time_api_update(NULL);
     
     if (buffer->count > 0)
     {

@@ -8,6 +8,7 @@
 
 /*debug*/
 #include <time.h>
+#include <stdlib.h>
 
 #define PORT 8674
 
@@ -52,7 +53,10 @@ int main_loop()
     return 0;
 }
 
-char* teams[] = {"team1", "team2", NULL};
+char* teams[] = {"team1", "team2", "team3", "team4", "team5",\
+                  "team6", "team7", "team8", "team9", "team10",
+                  "team11", "team12", "team13", "team14", "team15",
+                  NULL};
 
 int main(int argc, char **argv)
 {
@@ -62,11 +66,22 @@ int main(int argc, char **argv)
         .width = 10,
         .height = 10,
         .teams = teams,
+        .nb_teams = 2,
         .nb_clients = 3,
         .time_unit = 1,
         .cert = "certs/cert.pem",
         .key = "certs/key.pem",
     };
+
+    srand(time(NULL));
+    args.width = rand() % 1000 + 4;
+    args.height = rand() % 1000 + 4;
+    args.nb_clients = rand() % 100 + 10;
+    args.nb_teams = rand() % 14 + 1;
+    args.time_unit = rand() % 1000 + 1;
+    printf("Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
+           args.width, args.height, args.nb_clients, args.time_unit);
+
     /* DEBUG_END */
 
     if (argc < 2)
