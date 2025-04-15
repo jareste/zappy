@@ -1,6 +1,7 @@
 #include <parse_arg.h>
 #include <server.h>
 #include <cJSON.h>
+#include <sys/signal.h>
 #include "server/ssl_al.h"
 #include "server/server.h"
 #include "game/game.h"
@@ -16,18 +17,20 @@ int main_loop()
 {
     int sel_ret;
     int game_ret;
+    int sel_timeout;
 #ifdef DEBUG
     struct timeval start_time;
     struct timeval end_time;
 #endif
 
+    sel_timeout = 0;
     while (1)
     {
 #ifdef DEBUG
         gettimeofday(&start_time, NULL);
 #endif
 
-        sel_ret = server_select();
+        sel_ret = server_select(sel_timeout);
         if (sel_ret == ERROR)
         {
             fprintf(stderr, "Failed to select\n");
@@ -50,8 +53,13 @@ int main_loop()
 
         if (sel_ret == 0 && game_ret == 0)
         {
-            /* Release some CPU time or computer slows down :) */
-            usleep(5);
+            /* Release some CPU time or computer slows down */
+            sel_timeout = 10000; /* 10ms */
+        }
+        else
+        {
+            /* We are busy so keep going */
+            sel_timeout = 0;
         }
     }
 
@@ -107,7 +115,11 @@ int main(int argc, char **argv)
 
     game_init(args.width, args.height, args.teams, args.nb_clients);
 
+    /* if server closes us something weird could happen */
+    signal(SIGPIPE, SIG_IGN);
+
     main_loop();
+    printf("Exiting...\n");
 
     return 0;
 }

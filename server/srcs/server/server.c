@@ -302,6 +302,7 @@ static int m_handle_client_message(int fd, char *buffer, int bytes)
         return ERROR;
     }
 
+    printf("Handled message of type '%s' from fd=%d\n", key_value->valuestring, fd);
     cJSON_Delete(root);
 
     return SUCCESS;
@@ -327,9 +328,6 @@ static int m_handle_client_event(int fd)
     if (ret == ERROR)
     {
         return ERROR;
-        printf("Received '%s' from fd=%d\n", buffer, fd);
-        send(fd, buffer, bytes, 0);
-        send(fd, "Message Received!!", strlen("Message Received!!"), 0);
         // printf("Sent '%s' to fd=%d\n", buffer, fd);
     }
     else
@@ -339,17 +337,18 @@ static int m_handle_client_event(int fd)
     return SUCCESS;
 }
 
-int server_select()
+int server_select(int sel_timeout)
 {
     fd_set read_fds;
     struct timeval timeout;
     int ret;
+    int fd;
 
     /* Cpy the read_fds set to avoid modifying the original. */
     memcpy(&read_fds, &m_read_fds, sizeof(m_read_fds));
 
     timeout.tv_sec = 0;
-    timeout.tv_usec = 0; /* Non-blocking select at all. */
+    timeout.tv_usec = sel_timeout; /* Non-blocking select at all. */
 
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
@@ -357,7 +356,7 @@ int server_select()
     else if (ret == 0) /* No new data to read. */
         return 0;
 
-    for (int fd = 0; fd <= m_max_fd; ++fd)
+    for (fd = 0; fd <= m_max_fd; ++fd)
     {
         if (!FD_ISSET(fd, &read_fds))
             continue;

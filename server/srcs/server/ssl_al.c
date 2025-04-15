@@ -146,21 +146,8 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         r = SSL_read(ssl, header + offset, 2 - offset);
         if (r <= 0)
         {
-            if (SSL_get_error(ssl, r) == SSL_ERROR_WANT_READ)
-            {
-                fprintf(stderr, "SSL_read would block\n");
-                return ERROR;
-            }
-            else if (SSL_get_error(ssl, r) == SSL_ERROR_SYSCALL)
-            {
-                fprintf(stderr, "SSL_read syscall error\n");
-                return ERROR;
-            }
-            else
-            {
-                fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
-                return ERROR;
-            }
+            fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
+            return ERROR;
         }
 
         offset += r;
@@ -423,10 +410,11 @@ int ws_close(int fd)
     SSL* ssl;
 
     if (fd == -1) return ERROR;
-    ws_send_close(fd, 1000, "Normal closure"); /* Send close message */
+
     ssl = ssl_table_get(fd);
     if (ssl)
     {
+        /* review */
         SSL_shutdown(ssl);
         SSL_free(ssl);
         ssl_table_remove(fd);
