@@ -24,15 +24,15 @@ public class CommandManager {
 
     public void handleResponse(String response) {
         // Handle the response from the server
-        System.out.println("Received response: " + response);
-        if (response.equals("Welcome to WSS WebSocket server!")) {
-            // System.out.println("hereee");
-            sendCommand(new Command("avance"));
-            return;
-        }
-        if (response.equals("Message received!")) {
-            return;
-        }
+        // System.out.println("Received response: " + response);
+        // if (response.equals("Welcome to WSS WebSocket server!")) {
+        //     // System.out.println("hereee");
+        //     sendCommand(new Command("avance"));
+        //     return;
+        // }
+        // if (response.equals("Message received!")) {
+        //     return;
+        // }
         JsonObject jsonResponse = parseJson(response);
         String type = jsonResponse.has("type") ? jsonResponse.get("type").getAsString() : "response"; // only for debug
 

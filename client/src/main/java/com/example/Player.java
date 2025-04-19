@@ -28,7 +28,7 @@ public class Player {
     }
 
     public void handleResponse(JsonObject msg) {
-        String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : null;
+        String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : "null";
         System.out.println("Handling response of Command: " + cmd);
         // if (cmd == null) {
         //     System.out.println("Command not found in response message.");

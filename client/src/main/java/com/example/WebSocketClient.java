@@ -15,7 +15,6 @@ public class WebSocketClient {
     private int port;
     private String hostname;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private String bienvenue = "Welcome to WSS WebSocket server!";
     private Session session;
     private CommandManager cmdManager;
 
