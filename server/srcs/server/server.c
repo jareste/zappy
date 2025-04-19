@@ -397,6 +397,7 @@ int server_select(int sel_timeout)
                  * be disconnected by his side when tcp timeout occurs
                  */
                 FD_CLR(fd, &m_read_fds);
+                close(fd);
                 printf("Client fd=%d disconnected\n", fd);
             }
         }
