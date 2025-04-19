@@ -62,6 +62,39 @@ static client_message_type m_get_message_type(const char *str)
     return type_unknown;
 }
 
+int server_create_response_to_command(int fd, char *cmd, char *arg, char* status)
+{
+    cJSON *response;
+    char *json;
+
+    response = cJSON_CreateObject();
+    if (!response)
+        return ERROR;
+
+    cJSON_AddStringToObject(response, "type", "response");
+    cJSON_AddStringToObject(response, "cmd", cmd);
+    if (arg)
+        cJSON_AddStringToObject(response, "arg", arg);
+    if (status)
+        cJSON_AddStringToObject(response, "status", status);
+
+    json = cJSON_Print(response);
+    if (!json)
+    {
+        cJSON_Delete(response);
+        return ERROR;
+    }
+
+    send(fd, json, strlen(json), 0);
+
+    fprintf(stderr, "Sent JSON response: %s\n", json);
+
+    cJSON_Delete(response);
+    free(json);
+
+    return SUCCESS;
+}
+
 static int m_create_json_response(int fd, char* type, char* msg, char* args)
 {
     cJSON *response;
@@ -135,39 +168,6 @@ static int m_handle_cmd(int fd, cJSON *root)
         ret = game_execute_command(fd, key_value->valuestring, arg->valuestring);
     else
         ret = game_execute_command(fd, key_value->valuestring, NULL);
-
-    /* DEBUG */
-    cJSON* response = cJSON_CreateObject();
-    if (!response)
-        return ERROR;
-    
-    cJSON_AddStringToObject(response, "type", "response");
-    cJSON_AddStringToObject(response, "cmd", key_value->valuestring);
-    cJSON_AddStringToObject(response, "status", "ok");
-
-    char* json = cJSON_Print(response);
-    if (!json)
-    {
-        cJSON_Delete(response);
-        return ERROR;
-    }
-    send(fd, json, strlen(json), 0);
-    free(json);
-    cJSON_Delete(response);
-
-    cJSON *current_element = NULL;
-    cJSON_ArrayForEach(current_element, root)
-    {
-        if (cJSON_IsString(current_element))
-        {
-            printf("Key: %s, Value: %s\n", current_element->string, current_element->valuestring);
-        }
-        else if (cJSON_IsNumber(current_element))
-        {
-            printf("Key: %s, Value: %lf\n", current_element->string, current_element->valuedouble);
-        }
-    }
-    /* DEBUG_END */
 
     /* game execute_command must inform to the client if something would happen. */
     return ret;
@@ -338,6 +338,17 @@ static int m_handle_client_event(int fd)
     {
         // printf("Handled JSON message from fd=%d\n", fd);
     }
+    return SUCCESS;
+}
+
+int server_remove_client(int fd)
+{
+    if (fd < 0 || fd > m_max_fd)
+        return ERROR;
+
+    FD_CLR(fd, &m_read_fds);
+    close(fd);
+
     return SUCCESS;
 }
 

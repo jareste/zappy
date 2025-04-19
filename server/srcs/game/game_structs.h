@@ -57,8 +57,9 @@ typedef struct
 typedef struct
 {
     int exec_time;
-    void (*callback)(void *);
+    int (*callback)(void *, void *);
     void* data;
+    void* arg;
 } event;
 
 typedef struct 
@@ -76,13 +77,6 @@ typedef struct
     char buffer[1024]; /* not sure if i need that */
     event_buffer event_buffer;
 } client;
-
-typedef struct
-{
-    char* name;
-    int delay;
-    void (*callback)(void *);
-} command;
 
 typedef struct
 {
