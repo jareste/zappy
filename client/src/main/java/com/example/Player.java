@@ -28,6 +28,7 @@ public class Player {
     }
 
     public void handleResponse(JsonObject msg) {
+        // msg == jsonResponse from server (from CommandManager)
         String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : "null";
         System.out.println("Handling response of Command: " + cmd);
         // if (cmd == null) {
@@ -47,13 +48,19 @@ public class Player {
                 handleGaucheResponse(msg);
                 break;
             case "voir":
-                System.out.println("See response: " + msg);
+                handleVoirResponse(msg);
                 break;
             case "inventaire":
                 System.out.println("Inventory response: " + msg);
                 break;
             case "prend":
                 System.out.println("Take an object response: " + msg);
+                break;
+            case "pose":
+                System.out.println("Drop an object response: " + msg);
+                break;
+            case "expulse":
+                System.out.println("Expulse response: " + msg);
                 break;
             default:
                 System.out.println("Not handled (yet) command in response message.");
@@ -99,6 +106,10 @@ public class Player {
         } else {
             System.out.println("Turn left failed :(");
         }
+    }
+
+    private void handleVoirResponse(JsonObject msg) {
+        System.out.println("See response: " + msg);
     }
 
     /********** GETTERS **********/

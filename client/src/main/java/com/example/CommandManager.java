@@ -90,7 +90,7 @@ public class CommandManager {
             int x = mapSize.get("x").getAsInt();
             int y = mapSize.get("y").getAsInt();
             System.out.println("Map size: " + x + "x" + y);
-            // this.player.setWorldSize(x, y);
+            this.player.setWorldSize(x, y);
         }
         // send voir command instead:
         // sendCommand(new Command("voir"));
