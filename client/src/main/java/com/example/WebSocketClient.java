@@ -17,11 +17,13 @@ public class WebSocketClient {
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Session session;
     private CommandManager cmdManager;
+    private CountDownLatch latch;
 
-    public WebSocketClient(String teamName, int port, String hostname) {
+    public WebSocketClient(String teamName, int port, String hostname, CountDownLatch latch) {
         this.teamName = teamName;
         this.port = port;
         this.hostname = hostname;
+        this.latch = latch;
     }
 
     @OnOpen
@@ -30,7 +32,7 @@ public class WebSocketClient {
         System.out.println("Connected to server");
 
         Player player = new Player(this.teamName);
-        CommandManager cmdManager = new CommandManager(this::send, player);
+        CommandManager cmdManager = new CommandManager(this::send, player, session);
         player.setCommandManager(cmdManager);
         this.cmdManager = cmdManager;
 
@@ -93,9 +95,25 @@ public class WebSocketClient {
     public void onClose() {
         System.out.println("Connection closed");
         scheduler.shutdown();  // Clean up the scheduler when the connection is closed
+        latch.countDown(); // Unblock main thread
+    }
+
+    public void close() {
+        try {
+            if (session != null && session.isOpen()) {
+                session.close();
+                System.out.println("WebSocket session closed by client.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void send(String msg) {
+        if (session == null || !session.isOpen()) {
+            System.out.println("Tried to send after closed. Skipping.");
+            return;
+        }
         try {
             this.session.getBasicRemote().sendText(msg);
         } catch (IOException e) {

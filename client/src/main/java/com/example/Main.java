@@ -2,6 +2,7 @@ package com.example;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class Main {
     private static void showUsage() {
@@ -74,11 +75,20 @@ public class Main {
         System.out.println("Hostname: " + hostname);
         System.out.println("Connecting to server...");
 
-        WebSocketClient webSocketClient = new WebSocketClient(teamName, port, hostname);
+        CountDownLatch latch = new CountDownLatch(1);
+        WebSocketClient webSocketClient = new WebSocketClient(teamName, port, hostname, latch);
+
+        // Registering shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutdown signal received. Closing connection...");
+            webSocketClient.close();
+        }));
+
         webSocketClient.startConnection();
 
         try {
-            Thread.sleep(Long.MAX_VALUE); // Keep alive forever
+            latch.await(); // Blocks until latch is counted down
+            System.out.println("Shutting down gracefully.");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

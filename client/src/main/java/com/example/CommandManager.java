@@ -5,17 +5,22 @@ import java.util.LinkedList;
 import java.util.Queue;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import javax.websocket.Session;
+import java.io.IOException;
 
 public class CommandManager {
     // private String teamName;
     private final Consumer<String> sendToServerFunction;
+    private Session session;
     private final Queue<Command> commandQueue = new LinkedList<>();
     private final Player player;
     private int pendingResponses = 0;
 
-    public CommandManager(Consumer<String> sendFunction, Player player) {
+    public CommandManager(Consumer<String> sendFunction, Player player, Session session) {
         this.sendToServerFunction = sendFunction;
         this.player = player;
+        this.session = session;
     }
 
     public void sendMsg(String msg) {
@@ -23,39 +28,30 @@ public class CommandManager {
     }
 
     public void handleResponse(String response) {
-        // Handle the response from the server
-        // System.out.println("Received response: " + response);
-        // if (response.equals("Welcome to WSS WebSocket server!")) {
-        //     // System.out.println("hereee");
-        //     sendCommand(new Command("avance"));
-        //     return;
-        // }
-        // if (response.equals("Message received!")) {
-        //     return;
-        // }
         JsonObject jsonResponse = parseJson(response);
         String type = jsonResponse.has("type") ? jsonResponse.get("type").getAsString() : "response"; // only for debug
 
         switch (type) {
             case "bienvenue":
-                System.out.println("BIENVENUE message received: " + jsonResponse.get("msg").getAsString());
-                String loginMessage = createLoginJsonMessage();
-                sendMsg(loginMessage);
+                handleBienvenueMsg(jsonResponse);
                 break;
             case "welcome":
                 handleWelcomeMsg(jsonResponse);
                 break;
             case "response":
-                System.out.println("Response received");
-                pendingResponses--;
-                this.player.handleResponse(jsonResponse);
+                handleResponseMsg(jsonResponse);
                 break;
-            case "message":
-                // from broadcasting
-                System.out.println("Message received: " + jsonResponse.get("msg").getAsString());
+            case "broadcast":
+                handleBroadcastMsg(jsonResponse);
+                break;
+            case "kick":
+                handleKickMsg(jsonResponse);
+                break;
+            case "event":
+                handleEventMsg(jsonResponse);
                 break;
             case "error":
-                System.out.println("Error received");
+                handleErrorMsg(jsonResponse);
                 break;
             case "cmd": // for debug
                 this.player.handleResponse(jsonResponse);
@@ -77,14 +73,12 @@ public class CommandManager {
         // }
     }
 
-    private String createLoginJsonMessage() {
-        JsonObject jsonMessage = new JsonObject();
-        jsonMessage.addProperty("type", "login");
-        jsonMessage.addProperty("key", "SOME_KEY");
-        jsonMessage.addProperty("role", "player");
-        jsonMessage.addProperty("team-name", this.player.getTeamName());
+    /********** MESSAGE HANDLERS **********/
 
-        return jsonMessage.toString();
+    private void handleBienvenueMsg(JsonObject jsonResponse) {
+        System.out.println("BIENVENUE message received: " + jsonResponse.get("msg").getAsString());
+        String loginMessage = createLoginJsonMessage();
+        sendMsg(loginMessage);
     }
 
     private void handleWelcomeMsg(JsonObject jsonResponse) {
@@ -103,12 +97,61 @@ public class CommandManager {
         sendCommand(new Command("avance"));
     }
 
+    private void handleResponseMsg(JsonObject jsonResponse) {
+        System.out.println("Response received");
+        // TODO: check if arg == 'died'
+        pendingResponses--;
+        this.player.handleResponse(jsonResponse);
+    }
+
+    private void handleBroadcastMsg(JsonObject jsonResponse) {
+        int dir = jsonResponse.get("source_direction").getAsInt();
+        System.out.println("Message received: \"" + jsonResponse.get("arg").getAsString() + "\" from direction: " + dir);
+        // handle properly
+    }
+
+    private void handleKickMsg(JsonObject jsonResponse) {
+        int dir = jsonResponse.get("from_direction").getAsInt();
+        System.out.println("KICK message received from direction: " + dir);
+        // handle properly
+    }
+
+    private void handleEventMsg(JsonObject jsonResponse) {
+        String event = jsonResponse.get("event").getAsString();
+        System.out.println("Event received: " + event);
+        // handle properly
+    }
+
+    private void handleErrorMsg(JsonObject jsonResponse) {
+        String argument = jsonResponse.has("arg") ? jsonResponse.get("arg").getAsString() : "Unknown";
+        System.out.println("Error received: " + argument);
+        if (this.session != null && this.session.isOpen()) {
+            try {
+                this.session.close();
+            } catch (IOException e) {
+                System.err.println("Failed to close session: " + e.getMessage());
+            }
+        }
+    }
+
+    /********** JSON FUNCTIONS **********/
+
     private JsonObject parseJson(String message) {
         JsonObject jsonMessage = JsonParser.parseString(message).getAsJsonObject();
         return jsonMessage;
     }
 
+    private String createLoginJsonMessage() {
+        JsonObject jsonMessage = new JsonObject();
+        jsonMessage.addProperty("type", "login");
+        jsonMessage.addProperty("key", "SOME_KEY");
+        jsonMessage.addProperty("role", "player");
+        jsonMessage.addProperty("team-name", this.player.getTeamName());
 
+        return jsonMessage.toString();
+    }
+
+    /********** COMMAND FUNCTIONS **********/
 
     public void addCommand(Command command) {
         commandQueue.add(command);
