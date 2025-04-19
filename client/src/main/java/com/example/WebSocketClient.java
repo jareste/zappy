@@ -39,6 +39,16 @@ public class WebSocketClient {
         // String msg2 = createJsonMessage2();
         // this.cmdManager.handleResponse(msg1);
         // this.cmdManager.handleResponse(msg2);
+
+        // scheduler.scheduleAtFixedRate(() -> {
+        //     try {
+        //         if (session.isOpen()) {
+        //             session.getAsyncRemote().sendText("ping"); 
+        //         }
+        //     } catch (Exception e) {
+        //         e.printStackTrace();
+        //     }
+        // }, 0, 5, TimeUnit.SECONDS);
     }
 
     private String createJsonMessage() {
@@ -71,8 +81,12 @@ public class WebSocketClient {
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("Received message: " + message);
-        this.cmdManager.handleResponse(message);
+        System.out.println("RECEIVED message: " + message);
+        try {
+            this.cmdManager.handleResponse(message);
+        } catch (Exception e) {
+            e.printStackTrace();  // You’ll see if it’s crashing quietly
+        }
     }
 
     @OnClose

@@ -180,6 +180,8 @@ static int m_handle_login(int fd, cJSON *root)
     cJSON*  map_size;
     char*   json;
     int     ret;
+    int    map_x;
+    int    map_y;
 
     printf("Handling login...\n");
     printf("Buffer: %s\n", cJSON_Print(root));
@@ -231,7 +233,7 @@ static int m_handle_login(int fd, cJSON *root)
         return ERROR;
     
     cJSON_AddStringToObject(response, "type", "welcome");
-    cJSON_AddNumberToObject(response, "remaining_clients", 3);
+    cJSON_AddNumberToObject(response, "remaining_clients", game_get_client_count());
     
     map_size = cJSON_CreateObject();
     if (!map_size)
@@ -240,8 +242,10 @@ static int m_handle_login(int fd, cJSON *root)
         return ERROR;
     }
     
-    cJSON_AddNumberToObject(map_size, "x", 10);
-    cJSON_AddNumberToObject(map_size, "y", 10);
+    game_get_map_size(&map_x, &map_y);
+
+    cJSON_AddNumberToObject(map_size, "x", map_x);
+    cJSON_AddNumberToObject(map_size, "y", map_y);
     
     cJSON_AddItemToObject(response, "map_size", map_size);
     

@@ -23,6 +23,22 @@ int m_game_init_team(team *team, char *name, int max_players)
     return SUCCESS;
 }
 
+int game_get_client_count()
+{
+    return m_server.client_count;
+}
+
+int game_get_team_count()
+{
+    return m_server.team_count;
+}
+
+void game_get_map_size(int *width, int *height)
+{
+    *width = m_server.map_x;
+    *height = m_server.map_y;
+}
+
 int game_init(int width, int height, char **teams, int nb_clients)
 {
     int team_number;

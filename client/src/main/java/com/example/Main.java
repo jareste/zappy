@@ -76,5 +76,11 @@ public class Main {
 
         WebSocketClient webSocketClient = new WebSocketClient(teamName, port, hostname);
         webSocketClient.startConnection();
+
+        try {
+            Thread.sleep(Long.MAX_VALUE); // Keep alive forever
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
