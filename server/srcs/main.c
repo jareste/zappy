@@ -23,6 +23,9 @@ int main_loop()
     struct timeval end_time;
 #endif
 
+    int i;
+
+    i = 0;
     sel_timeout = 0;
     while (1)
     {
@@ -61,6 +64,14 @@ int main_loop()
             /* We are busy so keep going */
             sel_timeout = 0;
         }
+        /* DEBUG */
+        i++;
+        if (i % 100 == 0)
+        {
+            time_api *api = time_api_get_local();
+            printf("Current time units: %d\n", api->current_time_units);
+        }
+        /* END_DEBUG */
     }
 
     cleanup_server();
@@ -94,9 +105,19 @@ int main(int argc, char **argv)
     args.nb_clients = rand() % 100 + 10;
     args.nb_teams = rand() % 14 + 1;
     args.time_unit = rand() % 1000 + 1;
+    // args.time_unit = 10;
     printf("Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
            args.width, args.height, args.nb_clients, args.time_unit);
 
+    int port = atoi(argv[1]);
+    if (port != 2)
+    {
+        args.port = port;
+    }
+    else
+    {
+        args.port = PORT;
+    }
     /* DEBUG_END */
 
     if (argc < 2)
@@ -110,8 +131,6 @@ int main(int argc, char **argv)
     init_server(args.port, args.cert, args.key);
 
     time_api_init_local(args.time_unit);
-
-    // int game_init(int width, int height, int nb_clients, char **teams, int time_unit)
 
     game_init(args.width, args.height, args.teams, args.nb_clients);
 

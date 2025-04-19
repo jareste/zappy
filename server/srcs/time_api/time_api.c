@@ -15,6 +15,7 @@ static long get_current_time_ms()
 
 time_api *time_api_get_local()
 {
+    time_api_update(NULL);
     return m_time;
 }
 
@@ -75,7 +76,7 @@ int m_is_event_buffer_full(event_buffer *buffer)
 /* Schedule a client event in the client's fixed-size event buffer.
  * The event's exec_time is set to current game time + delay.
  */
-int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int delay, void (*callback)(void *), void *data)
+int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int delay, int (*callback)(void *, void *), void *data, void *arg)
 {
     event new_event;
     time_api *api;
@@ -94,23 +95,21 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
     }
 
     time_api_update(NULL);
-    
+
     if (buffer->count > 0)
-    {
         new_event.exec_time = buffer->events[buffer->tail].exec_time + delay;
-    }
     else
-    {
-        new_event.exec_time = _api->current_time_units + delay;
-    }
+        new_event.exec_time = api->current_time_units + delay;
 
     new_event.callback = callback;
     new_event.data = data;
+    new_event.arg = arg;
     
     buffer->events[buffer->tail] = new_event;
     buffer->tail = (buffer->tail + 1) % MAX_EVENTS;
     buffer->count++;
-    
+    printf("Scheduled event at time %d\n", new_event.exec_time);
+
     return 0;
 }
 
@@ -132,10 +131,10 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
     while (buffer->count > 0)
     {
         ev = &buffer->events[buffer->head];
-        if (ev->exec_time <= _api->current_time_units)
+        if (ev->exec_time <= api->current_time_units)
         {
             if (ev->callback)
-                ev->callback(ev->data);
+                ev->callback(ev->data, ev->arg);
 
             buffer->head = (buffer->head + 1) % MAX_EVENTS;
             buffer->count--;
