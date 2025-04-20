@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
+#include <cJSON.h>
 #include "game_structs.h"
 #include "../time_api/time_api.h"
 #include "../server/server.h"/* not liking it*/
@@ -68,6 +69,8 @@ static int m_command_avance(void* _p, void* _arg);
 static int m_command_droite(void* _p, void* _arg);
 static int m_command_gauche(void* _p, void* _arg);
 static int m_command_connect_nbr(void* _p, void* _arg);
+static int m_command_voir(void* _p, void* _arg);
+static int m_command_inventaire(void* _p, void* _arg);
 
 server m_server = {0};
 
@@ -92,8 +95,8 @@ command command_prototypes[MAX_COMMANDS] =
     {m_command_avance, 7},
     {m_command_droite, 7},
     {m_command_gauche, 7},
-    {NULL, 7},
-    {NULL, 1},
+    {m_command_voir, 7},
+    {m_command_inventaire, 1},
     {NULL, 7},
     {NULL, 7},
     {NULL, 7},
@@ -141,6 +144,26 @@ static int m_game_get_start_pos(int *x, int *y, direction* dir)
     return SUCCESS;
 }
 
+// static void m_print_map()
+// {
+//     int i;
+//     int j;
+//     tile *t;
+
+//     for (i = 0; i < m_server.map_x; i++)
+//     {
+//         for (j = 0; j < m_server.map_y; j++)
+//         {
+//             t = MAP(i, j);
+//             printf("Tile (%d,%d): ", i, j);
+//             if (t->players)
+//                 printf("Players: %d\n", t->players->id);
+//             else
+//                 printf("No players\n");
+//         }
+//     }
+// }
+
 int m_game_add_player_to_tile(tile *t, player *p)
 {
     p->next_on_tile = t->players;
@@ -172,6 +195,10 @@ static void m_game_remove_player_from_tile(player *p)
 static void m_game_move_player(player *p, int new_x, int new_y)
 {
     m_game_remove_player_from_tile(p);
+
+    p->pos.x = new_x;
+    p->pos.y = new_y;
+
     m_game_add_player_to_tile(MAP(new_x, new_y), p);
 }
 
@@ -252,6 +279,157 @@ static int m_remove_client_from_server(client *c)
     return ERROR;
 }
 
+static inline int wrap(int v, int m)
+{
+    int r = v % m;
+    return r < 0 ? r + m : r;
+}
+
+static cJSON* build_tile_vision(tile *T)
+{
+    cJSON *tile_arr;
+    // player* p;
+    // cJSON *obj;
+    // int i;
+
+    tile_arr = cJSON_CreateArray();
+
+    // for (p = T->players; p; p = p->next_on_tile)
+    // {
+    //     obj = cJSON_CreateObject();
+    //     cJSON_AddStringToObject(obj, "type",  "player");
+    //     cJSON_AddStringToObject(obj, "team",  m_server.teams[p->team_id].name);
+    //     cJSON_AddItemToArray(tile_arr, obj);
+    // }
+
+    if (T->players)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("player"));
+
+    // for (i = 0; i < T->items.nourriture; i++)
+    if (T->items.nourriture > 0)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("nourriture"));
+    // for (i = 0; i < T->items.linemate; i++)
+    if (T->items.linemate > 0)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("linemate"));
+    // for (i = 0; i < T->items.deraumere; i++)
+    if (T->items.deraumere > 0)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("deraumere"));
+    // for (i = 0; i < T->items.sibur; i++)
+    if (T->items.sibur > 0)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("sibur"));
+    // for (i = 0; i < T->items.mendiane; i++)
+    if (T->items.mendiane > 0)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("mendiane"));
+    // for (i = 0; i < T->items.phiras; i++)
+    if (T->items.phiras > 0)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("phiras"));
+    // for (i = 0; i < T->items.thystame; i++)
+    if (T->items.thystame > 0)
+        cJSON_AddItemToArray(tile_arr, cJSON_CreateString("thystame"));
+    return tile_arr;
+}
+
+int m_command_voir(void* _p, void* _arg)
+{
+    player *p;
+    tile* T;
+    int width;
+    int rel_x;
+    int rel_y;
+    int x;
+    int y;
+    int d;
+    int i;
+    int lvl;
+    cJSON* root;
+    cJSON* vision;
+    cJSON* tile_arr;
+
+    (void)_arg;
+
+    p = (player*)_p;
+
+    lvl = p->level;
+
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "type",    "response");
+    cJSON_AddStringToObject(root, "command", "voir");
+
+    vision = cJSON_CreateArray();
+    cJSON_AddItemToObject(root, "vision", vision);
+
+    for (d = 0; d <= lvl; d++)
+    {
+        width = 2*d + 1;
+        for (i = 0; i < width; i++)
+        {
+            switch (p->dir)
+            {
+                case NORTH:
+                    rel_x = p->pos.x - d + i;
+                    rel_y = p->pos.y - (d + 1);
+                    break;
+                case EAST:
+                    rel_x = p->pos.x + (d + 1);
+                    rel_y = p->pos.y - d + i;
+                    break;
+                case SOUTH:
+                    rel_x = p->pos.x + d - i;
+                    rel_y = p->pos.y + (d + 1);
+                    break;
+                case WEST:
+                    rel_x = p->pos.x - (d + 1);
+                    rel_y = p->pos.y + d - i;
+                    break;
+                default:
+                    rel_x = p->pos.x;
+                    rel_y = p->pos.y;
+            }
+            x = wrap(rel_x, m_server.map_x);
+            y = wrap(rel_y, m_server.map_y);
+            T = MAP(x, y);
+
+            tile_arr = build_tile_vision(T);
+            cJSON_AddItemToArray(vision, tile_arr);
+        }
+    }
+
+    server_send_json(p->id, root);
+    cJSON_Delete(root);
+
+    return SUCCESS;
+}
+
+static int m_command_inventaire(void* _p, void* _arg)
+{
+    player *p;
+    cJSON* root;
+    cJSON* inv;
+
+    (void)_arg;
+
+    p = (player*)_p;
+
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "type", "response");
+    cJSON_AddStringToObject(root, "command", "inventaire");
+
+    inv = cJSON_CreateObject();
+    cJSON_AddNumberToObject(inv, "nourriture", p->inv.nourriture);
+    cJSON_AddNumberToObject(inv, "linemate",   p->inv.linemate);
+    cJSON_AddNumberToObject(inv, "deraumere",  p->inv.deraumere);
+    cJSON_AddNumberToObject(inv, "sibur",      p->inv.sibur);
+    cJSON_AddNumberToObject(inv, "mendiane",   p->inv.mendiane);
+    cJSON_AddNumberToObject(inv, "phiras",     p->inv.phiras);
+    cJSON_AddNumberToObject(inv, "thystame",   p->inv.thystame);
+
+    cJSON_AddItemToObject(root, "inventaire", inv);
+
+    server_send_json(p->id, root);
+    cJSON_Delete(root);
+
+    return SUCCESS;
+}
 static int m_command_connect_nbr(void* _p, void* _arg)
 {
     player* p;
@@ -320,29 +498,25 @@ static int m_command_gauche(void* _p, void* _arg)
 
 static int m_command_avance(void* _p, void* _arg)
 {
-    player *p;
-    char   *arg;
+    player* p;
+    char* arg;
+    int new_x;
+    int new_y;
 
     p = (player*)_p;
     arg = (char*)_arg;
+    new_x = p->pos.x;
+    new_y = p->pos.y;
     switch (p->dir)
     {
-        case NORTH:
-            p->pos.y = (p->pos.y + m_server.map_y - 1) % m_server.map_y;
-            break;
-        case EAST:
-            p->pos.x = (p->pos.x + 1) % m_server.map_x;
-            break;
-        case SOUTH:
-            p->pos.y = (p->pos.y + 1) % m_server.map_y;
-            break;
-        case WEST:
-            p->pos.x = (p->pos.x + m_server.map_x - 1) % m_server.map_x;
-            break;
+      case NORTH: new_y = (p->pos.y + m_server.map_y - 1) % m_server.map_y; break;
+      case EAST:  new_x = (p->pos.x + 1) % m_server.map_x;                   break;
+      case SOUTH: new_y = (p->pos.y + 1) % m_server.map_y;                   break;
+      case WEST:  new_x = (p->pos.x + m_server.map_x - 1) % m_server.map_x;  break;
     }
 
-    m_game_move_player(p, p->pos.x, p->pos.y);
-
+    m_game_move_player(p, new_x, new_y);
+ 
     return server_create_response_to_command(p->id, "avance", arg, "ok");
 }
 
@@ -433,7 +607,6 @@ int game_register_player(int fd, char *team_name)
     /*inventroy already 0*/
     p->die_time = t_api->current_time_units + TIME_TO_DIE; /* 1260 time units = 1 minute */
     p->start_time = t_api->current_time_units; /* 1260 time units = 1 minute */
-
 
     /* add player to team */
     m_team_add_player_to_team(p);

@@ -62,6 +62,18 @@ static client_message_type m_get_message_type(const char *str)
     return type_unknown;
 }
 
+int server_send_json(int fd, void* resp)
+{
+    cJSON* json;
+    char *out;
+
+    json = (cJSON*)resp;
+    out = cJSON_PrintUnformatted(json);
+    send(fd, out, strlen(out), 0);
+    free(out);
+    return SUCCESS;
+}
+
 int server_create_response_to_command(int fd, char *cmd, char *arg, char* status)
 {
     cJSON *response;

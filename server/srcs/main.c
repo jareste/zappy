@@ -100,10 +100,12 @@ int main(int argc, char **argv)
     };
 
     srand(time(NULL));
-    args.width = rand() % 1000 + 4;
+    // args.width = rand() % 1000 + 4;
     // args.width = 10000;
-    args.height = rand() % 1000 + 4;
+    args.width = 10;
+    // args.height = rand() % 1000 + 4;
     // args.height = 10000;
+    args.height = 10;
     args.nb_clients = rand() % 100 + 10;
     args.nb_teams = rand() % 14 + 1;
     // args.time_unit = rand() % 1000 + 1;
