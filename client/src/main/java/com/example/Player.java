@@ -13,17 +13,16 @@ public class Player {
     private CommandManager cmdManager;
     private AI ai;
     private int level;
-    // private Position position;
+    private World world;
+    private Position position;
     // private List<Resource> resources;
 
-    public Player(String teamName) {
+    public Player(String teamName, int w, int h) {
         this.team = teamName;
         this.ai = new AI(teamName);
         this.level = 1;
-        // this.world = new World(x, y); 
-
-        // this.name = name;
-        // this.position = position;
+        this.world = new World(w, h);
+        this.position = new Position(w, h);
         // this.resources = new ArrayList<>();
     }
 
@@ -62,6 +61,18 @@ public class Player {
             case "expulse":
                 System.out.println("Expulse response: " + msg);
                 break;
+            case "broadcast":
+                System.out.println("Broadcast response: " + msg);
+                break;
+            case "incantation":
+                System.out.println("Incantation response: " + msg);
+                break;
+            case "fork":
+                System.out.println("Fork response: " + msg);
+                break;
+            case "connect_nbr":
+                System.out.println("Connect number response: " + msg);
+                break;
             default:
                 System.out.println("Not handled (yet) command in response message.");
                 break;
@@ -76,33 +87,33 @@ public class Player {
     /********** RESPONSE HANDLERS **********/
 
     private void handleAvanceResponse(JsonObject msg) {
-        // Handle the response for the "avance" command
         String status = msg.has("status") ? msg.get("status").getAsString() : "ko";
         if (status.equals("ok")) {
-            System.out.println("Move successful!");
-            // Update player position or state
+            // System.out.println("Move successful!");
+            this.position.moveForward();
+            System.out.println("New position: " + this.position);
         } else {
             System.out.println("Move failed :(");
         }
     }
 
     private void handleDroiteResponse(JsonObject msg) {
-        // Handle the response for the "droite" command
         String status = msg.get("status").getAsString();
         if (status.equals("ok")) {
-            System.out.println("Turn right successful!");
-            // Update player state
+            // System.out.println("Turn right successful!");
+            this.position.turnRight();
+            System.out.println("New position: " + this.position);
         } else {
             System.out.println("Turn right failed :(");
         }
     }
 
     private void handleGaucheResponse(JsonObject msg) {
-        // Handle the response for the "gauche" command
         String status = msg.get("status").getAsString();
         if (status.equals("ok")) {
-            System.out.println("Turn left successful!");
-            // Update player state
+            // System.out.println("Turn left successful!");
+            this.position.turnLeft();
+            System.out.println("New position: " + this.position);
         } else {
             System.out.println("Turn left failed :(");
         }
@@ -132,19 +143,5 @@ public class Player {
         this.level = level;
     }
 
-    public void setWorldSize(int x, int y) {
-        // Set the world size
-        // this.world.setSize(x, y);
-        // or this.world = new World(x, y);
-
-        // start the AI decision-making process
-    }
-
     /********** SOMETHING ELSE... **********/
-
-    public void move(int x, int y) {
-        // Move the player to a new position
-        // this.position = new Position(x, y);
-    }
-
 }
