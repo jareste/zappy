@@ -57,7 +57,7 @@ int main_loop()
         if (sel_ret == 0 && game_ret == 0)
         {
             /* Release some CPU time or computer slows down */
-            sel_timeout = 10000; /* 10ms */
+            // sel_timeout = 100; /* 10ms */
         }
         else
         {
@@ -66,11 +66,11 @@ int main_loop()
         }
         /* DEBUG */
         i++;
-        if (i % 100 == 0)
-        {
-            time_api *api = time_api_get_local();
-            printf("Current time units: %d\n", api->current_time_units);
-        }
+        // if (i % 100 == 0)
+        // {
+        //     time_api *api = time_api_get_local();
+        //     printf("Current time units: %d\n", api->current_time_units);
+        // }
         /* END_DEBUG */
     }
 
@@ -101,11 +101,13 @@ int main(int argc, char **argv)
 
     srand(time(NULL));
     args.width = rand() % 1000 + 4;
+    // args.width = 10000;
     args.height = rand() % 1000 + 4;
+    // args.height = 10000;
     args.nb_clients = rand() % 100 + 10;
     args.nb_teams = rand() % 14 + 1;
-    args.time_unit = rand() % 1000 + 1;
-    // args.time_unit = 10;
+    // args.time_unit = rand() % 1000 + 1;
+    args.time_unit = 800;
     printf("Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
            args.width, args.height, args.nb_clients, args.time_unit);
 
@@ -119,6 +121,12 @@ int main(int argc, char **argv)
         args.port = PORT;
     }
     /* DEBUG_END */
+
+    if (args.nb_teams > args.nb_clients)
+    {
+        fprintf(stderr, "ERROR: there could not be more teams than clients.\n");
+        return ERROR;
+    }
 
     if (argc < 2)
     {

@@ -87,8 +87,6 @@ int server_create_response_to_command(int fd, char *cmd, char *arg, char* status
 
     send(fd, json, strlen(json), 0);
 
-    fprintf(stderr, "Sent JSON response: %s\n", json);
-
     cJSON_Delete(response);
     free(json);
 
@@ -117,8 +115,6 @@ static int m_create_json_response(int fd, char* type, char* msg, char* args)
     }
 
     send(fd, json, strlen(json), 0);
-
-    fprintf(stderr, "Sent JSON response: %s\n", json);
 
     cJSON_Delete(response);
     free(json);
@@ -306,7 +302,6 @@ static int m_handle_client_message(int fd, char *buffer, int bytes)
         return ERROR;
     }
 
-    printf("Handled message of type '%s' from fd=%d\n", key_value->valuestring, fd);
     cJSON_Delete(root);
 
     return SUCCESS;

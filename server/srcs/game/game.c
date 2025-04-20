@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 #include "game_structs.h"
 #include "../time_api/time_api.h"
 #include "../server/server.h"/* not liking it*/
@@ -14,7 +15,10 @@
 
 #define TEAM_IS_FULL(id) (m_server.teams[id].current_players >= m_server.teams[id].max_players)
 
-#define TIME_TO_DIE 1260 /* Stated in the subject */
+#define LIFE_UNIT 126 /* Stated in the subject */
+#define TIME_TO_DIE (LIFE_UNIT*10) /* Stated in the subject */
+
+#define MAP(x,y) (&(m_server.map[((y) * (m_server.map_x)) + (x)]))
 
 typedef enum
 {
@@ -47,8 +51,23 @@ typedef struct
     int delay;
 }command;
 
+typedef struct
+{
+    double  d_nourriture;
+    double  d_linemate;
+    double  d_deraumere;
+    double  d_sibur;
+    double  d_mendiane;
+    double  d_phiras;
+    double  d_thystame;
+    int     period;
+    int     next_idx;
+} spawn_ctx;
 
-int m_command_avance(void* p, void* arg);
+static int m_command_avance(void* _p, void* _arg);
+static int m_command_droite(void* _p, void* _arg);
+static int m_command_gauche(void* _p, void* _arg);
+static int m_command_connect_nbr(void* _p, void* _arg);
 
 server m_server = {0};
 
@@ -71,8 +90,8 @@ command_message command_messages[MAX_COMMANDS] =
 command command_prototypes[MAX_COMMANDS] =
 {
     {m_command_avance, 7},
-    {NULL, 7},
-    {NULL, 7},
+    {m_command_droite, 7},
+    {m_command_gauche, 7},
     {NULL, 7},
     {NULL, 1},
     {NULL, 7},
@@ -80,12 +99,19 @@ command command_prototypes[MAX_COMMANDS] =
     {NULL, 7},
     {NULL, 7},
     {NULL, 6},
-    {NULL, 42},
-    {NULL, 42},
+    {m_command_connect_nbr, 0},
+    {m_command_connect_nbr, 0},
 };
 
+static const double DENSITY_NOURRITURE = 1.0;
+static const double DENSITY_LINEMATE   = 0.02;
+static const double DENSITY_DERAUMERE  = 0.02;
+static const double DENSITY_SIBUR      = 0.04;
+static const double DENSITY_MENDIANE   = 0.04;
+static const double DENSITY_PHIRAS     = 0.04;
+static const double DENSITY_THYSTAME   = 0.005;
 
-int m_game_init_team(team *team, char *name, int max_players)
+static int m_game_init_team(team *team, char *name, int max_players)
 {
     team->name = strdup(name);
     team->max_players = max_players;
@@ -95,7 +121,7 @@ int m_game_init_team(team *team, char *name, int max_players)
     return SUCCESS;
 }
 
-int m_game_get_team_id(char *name)
+static int m_game_get_team_id(char *name)
 {
     int i;
 
@@ -107,7 +133,7 @@ int m_game_get_team_id(char *name)
     return ERROR;
 }
 
-int m_game_get_start_pos(int *x, int *y, direction* dir)
+static int m_game_get_start_pos(int *x, int *y, direction* dir)
 {
     *x = rand() % m_server.map_x;
     *y = rand() % m_server.map_y;
@@ -115,7 +141,41 @@ int m_game_get_start_pos(int *x, int *y, direction* dir)
     return SUCCESS;
 }
 
-int m_game_get_client_from_fd(int fd, client **c)
+int m_game_add_player_to_tile(tile *t, player *p)
+{
+    p->next_on_tile = t->players;
+    p->prev_on_tile = NULL;
+    if (t->players)
+        t->players->prev_on_tile = p;
+    t->players = p;
+
+    p->pos = t->pos;
+    return SUCCESS;
+}
+
+static void m_game_remove_player_from_tile(player *p)
+{
+    tile* t;
+    
+    t = MAP(p->pos.x, p->pos.y);
+    if (p->prev_on_tile)
+        p->prev_on_tile->next_on_tile = p->next_on_tile;
+    else
+        t->players = p->next_on_tile;
+
+    if (p->next_on_tile)
+        p->next_on_tile->prev_on_tile = p->prev_on_tile;
+
+    p->next_on_tile = p->prev_on_tile = NULL;
+}
+
+static void m_game_move_player(player *p, int new_x, int new_y)
+{
+    m_game_remove_player_from_tile(p);
+    m_game_add_player_to_tile(MAP(new_x, new_y), p);
+}
+
+static int m_game_get_client_from_fd(int fd, client **c)
 {
     int i;
 
@@ -130,7 +190,7 @@ int m_game_get_client_from_fd(int fd, client **c)
     return ERROR;
 }
 
-int m_team_add_player_to_team(player *p)
+static int m_team_add_player_to_team(player *p)
 {
     int team_id;
     team *t;
@@ -146,7 +206,7 @@ int m_team_add_player_to_team(player *p)
     return SUCCESS;
 }
 
-int m_team_remove_player_from_team(player *p)
+static int m_team_remove_player_from_team(player *p)
 {
     int team_id;
     team *t;
@@ -162,7 +222,7 @@ int m_team_remove_player_from_team(player *p)
     return SUCCESS;
 }
 
-int m_add_client_to_server(client *c)
+static int m_add_client_to_server(client *c)
 {
     int i;
 
@@ -177,7 +237,7 @@ int m_add_client_to_server(client *c)
     return ERROR;
 }
 
-int m_remove_client_from_server(client *c)
+static int m_remove_client_from_server(client *c)
 {
     int i;
 
@@ -192,23 +252,127 @@ int m_remove_client_from_server(client *c)
     return ERROR;
 }
 
-int m_command_avance(void* _p, void* _arg)
+static int m_command_connect_nbr(void* _p, void* _arg)
+{
+    player* p;
+    char number[10];
+    
+    (void)_arg;
+
+    p = (player*)_p;
+    snprintf(number, sizeof(number),\
+     "%d", m_server.teams[p->team_id].max_players - m_server.teams[p->team_id].current_players);
+
+    return server_create_response_to_command(p->id, "connect_nbr", number,  NULL);
+}
+
+static int m_command_droite(void* _p, void* _arg)
 {
     player *p;
-    char *arg;
+    char   *arg;
 
     p = (player*)_p;
     arg = (char*)_arg;
-    /* move the player forward */
-    /* check if the player can move */
-    /* check if the player is alive */
-    /* check if the player is not dead */
-    (void)p;
-    (void)arg;
-    printf("---------------------------------------------------------------------\n");
-    printf("Player %d is moving forward\n", p->id);
+    switch (p->dir)
+    {
+        case NORTH:
+            p->dir = EAST;
+            break;
+        case EAST:
+            p->dir = SOUTH;
+            break;
+        case SOUTH:
+            p->dir = WEST;
+            break;
+        case WEST:
+            p->dir = NORTH;
+            break;
+    }
+
+    return server_create_response_to_command(p->id, "droite", arg, "ok");
+}
+
+static int m_command_gauche(void* _p, void* _arg)
+{
+    player *p;
+    char   *arg;
+
+    p = (player*)_p;
+    arg = (char*)_arg;
+    switch (p->dir)
+    {
+        case NORTH:
+            p->dir = WEST;
+            break;
+        case EAST:
+            p->dir = NORTH;
+            break;
+        case SOUTH:
+            p->dir = EAST;
+            break;
+        case WEST:
+            p->dir = SOUTH;
+            break;
+    }
+
+    return server_create_response_to_command(p->id, "gauche", arg, "ok");
+}
+
+static int m_command_avance(void* _p, void* _arg)
+{
+    player *p;
+    char   *arg;
+
+    p = (player*)_p;
+    arg = (char*)_arg;
+    switch (p->dir)
+    {
+        case NORTH:
+            p->pos.y = (p->pos.y + m_server.map_y - 1) % m_server.map_y;
+            break;
+        case EAST:
+            p->pos.x = (p->pos.x + 1) % m_server.map_x;
+            break;
+        case SOUTH:
+            p->pos.y = (p->pos.y + 1) % m_server.map_y;
+            break;
+        case WEST:
+            p->pos.x = (p->pos.x + m_server.map_x - 1) % m_server.map_x;
+            break;
+    }
+
+    m_game_move_player(p, p->pos.x, p->pos.y);
 
     return server_create_response_to_command(p->id, "avance", arg, "ok");
+}
+
+static void m_game_print_players_on_tile(tile *t)
+{
+    player *it;
+
+    printf("Players on tile (%d,%d):\n", t->pos.x, t->pos.y);
+    for (it = t->players; it; it = it->next_on_tile)
+    {
+        printf(" - Player %d (team %d, lvl %d, dir %d)\n", it->id, it->team_id+1, it->level, it->dir);
+    }
+}
+
+static int m_game_random_resource_count(double lambda)
+{
+    int count;
+    double p0;
+    double prod;
+
+    p0 = exp(-lambda);
+    prod = 1.0;
+    count = 0;
+    while (1)
+    {
+        prod *= (rand() / (double)RAND_MAX);
+        if (prod < p0) break;
+        count++;
+    }
+    return count;
 }
 
 int game_get_client_count()
@@ -225,45 +389,6 @@ void game_get_map_size(int *width, int *height)
 {
     *width = m_server.map_x;
     *height = m_server.map_y;
-}
-
-int game_init(int width, int height, char **teams, int nb_clients)
-{
-    int team_number;
-    int i;
-    int ret;
-
-    i = 0;
-    while (teams[i])
-        i++;
-
-    m_server.map_x = width;
-    m_server.map_y = height;
-    m_server.map = malloc(sizeof(tile*) * width);
-    memset(m_server.map, 0, sizeof(tile*) * width);
-    m_server.teams = malloc(sizeof(team) * nb_clients);
-    memset(m_server.teams, 0, sizeof(team) * nb_clients);
-    m_server.clients = malloc(sizeof(client*) * nb_clients);
-    memset(m_server.clients, 0, sizeof(client*) * nb_clients);
-    m_server.client_count = nb_clients;
-    m_server.team_count = i;
-
-    i = 0;
-    team_number = 0;
-    while (teams[i])
-    {
-        ret = m_game_init_team(&m_server.teams[team_number], teams[i], m_server.client_count / m_server.team_count);
-        if (ret == ERROR)
-        {
-            fprintf(stderr, "Failed to initialize team %s\n", teams[i]);
-            return ERROR;
-        }
-
-        team_number++;
-        i++;
-    }
-
-    return SUCCESS;
 }
 
 int game_register_player(int fd, char *team_name)
@@ -300,11 +425,14 @@ int game_register_player(int fd, char *team_name)
     p->team_id = team_id;
     p->level = 1;
     m_game_get_start_pos(&p->pos.x, &p->pos.y, &p->dir);
-    
+
+    m_game_add_player_to_tile(MAP(p->pos.x, p->pos.y), p);
+
     /**/
     t_api = time_api_get_local();
     /*inventroy already 0*/
     p->die_time = t_api->current_time_units + TIME_TO_DIE; /* 1260 time units = 1 minute */
+    p->start_time = t_api->current_time_units; /* 1260 time units = 1 minute */
 
 
     /* add player to team */
@@ -313,8 +441,7 @@ int game_register_player(int fd, char *team_name)
     /* add player to server */
     m_add_client_to_server(c);
 
-    /* add player to map */
-    /* TODO */
+    fprintf(stderr, "Spawned player %d on tile (%d,%d,%d) for team %s\n", p->id, p->pos.x, p->pos.y, p->dir,team_name);
 
     return SUCCESS;
 }
@@ -336,7 +463,7 @@ int game_execute_command(int fd, char *cmd, char *arg)
     command = MAX_COMMANDS;
     for (i = 0; i < MAX_COMMANDS; i++)
     {
-        if (strcmp(cmd, command_messages->name) == 0)
+        if (strcmp(cmd, command_messages[i].name) == 0)
         {
             command = command_messages[i].type;
             break;
@@ -349,9 +476,6 @@ int game_execute_command(int fd, char *cmd, char *arg)
         return ERROR;
     }
 
-    fprintf(stderr, "scheduling command %s\n", command_messages[command].name);
-    fprintf(stderr, "Command %s with arg %s\n", command_messages[command].name, arg);
-    fprintf(stderr, "Command %s with delay %d\n", command_messages[command].name, command_prototypes[command].delay);
     ret = time_api_schedule_client_event(NULL, &c->event_buffer,\
      command_prototypes[command].delay,\
      command_prototypes[command].prototype, c->player, arg);
@@ -360,25 +484,34 @@ int game_execute_command(int fd, char *cmd, char *arg)
     return SUCCESS;
 }
 
-void game_player_die(client *c)
+int game_player_die(client *c)
 {
     int ret;
+
+    if (c->player->inv.nourriture > 0)
+    {
+        c->player->inv.nourriture--;
+        c->player->die_time = c->player->start_time + LIFE_UNIT;
+        return SUCCESS;
+    }
+
+    m_game_print_players_on_tile(MAP(c->player->pos.x, c->player->pos.y));
+    fprintf(stderr, "Player %d has died. '%d', '%d'\n", c->socket_fd, c->player->die_time, c->player->start_time);
 
     ret = m_remove_client_from_server(c);
     if (ret == ERROR)
     {
         fprintf(stderr, "Failed to remove client from server\n");
-        return;
+        return ERROR;
     }
     ret = m_team_remove_player_from_team(c->player);
     if (ret == ERROR)
     {
         fprintf(stderr, "Failed to remove player from team\n");
-        return;
+        return ERROR;
     }
 
-    // ret = m_remove_player_from_map(c->player);
-
+    m_game_remove_player_from_tile(c->player);
     free(c->player);
 
     server_create_response_to_command(c->socket_fd, "-", "die", NULL);
@@ -387,11 +520,11 @@ void game_player_die(client *c)
     if (ret == ERROR)
     {
         fprintf(stderr, "Failed to remove client from server\n");
-        return;
+        return ERROR;
     }
 
     free(c);
-
+    return SUCCESS;
 }
 
 int game_play()
@@ -414,8 +547,8 @@ int game_play()
             continue; /* No client */
 
         if (!PLAYER_IS_ALIVE(c, t_api->current_time_units))
-        {    
-            game_player_die(c); /* Player not ready */
+        {
+            game_player_die(c);
             continue;
         }
 
@@ -426,9 +559,137 @@ int game_play()
         }       
     }
 
+    time_api_process_client_events(NULL, &m_server.event_buffer);
 
     /* check if players can play and then make them play */
     if (!has_played)
         return 0;
+    return SUCCESS;
+}
+
+int m_game_spawn_resources(void* data, void* arg)
+{
+    spawn_ctx *ctx;
+    const int W = m_server.map_x;
+    const int H = m_server.map_y;
+    const int MAP_SZ = W * H;
+    int batch;
+    int idx;
+    int x;
+    int y;
+    tile* T;
+
+    ctx = (spawn_ctx*)arg;
+
+    batch = (MAP_SZ * 5 + 99) / 100;  
+    if (batch < 1) batch = 1;
+
+    if (batch > 1000) batch = 1000;
+
+    for (int i = 0; i < batch; i++)
+    {
+        idx = (ctx->next_idx + i) % MAP_SZ;
+        x = idx % W;
+        y = idx / W;
+        T = MAP(x, y);
+
+        T->items.nourriture += m_game_random_resource_count(ctx->d_nourriture);
+        T->items.linemate   += m_game_random_resource_count(ctx->d_linemate);
+        T->items.deraumere  += m_game_random_resource_count(ctx->d_deraumere);
+        T->items.sibur      += m_game_random_resource_count(ctx->d_sibur);
+        T->items.mendiane   += m_game_random_resource_count(ctx->d_mendiane);
+        T->items.phiras     += m_game_random_resource_count(ctx->d_phiras);
+        T->items.thystame   += m_game_random_resource_count(ctx->d_thystame);
+    }
+
+    ctx->next_idx = (ctx->next_idx + batch) % MAP_SZ;
+
+    time_api_schedule_client_event(
+      NULL,
+      &m_server.event_buffer,
+      ctx->period,
+      m_game_spawn_resources,
+      data,
+      ctx
+    );
+
+    return 0;
+}
+
+int game_init_map(int width, int height)
+{
+    int i;
+    int j;
+
+    for (i = 0; i < width; i++)
+    {
+        for (j = 0; j < height; j++)
+        {
+            MAP(i, j)->pos.x = i;
+            MAP(i, j)->pos.y = j;
+            MAP(i, j)->players = NULL;
+
+            MAP(i, j)->items.nourriture = m_game_random_resource_count(DENSITY_NOURRITURE);
+            MAP(i, j)->items.linemate   = m_game_random_resource_count(DENSITY_LINEMATE);
+            MAP(i, j)->items.deraumere  = m_game_random_resource_count(DENSITY_DERAUMERE);
+            MAP(i, j)->items.sibur      = m_game_random_resource_count(DENSITY_SIBUR);
+            MAP(i, j)->items.mendiane   = m_game_random_resource_count(DENSITY_MENDIANE);
+            MAP(i, j)->items.phiras     = m_game_random_resource_count(DENSITY_PHIRAS);
+            MAP(i, j)->items.thystame   = m_game_random_resource_count(DENSITY_THYSTAME);
+        }
+    }
+    return SUCCESS;
+}
+
+int game_init(int width, int height, char **teams, int nb_clients)
+{
+    int team_number;
+    int i;
+    int ret;
+
+    i = 0;
+    while (teams[i])
+        i++;
+
+    m_server.map_x = width;
+    m_server.map_y = height;
+    m_server.map = malloc(sizeof(tile) * width * height);
+    memset(m_server.map, 0, sizeof(tile) * width * height);
+    game_init_map(width, height);
+    m_server.teams = malloc(sizeof(team) * nb_clients);
+    memset(m_server.teams, 0, sizeof(team) * nb_clients);
+    m_server.clients = malloc(sizeof(client*) * nb_clients);
+    memset(m_server.clients, 0, sizeof(client*) * nb_clients);
+    m_server.client_count = nb_clients;
+    m_server.team_count = i;
+
+    i = 0;
+    team_number = 0;
+    while (teams[i])
+    {
+        ret = m_game_init_team(&m_server.teams[team_number], teams[i], m_server.client_count / m_server.team_count);
+        if (ret == ERROR)
+        {
+            fprintf(stderr, "Failed to initialize team %s\n", teams[i]);
+            return ERROR;
+        }
+
+        team_number++;
+        i++;
+    }
+
+    spawn_ctx *ctx = malloc(sizeof(spawn_ctx));
+    ctx->d_nourriture  = 0.5;
+    ctx->d_linemate    = 0.02;
+    ctx->d_deraumere   = 0.02;
+    ctx->d_sibur       = 0.04;
+    ctx->d_mendiane    = 0.04;
+    ctx->d_phiras      = 0.04;
+    ctx->d_thystame    = 0.005;
+    ctx->period        = 100;
+
+    time_api_schedule_client_event(NULL, &m_server.event_buffer, ctx->period, m_game_spawn_resources, NULL, ctx);
+
+
     return SUCCESS;
 }
