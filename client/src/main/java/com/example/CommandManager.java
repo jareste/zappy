@@ -99,7 +99,6 @@ public class CommandManager {
 
     private void handleResponseMsg(JsonObject jsonResponse) {
         System.out.println("Response received");
-        // TODO: check if arg == 'died'
         pendingResponses--;
         this.player.handleResponse(jsonResponse);
     }
@@ -125,13 +124,7 @@ public class CommandManager {
     private void handleErrorMsg(JsonObject jsonResponse) {
         String argument = jsonResponse.has("arg") ? jsonResponse.get("arg").getAsString() : "Unknown";
         System.out.println("Error received: " + argument);
-        if (this.session != null && this.session.isOpen()) {
-            try {
-                this.session.close();
-            } catch (IOException e) {
-                System.err.println("Failed to close session: " + e.getMessage());
-            }
-        }
+        closeSession();
     }
 
     /********** JSON FUNCTIONS **********/
@@ -179,5 +172,17 @@ public class CommandManager {
         }
 
         return jsonMessage.toString();
+    }
+
+    /********** UTILS **********/
+
+    public void closeSession() {
+        if (this.session != null && this.session.isOpen()) {
+            try {
+                this.session.close();
+            } catch (IOException e) {
+                System.err.println("Failed to close session: " + e.getMessage());
+            }
+        }
     }
 }

@@ -2,6 +2,8 @@ package com.example;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Queue;
@@ -73,6 +75,9 @@ public class Player {
             case "connect_nbr":
                 System.out.println("Connect number response: " + msg);
                 break;
+            case "-":
+                handleDieResponse(msg);
+                break;
             default:
                 System.out.println("Not handled (yet) command in response message.");
                 break;
@@ -121,6 +126,29 @@ public class Player {
 
     private void handleVoirResponse(JsonObject msg) {
         System.out.println("See response: " + msg);
+        List<List<String>> data = new ArrayList<>();
+        JsonArray arr = msg.getAsJsonArray("vision");
+
+        for (JsonElement tile : arr) {
+            JsonArray tileArr = tile.getAsJsonArray();
+            List<String> contents = new ArrayList<>();
+            for (JsonElement item : tileArr) {
+                contents.add(item.getAsString());
+            }
+            data.add(contents);
+        }
+        for (int i = 0; i < data.size(); i++) {
+            System.out.println("Tile " + i + ": " + data.get(i));
+        }
+        world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), level, data);
+    }
+
+    private void handleDieResponse(JsonObject msg) {
+        String arg = msg.has("arg") ? msg.get("arg").getAsString() : "null";
+        if (arg.equals("die")) {
+            System.out.println("I AM DEAD :(");
+            cmdManager.closeSession();
+        }
     }
 
     /********** GETTERS **********/
