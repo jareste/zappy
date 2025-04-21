@@ -191,9 +191,6 @@ static int m_handle_login(int fd, cJSON *root)
     int    map_x;
     int    map_y;
 
-    printf("Handling login...\n");
-    printf("Buffer: %s\n", cJSON_Print(root));
-
     key_value = cJSON_GetObjectItem(root, "key");
     if (!key_value || !cJSON_IsString(key_value))
         return ERROR;
@@ -440,5 +437,6 @@ void cleanup_server()
         }
     }
     cleanup_ssl_al();
+    ssl_table_free();
 }
 

@@ -79,9 +79,15 @@ typedef struct
 {
     int socket_fd;
     player* player;
-    char buffer[1024]; /* not sure if i need that */
     event_buffer event_buffer;
 } client;
+
+typedef struct
+{
+    int socket_fd;
+    player* player;
+    event_buffer event_buffer;
+} observer;
 
 typedef struct
 {
@@ -92,6 +98,7 @@ typedef struct
     team* teams;
     int team_count;
     client** clients;
+    observer** observers;
     int client_count;
 
     event_buffer event_buffer;

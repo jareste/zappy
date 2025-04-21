@@ -17,6 +17,7 @@ typedef struct
  * Returns a pointer to an allocated time_api or NULL on failure.
  */
 time_api *time_api_init(int t);
+void time_api_free(time_api *api);
 time_api *time_api_get_local();
 
 /* Initializes the local time_api with the time divider 't'.

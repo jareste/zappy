@@ -142,6 +142,8 @@ inventory_strings inventory_names[] =
     {UNKNOWN,    NULL}
 };
 
+spawn_ctx m_ctx;
+
 static const double DENSITY_NOURRITURE = 1.0;
 static const double DENSITY_LINEMATE   = 0.02;
 static const double DENSITY_DERAUMERE  = 0.02;
@@ -389,7 +391,7 @@ int m_command_voir(void* _p, void* _arg)
 
     root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type",    "response");
-    cJSON_AddStringToObject(root, "command", "voir");
+    cJSON_AddStringToObject(root, "cmd", "voir");
 
     vision = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "vision", vision);
@@ -448,7 +450,7 @@ static int m_command_inventaire(void* _p, void* _arg)
 
     root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type", "response");
-    cJSON_AddStringToObject(root, "command", "inventaire");
+    cJSON_AddStringToObject(root, "cmd", "inventaire");
 
     inv = cJSON_CreateObject();
     cJSON_AddNumberToObject(inv, "nourriture", p->inv.nourriture);
@@ -598,7 +600,7 @@ static int m_command_prend(void* _p, void* _arg)
         }
     }
 
-    free(arg);
+    free(_arg);
 
     if (type == UNKNOWN)
         return server_create_response_to_command(p->id, "prend", "Unknown type.", "ko");
@@ -631,7 +633,7 @@ static int m_command_pose(void* _p, void* _arg)
         }
     }
 
-    free(arg);
+    free(_arg);
 
     if (type == UNKNOWN)
         return server_create_response_to_command(p->id, "pose", "Unknown type.", "ko");
@@ -904,7 +906,10 @@ int game_execute_command(int fd, char *cmd, char *_arg)
     }
 
     if (_arg)
+    {
         arg = strdup(_arg);
+        fprintf(stderr, "Command %s with arg %s\n", cmd, arg);
+    }
     else
         arg = NULL;
 
@@ -1012,7 +1017,6 @@ int game_play()
 
 int m_game_spawn_resources(void* data, void* arg)
 {
-    spawn_ctx *ctx;
     const int W = m_server.map_x;
     const int H = m_server.map_y;
     const int MAP_SZ = W * H;
@@ -1021,39 +1025,38 @@ int m_game_spawn_resources(void* data, void* arg)
     int x;
     int y;
     tile* T;
-
-    ctx = (spawn_ctx*)arg;
+    int i;
 
     batch = (MAP_SZ * 5 + 99) / 100;  
     if (batch < 1) batch = 1;
 
     if (batch > 1000) batch = 1000;
 
-    for (int i = 0; i < batch; i++)
+    for (i = 0; i < batch; i++)
     {
-        idx = (ctx->next_idx + i) % MAP_SZ;
+        idx = (m_ctx.next_idx + i) % MAP_SZ;
         x = idx % W;
         y = idx / W;
         T = MAP(x, y);
 
-        T->items.nourriture += m_game_random_resource_count(ctx->d_nourriture);
-        T->items.linemate   += m_game_random_resource_count(ctx->d_linemate);
-        T->items.deraumere  += m_game_random_resource_count(ctx->d_deraumere);
-        T->items.sibur      += m_game_random_resource_count(ctx->d_sibur);
-        T->items.mendiane   += m_game_random_resource_count(ctx->d_mendiane);
-        T->items.phiras     += m_game_random_resource_count(ctx->d_phiras);
-        T->items.thystame   += m_game_random_resource_count(ctx->d_thystame);
+        T->items.nourriture += m_game_random_resource_count(m_ctx.d_nourriture);
+        T->items.linemate += m_game_random_resource_count(m_ctx.d_linemate);
+        T->items.deraumere += m_game_random_resource_count(m_ctx.d_deraumere);
+        T->items.sibur += m_game_random_resource_count(m_ctx.d_sibur);
+        T->items.mendiane += m_game_random_resource_count(m_ctx.d_mendiane);
+        T->items.phiras += m_game_random_resource_count(m_ctx.d_phiras);
+        T->items.thystame += m_game_random_resource_count(m_ctx.d_thystame);
     }
 
-    ctx->next_idx = (ctx->next_idx + batch) % MAP_SZ;
+    m_ctx.next_idx = (m_ctx.next_idx + batch) % MAP_SZ;
 
     time_api_schedule_client_event(
       NULL,
       &m_server.event_buffer,
-      ctx->period,
+      m_ctx.period,
       m_game_spawn_resources,
       data,
-      ctx
+      arg
     );
 
     return 0;
@@ -1082,6 +1085,28 @@ int game_init_map(int width, int height)
         }
     }
     return SUCCESS;
+}
+
+void game_clean()
+{
+    int i;
+
+    for (i = 0; i < m_server.client_count; i++)
+    {
+        if (m_server.clients[i])
+        {
+            free(m_server.clients[i]->player);
+            free(m_server.clients[i]);
+        }
+    }
+    for (i = 0; i < m_server.team_count; i++)
+    {
+        free(m_server.teams[i].players);
+        free(m_server.teams[i].name);
+    }
+    free(m_server.clients);
+    free(m_server.teams);
+    free(m_server.map);
 }
 
 int game_init(int width, int height, char **teams, int nb_clients)
@@ -1121,17 +1146,17 @@ int game_init(int width, int height, char **teams, int nb_clients)
         i++;
     }
 
-    spawn_ctx *ctx = malloc(sizeof(spawn_ctx));
-    ctx->d_nourriture  = 0.5;
-    ctx->d_linemate    = 0.02;
-    ctx->d_deraumere   = 0.02;
-    ctx->d_sibur       = 0.04;
-    ctx->d_mendiane    = 0.04;
-    ctx->d_phiras      = 0.04;
-    ctx->d_thystame    = 0.005;
-    ctx->period        = 100;
+    m_ctx.d_nourriture  = 0.5;
+    m_ctx.d_linemate    = 0.02;
+    m_ctx.d_deraumere   = 0.02;
+    m_ctx.d_sibur       = 0.04;
+    m_ctx.d_mendiane    = 0.04;
+    m_ctx.d_phiras      = 0.04;
+    m_ctx.d_thystame    = 0.005;
+    m_ctx.period        = 100;
+    m_ctx.next_idx      = 0;
 
-    time_api_schedule_client_event(NULL, &m_server.event_buffer, ctx->period, m_game_spawn_resources, NULL, ctx);
+    time_api_schedule_client_event(NULL, &m_server.event_buffer, m_ctx.period, m_game_spawn_resources, NULL, NULL);
 
 
     return SUCCESS;

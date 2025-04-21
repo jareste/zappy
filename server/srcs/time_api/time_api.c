@@ -34,6 +34,19 @@ void time_api_init_local(int t)
     m_time = time_api_init(t);
 }
 
+void time_api_free(time_api *api)
+{
+    if (api)
+    {
+        free(api);
+        api = NULL;
+        return;
+    }
+
+    free(m_time);
+    m_time = NULL;
+}
+
 /* Compute and return the current game time (in time units) */
 int time_get_current_time_units(time_api *_api)
 {
