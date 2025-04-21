@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Player {
     private String name;
@@ -18,19 +20,19 @@ public class Player {
     private int level;
     private World world;
     private Position position;
-    // private List<Resource> resources;
+    private Map<String, Integer> inventory;
 
     public Player(String teamName, int id) {
         this.team = teamName;
         this.ai = new AI(teamName);
         this.level = 1;
         this.id = id;
-        // this.resources = new ArrayList<>();
+        this.inventory = new HashMap<>(); 
     }
 
     public void handleResponse(JsonObject msg) {
         // msg == jsonResponse from server (from CommandManager)
-        String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : "null";
+        String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : msg.get("command").getAsString();
         System.out.println("[CLIENT " + this.id + "] " + "Handling response of Command: " + cmd);
         String status = "";
 
@@ -48,7 +50,7 @@ public class Player {
                 handleVoirResponse(msg);
                 break;
             case "inventaire":
-                System.out.println("[CLIENT " + this.id + "] " + "Inventory response: " + msg);
+                handleInventaireResponse(msg);
                 break;
             case "prend":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
@@ -127,7 +129,6 @@ public class Player {
     }
 
     private void handleVoirResponse(JsonObject msg) {
-        System.out.println("[CLIENT " + this.id + "] " + "See response: " + msg);
         List<List<String>> data = new ArrayList<>();
         JsonArray arr = msg.getAsJsonArray("vision");
 
@@ -143,6 +144,18 @@ public class Player {
             System.out.println("[CLIENT " + this.id + "] " + "Tile " + i + ": " + data.get(i));
         }
         world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), level, data);
+    }
+
+    private void handleInventaireResponse(JsonObject msg) {
+        JsonObject inv = msg.getAsJsonObject("inventaire");
+        for (Map.Entry<String, JsonElement> entry : inv.entrySet()) {
+            String item = entry.getKey();
+            int count = entry.getValue().getAsInt();
+            updateInventory(item, count);
+        }
+        for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
+            System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());
+        }
     }
 
     private void handleDieResponse(JsonObject msg) {
@@ -163,6 +176,14 @@ public class Player {
         return this.level;
     }
 
+    public int getId() {
+        return this.id;
+    }
+
+    public int getInventoryCount(String item) {
+        return this.inventory.getOrDefault(item, 0);
+    }
+
     /********** SETTERS **********/
 
     public void setCommandManager(CommandManager commandManager) {
@@ -176,6 +197,10 @@ public class Player {
     public void setWorld(int w, int h) {
         this.world = new World(w, h);
         this.position = new Position(w, h);
+    }
+
+    public void updateInventory(String item, int count) {
+        this.inventory.put(item, count);
     }
 
     /********** UTILS **********/
