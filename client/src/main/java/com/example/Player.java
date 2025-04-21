@@ -19,12 +19,12 @@ public class Player {
     private Position position;
     // private List<Resource> resources;
 
-    public Player(String teamName, int w, int h) {
+    public Player(String teamName) {
         this.team = teamName;
         this.ai = new AI(teamName);
         this.level = 1;
-        this.world = new World(w, h);
-        this.position = new Position(w, h);
+        // this.world = new World(w, h);
+        // this.position = new Position(w, h);
         // this.resources = new ArrayList<>();
     }
 
@@ -169,6 +169,11 @@ public class Player {
 
     private void setLevel(int level) {
         this.level = level;
+    }
+
+    public void setWorld(int w, int h) {
+        this.world = new World(w, h);
+        this.position = new Position(w, h);
     }
 
     /********** SOMETHING ELSE... **********/
