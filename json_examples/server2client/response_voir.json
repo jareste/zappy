@@ -1,6 +1,10 @@
 {
     "type": "response",
-    "cmd": "voir",
-    "view": ["nourriture", "player sibur", "phiras phiras"]
+    "command": "voir",
+    "vision": [
+      ["nourriture"],
+      [{"type": "player", "team": "red"}, "sibur"],
+      ["phiras", "phiras"],
+      []
+    ]
 }
-  

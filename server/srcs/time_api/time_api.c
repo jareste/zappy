@@ -108,7 +108,6 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
     buffer->events[buffer->tail] = new_event;
     buffer->tail = (buffer->tail + 1) % MAX_EVENTS;
     buffer->count++;
-    printf("Scheduled event at time %d\n", new_event.exec_time);
 
     return 0;
 }
