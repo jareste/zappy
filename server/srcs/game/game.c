@@ -647,9 +647,46 @@ static int m_command_pose(void* _p, void* _arg)
 static int m_command_expulse(void* _p, void* _arg)
 {
     player* p;
-    (void)_arg;
+    player* it;
+    tile* t;
+    int new_x;
+    int new_y;
+    const char* dir_string;
+    static const char* direction_table[4][4] = {
+        /* NORTH */ {"1", "7", "5", "3"},
+        /* EAST  */ {"3", "1", "7", "5"},
+        /* SOUTH */ {"5", "3", "1", "7"},
+        /* WEST  */ {"7", "5", "3", "1"}
+                   /* N    E    S    W */
+    };
 
+    (void)_arg;
     p = (player*)_p;
+    t = MAP(p->pos.x, p->pos.y);
+    if (t->players == NULL)
+        return server_create_response_to_command(p->id, "expulse", NULL, "ok");
+
+    new_x = p->pos.x;
+    new_y = p->pos.y;
+
+    switch (p->dir)
+    {
+        case NORTH: new_y = (p->pos.y + m_server.map_y - 1) % m_server.map_y; break;
+        case EAST: new_x = (p->pos.x + 1) % m_server.map_x; break;
+        case SOUTH: new_y = (p->pos.y + 1) % m_server.map_y; break;
+        case WEST: new_x = (p->pos.x + m_server.map_x - 1) % m_server.map_x; break;
+    }
+
+    for (it = t->players; it; it = it->next_on_tile)
+    {
+        if (it->id == p->id)
+            continue;
+
+        dir_string = direction_table[p->dir][p->dir];
+
+        m_game_move_player(it, new_x, new_y);
+        server_create_response_to_command(it->id, "deplacement", NULL, (char*)dir_string);
+    }
 
     return server_create_response_to_command(p->id, "expulse", NULL, "ok");
 }
@@ -1105,31 +1142,27 @@ void game_clean()
     free(m_server.map);
 }
 
-int game_init(int width, int height, char **teams, int nb_clients)
+int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
 {
     int team_number;
     int i;
     int ret;
-
-    i = 0;
-    while (teams[i])
-        i++;
 
     m_server.map_x = width;
     m_server.map_y = height;
     m_server.map = malloc(sizeof(tile) * width * height);
     memset(m_server.map, 0, sizeof(tile) * width * height);
     game_init_map(width, height);
-    m_server.teams = malloc(sizeof(team) * nb_clients);
-    memset(m_server.teams, 0, sizeof(team) * nb_clients);
+    m_server.teams = malloc(sizeof(team) * nb_teams);
+    memset(m_server.teams, 0, sizeof(team) * nb_teams);
     m_server.clients = malloc(sizeof(client*) * nb_clients);
     memset(m_server.clients, 0, sizeof(client*) * nb_clients);
     m_server.client_count = nb_clients;
-    m_server.team_count = i;
+    m_server.team_count = nb_teams;
 
     i = 0;
     team_number = 0;
-    while (teams[i])
+    while (i < nb_teams)
     {
         ret = m_game_init_team(&m_server.teams[team_number], teams[i], m_server.client_count / m_server.team_count);
         if (ret == ERROR)

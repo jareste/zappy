@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 
     time_api_init_local(args.time_unit);
 
-    game_init(args.width, args.height, args.teams, args.nb_clients);
+    game_init(args.width, args.height, args.teams, args.nb_clients, args.nb_teams);
 
     /* if server closes us something weird could happen */
     signal(SIGPIPE, SIG_IGN);
