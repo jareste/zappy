@@ -11,7 +11,7 @@ public class Command {
         this.name = name;
         this.argument = "";
         if (name.equals("prend") || name.equals("pose")) {
-            String[] possibleArgs = {"norriture", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"};
+            String[] possibleArgs = {"nourriture", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"};
             String randomCommand = possibleArgs[random.nextInt(possibleArgs.length)];
             this.argument = randomCommand;
             System.out.println("Random argument for " + name + ": " + this.argument);
@@ -22,7 +22,7 @@ public class Command {
         this.name = name;
 
         if (name.equals("prend") || name.equals("pose")) {
-            String[] possibleArgs = {"norriture", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"};
+            String[] possibleArgs = {"nourriture", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"};
             String randomCommand = possibleArgs[random.nextInt(possibleArgs.length)];
             this.argument = randomCommand;
             System.out.println("Random argument for " + name + ": " + this.argument);

@@ -12,6 +12,7 @@ import java.util.LinkedList;
 public class Player {
     private String name;
     private String team;
+    private int id;
     private CommandManager cmdManager;
     private AI ai;
     private int level;
@@ -19,17 +20,18 @@ public class Player {
     private Position position;
     // private List<Resource> resources;
 
-    public Player(String teamName) {
+    public Player(String teamName, int id) {
         this.team = teamName;
         this.ai = new AI(teamName);
         this.level = 1;
+        this.id = id;
         // this.resources = new ArrayList<>();
     }
 
     public void handleResponse(JsonObject msg) {
         // msg == jsonResponse from server (from CommandManager)
         String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : "null";
-        System.out.println("Handling response of Command: " + cmd);
+        System.out.println("[CLIENT " + this.id + "] " + "Handling response of Command: " + cmd);
         String status = "";
 
         switch (cmd) {
@@ -46,40 +48,40 @@ public class Player {
                 handleVoirResponse(msg);
                 break;
             case "inventaire":
-                System.out.println("Inventory response: " + msg);
+                System.out.println("[CLIENT " + this.id + "] " + "Inventory response: " + msg);
                 break;
             case "prend":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("Take an object response: " + status);
+                System.out.println("[CLIENT " + this.id + "] " + "Take an object response: " + status);
                 break;
             case "pose":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("Drop an object response: " + status);
+                System.out.println("[CLIENT " + this.id + "] " + "Drop an object response: " + status);
                 break;
             case "expulse":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("Expulse response: " + status);
+                System.out.println("[CLIENT " + this.id + "] " + "Expulse response: " + status);
                 break;
             case "broadcast":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("Broadcast response: " + status);
+                System.out.println("[CLIENT " + this.id + "] " + "Broadcast response: " + status);
                 break;
             case "incantation":
-                System.out.println("Incantation response: " + msg);
+                System.out.println("[CLIENT " + this.id + "] " + "Incantation response: " + msg);
                 break;
             case "fork":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("Fork response: " + status);
+                System.out.println("[CLIENT " + this.id + "] " + "Fork response: " + status);
                 break;
             case "connect_nbr":
-                int value = msg.has("value") ? msg.get("value").getAsInt() : 0;
-                System.out.println("Connect number response: " + value);
+                int value = msg.has("arg") ? msg.get("arg").getAsInt() : 0;
+                System.out.println("[CLIENT " + this.id + "] " + "Connect number response: " + value);
                 break;
             case "-":
                 handleDieResponse(msg);
                 break;
             default:
-                System.out.println("Not handled (yet) command in response message.");
+                System.out.println("[CLIENT " + this.id + "] " + "Not handled (yet) command in response message.");
                 break;
         }
 
@@ -96,9 +98,9 @@ public class Player {
         if (status.equals("ok")) {
             // System.out.println("Move successful!");
             this.position.moveForward();
-            System.out.println("New position: " + this.position);
+            System.out.println("[CLIENT " + this.id + "] " + "New position: " + this.position);
         } else {
-            System.out.println("Move failed :(");
+            System.out.println("[CLIENT " + this.id + "] " + "Move failed :(");
         }
     }
 
@@ -107,9 +109,9 @@ public class Player {
         if (status.equals("ok")) {
             // System.out.println("Turn right successful!");
             this.position.turnRight();
-            System.out.println("New position: " + this.position);
+            System.out.println("[CLIENT " + this.id + "] " + "New position: " + this.position);
         } else {
-            System.out.println("Turn right failed :(");
+            System.out.println("[CLIENT " + this.id + "] " + "Turn right failed :(");
         }
     }
 
@@ -118,14 +120,14 @@ public class Player {
         if (status.equals("ok")) {
             // System.out.println("Turn left successful!");
             this.position.turnLeft();
-            System.out.println("New position: " + this.position);
+            System.out.println("[CLIENT " + this.id + "] " + "New position: " + this.position);
         } else {
-            System.out.println("Turn left failed :(");
+            System.out.println("[CLIENT " + this.id + "] " + "Turn left failed :(");
         }
     }
 
     private void handleVoirResponse(JsonObject msg) {
-        System.out.println("See response: " + msg);
+        System.out.println("[CLIENT " + this.id + "] " + "See response: " + msg);
         List<List<String>> data = new ArrayList<>();
         JsonArray arr = msg.getAsJsonArray("vision");
 
@@ -138,7 +140,7 @@ public class Player {
             data.add(contents);
         }
         for (int i = 0; i < data.size(); i++) {
-            System.out.println("Tile " + i + ": " + data.get(i));
+            System.out.println("[CLIENT " + this.id + "] " + "Tile " + i + ": " + data.get(i));
         }
         world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), level, data);
     }
@@ -146,7 +148,7 @@ public class Player {
     private void handleDieResponse(JsonObject msg) {
         String arg = msg.has("arg") ? msg.get("arg").getAsString() : "null";
         if (arg.equals("die")) {
-            System.out.println("I AM DEAD :(");
+            System.out.println("[CLIENT " + this.id + "] " + "I AM DEAD :(");
             cmdManager.closeSession();
         }
     }
