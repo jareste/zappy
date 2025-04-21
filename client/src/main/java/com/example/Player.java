@@ -23,8 +23,6 @@ public class Player {
         this.team = teamName;
         this.ai = new AI(teamName);
         this.level = 1;
-        // this.world = new World(w, h);
-        // this.position = new Position(w, h);
         // this.resources = new ArrayList<>();
     }
 
@@ -32,11 +30,6 @@ public class Player {
         // msg == jsonResponse from server (from CommandManager)
         String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : "null";
         System.out.println("Handling response of Command: " + cmd);
-        // if (cmd == null) {
-        //     System.out.println("Command not found in response message.");
-        //     return;
-        // }
-        // String status = msg.has("status") ? msg.get("status").getAsString() : null;
 
         switch (cmd) {
             case "avance":
@@ -55,25 +48,31 @@ public class Player {
                 System.out.println("Inventory response: " + msg);
                 break;
             case "prend":
-                System.out.println("Take an object response: " + msg);
+                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                System.out.println("Take an object response: " + status);
                 break;
             case "pose":
-                System.out.println("Drop an object response: " + msg);
+                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                System.out.println("Drop an object response: " + status);
                 break;
             case "expulse":
-                System.out.println("Expulse response: " + msg);
+                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                System.out.println("Expulse response: " + status);
                 break;
             case "broadcast":
-                System.out.println("Broadcast response: " + msg);
+                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                System.out.println("Broadcast response: " + status);
                 break;
             case "incantation":
                 System.out.println("Incantation response: " + msg);
                 break;
             case "fork":
-                System.out.println("Fork response: " + msg);
+                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                System.out.println("Fork response: " + status);
                 break;
             case "connect_nbr":
-                System.out.println("Connect number response: " + msg);
+                int value = msg.has("value") ? msg.get("value").getAsInt() : 0;
+                System.out.println("Connect number response: " + value);
                 break;
             case "-":
                 handleDieResponse(msg);
@@ -176,5 +175,5 @@ public class Player {
         this.position = new Position(w, h);
     }
 
-    /********** SOMETHING ELSE... **********/
+    /********** UTILS **********/
 }

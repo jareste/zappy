@@ -93,8 +93,8 @@ public class CommandManager {
             this.player.setWorld(x, y);
         }
         // send voir command instead:
-        // sendCommand(new Command("voir"));
-        sendCommand(new Command("avance"));
+        sendCommand(new Command("voir"));
+        // sendCommand(new Command("avance"));
     }
 
     private void handleResponseMsg(JsonObject jsonResponse) {
