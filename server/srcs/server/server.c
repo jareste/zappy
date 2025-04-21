@@ -188,8 +188,15 @@ static int m_handle_login(int fd, cJSON *root)
     cJSON*  map_size;
     char*   json;
     int     ret;
-    int    map_x;
-    int    map_y;
+    int     map_x;
+    int     map_y;
+    int     i;
+    const int role_count = 3;
+    static const char* roles[] = {
+        "player",
+        "admin",
+        "observer"
+    };
 
     key_value = cJSON_GetObjectItem(root, "key");
     if (!key_value || !cJSON_IsString(key_value))
@@ -210,11 +217,19 @@ static int m_handle_login(int fd, cJSON *root)
         m_create_json_response(fd, "error", "Invalid team name", NULL);
         return ERROR;
     }
-    if (strcmp(key_value->valuestring, "player") != 0)
+    for (i = 0; i < role_count; ++i)
+    {
+        if (strcmp(key_value->valuestring, roles[i]) == 0)
+            break;
+    }
+
+    if (i == role_count)
     {
         m_create_json_response(fd, "error", "Invalid role", NULL);
         return ERROR;
     }
+
+    /* abstract this to handle the login based on the role. */
 
     /**/
     key_value = cJSON_GetObjectItem(root, "team-name");

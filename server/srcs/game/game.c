@@ -182,6 +182,12 @@ static int m_game_get_start_pos(int *x, int *y, direction* dir)
     return SUCCESS;
 }
 
+static inline int inventory_sum(const inventory* inv)
+{
+    return inv->nourriture + inv->linemate + inv->deraumere +
+           inv->sibur + inv->mendiane + inv->phiras + inv->thystame;
+}
+
 // static void m_print_map()
 // {
 //     int i;
@@ -1077,6 +1083,9 @@ int m_game_spawn_resources(void* data, void* arg)
         x = idx % W;
         y = idx / W;
         T = MAP(x, y);
+
+        if (inventory_sum(&T->items) > 15)
+            continue;
 
         T->items.nourriture += m_game_random_resource_count(m_ctx.d_nourriture);
         T->items.linemate += m_game_random_resource_count(m_ctx.d_linemate);
