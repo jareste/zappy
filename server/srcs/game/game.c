@@ -65,12 +65,36 @@ typedef struct
     int     next_idx;
 } spawn_ctx;
 
+typedef enum
+{
+    NOURRITURE = 0,
+    LINEMATE,
+    DERAUMERE,
+    SIBUR,
+    MENDIANE,
+    PHIRAS,
+    THYSTAME,
+    UNKNOWN
+} inventory_type;
+
+typedef struct
+{
+    inventory_type type;
+    char* name;
+} inventory_strings;
+
 static int m_command_avance(void* _p, void* _arg);
 static int m_command_droite(void* _p, void* _arg);
 static int m_command_gauche(void* _p, void* _arg);
 static int m_command_connect_nbr(void* _p, void* _arg);
 static int m_command_voir(void* _p, void* _arg);
 static int m_command_inventaire(void* _p, void* _arg);
+static int m_command_prend(void* _p, void* _arg);
+static int m_command_pose(void* _p, void* _arg);
+static int m_command_expulse(void* _p, void* _arg);
+static int m_command_broadcast(void* _p, void* _arg);
+static int m_command_incantation(void* _p, void* _arg);
+static int m_command_fork(void* _p, void* _arg);
 
 server m_server = {0};
 
@@ -85,7 +109,7 @@ command_message command_messages[MAX_COMMANDS] =
     {POSE, "pose"},
     {EXPULSE, "expulse"},
     {BROADCAST, "broadcast"},
-    {INCARNATION, "incarnation"},
+    {INCARNATION, "incantation"},
     {FORK, "fork"},
     {CONNECT_NBR, "connect_nbr"}
 };
@@ -97,13 +121,25 @@ command command_prototypes[MAX_COMMANDS] =
     {m_command_gauche, 7},
     {m_command_voir, 7},
     {m_command_inventaire, 1},
-    {NULL, 7},
-    {NULL, 7},
-    {NULL, 7},
-    {NULL, 7},
-    {NULL, 6},
+    {m_command_prend, 7},
+    {m_command_pose, 7},
+    {m_command_expulse, 7},
+    {m_command_broadcast, 7},
+    {m_command_incantation, 300},
+    {m_command_fork, 42},
     {m_command_connect_nbr, 0},
-    {m_command_connect_nbr, 0},
+};
+
+inventory_strings inventory_names[] =
+{
+    {NOURRITURE, "nourriture"},
+    {LINEMATE,   "linemate"},
+    {DERAUMERE,  "deraumere"},
+    {SIBUR,      "sibur"},
+    {MENDIANE,   "mendiane"},
+    {PHIRAS,     "phiras"},
+    {THYSTAME,   "thystame"},
+    {UNKNOWN,    NULL}
 };
 
 static const double DENSITY_NOURRITURE = 1.0;
@@ -430,6 +466,223 @@ static int m_command_inventaire(void* _p, void* _arg)
 
     return SUCCESS;
 }
+
+static int m_helper_items_to_tiles(tile* t, player* p, int add, inventory_type type)
+{
+    switch (type)
+    {
+        case NOURRITURE:
+            if (add == -1)
+            {
+                if (t->items.nourriture <= 0) return ERROR;
+                t->items.nourriture--;
+                p->inv.nourriture++;
+            }
+            else if (add == 1)
+            {
+                if (p->inv.nourriture <= 0) return ERROR;
+                t->items.nourriture++;
+                p->inv.nourriture--;
+            }
+            break;
+        case LINEMATE:
+            if (add == -1)
+            {
+                if (t->items.linemate <= 0) return ERROR;
+                t->items.linemate--;
+                p->inv.linemate++;
+            }
+            else if (add == 1)
+            {
+                if (p->inv.linemate <= 0) return ERROR;
+                t->items.linemate++;
+                p->inv.linemate--;
+            }
+            break;
+        case DERAUMERE:
+            if (add == -1)
+            {
+                if (t->items.deraumere <= 0) return ERROR;
+                t->items.deraumere--;
+                p->inv.deraumere++;
+            }
+            else if (add == 1)
+            {
+                if (p->inv.deraumere <= 0) return ERROR;
+                t->items.deraumere++;
+                p->inv.deraumere--;
+            }
+            break;
+        case SIBUR:
+            if (add == -1)
+            {
+                if (t->items.sibur <= 0) return ERROR;
+                t->items.sibur--;
+                p->inv.sibur++;
+            }
+            else if (add == 1)
+            {
+                if (p->inv.sibur <= 0) return ERROR;
+                t->items.sibur++;
+                p->inv.sibur--;
+            }
+            break;
+        case MENDIANE:
+            if (add == -1)
+            {
+                if (t->items.mendiane <= 0) return ERROR;
+                t->items.mendiane--;
+                p->inv.mendiane++;
+            }
+            else if (add == 1)
+            {
+                if (p->inv.mendiane <= 0) return ERROR;
+                t->items.mendiane++;
+                p->inv.mendiane--;
+            }
+            break;
+        case PHIRAS:
+            if (add == -1)
+            {
+                if (t->items.phiras <= 0) return ERROR;
+                t->items.phiras--;
+                p->inv.phiras++;
+            }
+            else if (add == 1)
+            {
+                if (p->inv.phiras <= 0) return ERROR;
+                t->items.phiras++;
+                p->inv.phiras--;
+            }
+            break;
+        case THYSTAME:
+            if (add == -1)
+            {
+                if (t->items.thystame <= 0) return ERROR;
+                t->items.thystame--;
+                p->inv.thystame++;
+            }
+            else if (add == 1)
+            {
+                if (p->inv.thystame <= 0) return ERROR;
+                t->items.thystame++;
+                p->inv.thystame--;
+            }
+            break;
+        default:
+            return ERROR;
+    }
+    return SUCCESS;
+}
+
+static int m_command_prend(void* _p, void* _arg)
+{
+    player* p;
+    char* arg;
+    inventory_type type;
+    int i;
+
+    p = (player*)_p;
+    arg = (char*)_arg;
+
+    if (!arg)
+        return server_create_response_to_command(p->id, "prend", "Invalid arg.", "ko");
+
+    type = UNKNOWN;
+    for (i = 0; inventory_names[i].name; i++)
+    {
+        if (strcmp(arg, inventory_names[i].name) == 0)
+        {
+            type = inventory_names[i].type;
+            break;
+        }
+    }
+
+    free(arg);
+
+    if (type == UNKNOWN)
+        return server_create_response_to_command(p->id, "prend", "Unknown type.", "ko");
+
+    if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, -1, type) == ERROR)
+        return server_create_response_to_command(p->id, "prend", "Failed to take item.", "ko");
+
+    return server_create_response_to_command(p->id, "prend", NULL, "ok");
+}
+
+static int m_command_pose(void* _p, void* _arg)
+{
+    player* p;
+    char* arg;
+    inventory_type type;
+    int i;
+
+    p = (player*)_p;
+    arg = (char*)_arg;
+    if (!arg)
+        return server_create_response_to_command(p->id, "pose", "Invalid arg.", "ko");
+    
+    type = UNKNOWN;
+    for (i = 0; inventory_names[i].name; i++)
+    {
+        if (strcmp(arg, inventory_names[i].name) == 0)
+        {
+            type = inventory_names[i].type;
+            break;
+        }
+    }
+
+    free(arg);
+
+    if (type == UNKNOWN)
+        return server_create_response_to_command(p->id, "pose", "Unknown type.", "ko");
+
+    if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, 1, type) == ERROR)
+        return server_create_response_to_command(p->id, "pose", "Failed to drop item.", "ko");
+
+    fprintf(stderr, "Player %d dropped %s\n", p->id, inventory_names[type].name);
+    return server_create_response_to_command(p->id, "pose", NULL, "ok");
+}
+
+static int m_command_expulse(void* _p, void* _arg)
+{
+    player* p;
+    (void)_arg;
+
+    p = (player*)_p;
+
+    return server_create_response_to_command(p->id, "expulse", NULL, "ok");
+}
+
+static int m_command_broadcast(void* _p, void* _arg)
+{
+    player* p;
+    (void)_arg;
+
+    p = (player*)_p;
+
+    return server_create_response_to_command(p->id, "broadcast", NULL, "ok");
+}
+
+static int m_command_incantation(void* _p, void* _arg)
+{
+    player* p;
+    (void)_arg;
+
+    p = (player*)_p;
+
+    return server_create_response_to_command(p->id, "incantation", NULL, "ok");
+}
+
+static int m_command_fork(void* _p, void* _arg)
+{
+    player* p;
+    (void)_arg;
+
+    p = (player*)_p;
+
+    return server_create_response_to_command(p->id, "fork", NULL, "ok");
+}
+
 static int m_command_connect_nbr(void* _p, void* _arg)
 {
     player* p;
@@ -619,12 +872,13 @@ int game_register_player(int fd, char *team_name)
     return SUCCESS;
 }
 
-int game_execute_command(int fd, char *cmd, char *arg)
+int game_execute_command(int fd, char *cmd, char *_arg)
 {
     client *c;
     int ret;
     int i;
     command_type command;
+    char* arg;
 
     ret = m_game_get_client_from_fd(fd, &c);
     if (ret == ERROR)
@@ -649,6 +903,11 @@ int game_execute_command(int fd, char *cmd, char *arg)
         return ERROR;
     }
 
+    if (_arg)
+        arg = strdup(_arg);
+    else
+        arg = NULL;
+
     ret = time_api_schedule_client_event(NULL, &c->event_buffer,\
      command_prototypes[command].delay,\
      command_prototypes[command].prototype, c->player, arg);
@@ -663,6 +922,7 @@ int game_player_die(client *c)
 
     if (c->player->inv.nourriture > 0)
     {
+        fprintf(stderr, "Player %d has eaten food\n", c->socket_fd);
         c->player->inv.nourriture--;
         c->player->die_time = c->player->start_time + LIFE_UNIT;
         return SUCCESS;
@@ -670,6 +930,16 @@ int game_player_die(client *c)
 
     m_game_print_players_on_tile(MAP(c->player->pos.x, c->player->pos.y));
     fprintf(stderr, "Player %d has died. '%d', '%d'\n", c->socket_fd, c->player->die_time, c->player->start_time);
+
+    fprintf(stderr, "Player inventory:\n");
+    fprintf(stderr, " - nourriture: %d\n", c->player->inv.nourriture);
+    fprintf(stderr, " - linemate:   %d\n", c->player->inv.linemate);
+    fprintf(stderr, " - deraumere:  %d\n", c->player->inv.deraumere);
+    fprintf(stderr, " - sibur:      %d\n", c->player->inv.sibur);
+    fprintf(stderr, " - mendiane:   %d\n", c->player->inv.mendiane);
+    fprintf(stderr, " - phiras:     %d\n", c->player->inv.phiras);
+    fprintf(stderr, " - thystame:   %d\n", c->player->inv.thystame);
+    fprintf(stderr, "Player position: (%d,%d)\n", c->player->pos.x, c->player->pos.y);
 
     ret = m_remove_client_from_server(c);
     if (ret == ERROR)
