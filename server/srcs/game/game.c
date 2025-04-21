@@ -641,7 +641,6 @@ static int m_command_pose(void* _p, void* _arg)
     if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, 1, type) == ERROR)
         return server_create_response_to_command(p->id, "pose", "Failed to drop item.", "ko");
 
-    fprintf(stderr, "Player %d dropped %s\n", p->id, inventory_names[type].name);
     return server_create_response_to_command(p->id, "pose", NULL, "ok");
 }
 
@@ -906,10 +905,7 @@ int game_execute_command(int fd, char *cmd, char *_arg)
     }
 
     if (_arg)
-    {
         arg = strdup(_arg);
-        fprintf(stderr, "Command %s with arg %s\n", cmd, arg);
-    }
     else
         arg = NULL;
 
@@ -929,7 +925,7 @@ int game_player_die(client *c)
     {
         fprintf(stderr, "Player %d has eaten food\n", c->socket_fd);
         c->player->inv.nourriture--;
-        c->player->die_time = c->player->start_time + LIFE_UNIT;
+        c->player->die_time = c->player->die_time + LIFE_UNIT;
         return SUCCESS;
     }
 

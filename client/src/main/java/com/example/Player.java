@@ -30,6 +30,7 @@ public class Player {
         // msg == jsonResponse from server (from CommandManager)
         String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : "null";
         System.out.println("Handling response of Command: " + cmd);
+        String status = "";
 
         switch (cmd) {
             case "avance":
@@ -48,26 +49,26 @@ public class Player {
                 System.out.println("Inventory response: " + msg);
                 break;
             case "prend":
-                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
                 System.out.println("Take an object response: " + status);
                 break;
             case "pose":
-                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
                 System.out.println("Drop an object response: " + status);
                 break;
             case "expulse":
-                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
                 System.out.println("Expulse response: " + status);
                 break;
             case "broadcast":
-                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
                 System.out.println("Broadcast response: " + status);
                 break;
             case "incantation":
                 System.out.println("Incantation response: " + msg);
                 break;
             case "fork":
-                String status = msg.has("status") ? msg.get("status").getAsString() : "ko"
+                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
                 System.out.println("Fork response: " + status);
                 break;
             case "connect_nbr":
