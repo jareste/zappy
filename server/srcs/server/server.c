@@ -439,4 +439,3 @@ void cleanup_server()
     cleanup_ssl_al();
     ssl_table_free();
 }
-

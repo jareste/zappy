@@ -583,6 +583,7 @@ static int m_command_prend(void* _p, void* _arg)
     char* arg;
     inventory_type type;
     int i;
+    int ret;
 
     p = (player*)_p;
     arg = (char*)_arg;
@@ -600,15 +601,17 @@ static int m_command_prend(void* _p, void* _arg)
         }
     }
 
-    free(_arg);
-
     if (type == UNKNOWN)
         return server_create_response_to_command(p->id, "prend", "Unknown type.", "ko");
 
     if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, -1, type) == ERROR)
-        return server_create_response_to_command(p->id, "prend", "Failed to take item.", "ko");
+        return server_create_response_to_command(p->id, "prend", arg, "ko");
 
-    return server_create_response_to_command(p->id, "prend", NULL, "ok");
+    ret = server_create_response_to_command(p->id, "prend", arg, "ok");
+
+    free(_arg);
+
+    return ret;
 }
 
 static int m_command_pose(void* _p, void* _arg)
@@ -617,6 +620,7 @@ static int m_command_pose(void* _p, void* _arg)
     char* arg;
     inventory_type type;
     int i;
+    int ret;
 
     p = (player*)_p;
     arg = (char*)_arg;
@@ -633,15 +637,17 @@ static int m_command_pose(void* _p, void* _arg)
         }
     }
 
-    free(_arg);
-
     if (type == UNKNOWN)
         return server_create_response_to_command(p->id, "pose", "Unknown type.", "ko");
 
     if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, 1, type) == ERROR)
-        return server_create_response_to_command(p->id, "pose", "Failed to drop item.", "ko");
+        return server_create_response_to_command(p->id, "pose", arg, "ko");
 
-    return server_create_response_to_command(p->id, "pose", NULL, "ok");
+    ret = server_create_response_to_command(p->id, "pose", arg, "ok");
+
+    free(_arg);
+
+    return ret;
 }
 
 static int m_command_expulse(void* _p, void* _arg)
