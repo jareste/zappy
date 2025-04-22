@@ -85,7 +85,7 @@ typedef struct
 typedef struct
 {
     int socket_fd;
-    player* player;
+    int last_idx;
     event_buffer event_buffer;
 } observer;
 
@@ -98,8 +98,8 @@ typedef struct
     team* teams;
     int team_count;
     client** clients;
-    observer** observers;
     int client_count;
+    observer** observers;
 
     event_buffer event_buffer;
 } server;

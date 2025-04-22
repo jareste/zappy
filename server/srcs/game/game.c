@@ -96,7 +96,7 @@ static int m_command_broadcast(void* _p, void* _arg);
 static int m_command_incantation(void* _p, void* _arg);
 static int m_command_fork(void* _p, void* _arg);
 
-server m_server = {0};
+static server m_server = {0};
 
 command_message command_messages[MAX_COMMANDS] =
 {
@@ -186,6 +186,133 @@ static inline int inventory_sum(const inventory* inv)
 {
     return inv->nourriture + inv->linemate + inv->deraumere +
            inv->sibur + inv->mendiane + inv->phiras + inv->thystame;
+}
+
+static cJSON* m_serialize_inventory(const inventory* inv)
+{
+    cJSON *o;
+
+    o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "nourriture", inv->nourriture);
+    cJSON_AddNumberToObject(o, "linemate", inv->linemate);
+    cJSON_AddNumberToObject(o, "deraumere", inv->deraumere);
+    cJSON_AddNumberToObject(o, "sibur", inv->sibur);
+    cJSON_AddNumberToObject(o, "mendiane", inv->mendiane);
+    cJSON_AddNumberToObject(o, "phiras", inv->phiras);
+    cJSON_AddNumberToObject(o, "thystame", inv->thystame);
+    return o;
+}
+
+static cJSON* m_serialize_tile(tile* t)
+{
+    cJSON *o;
+    cJSON *parr;
+    player* p;
+
+    o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "x", t->pos.x);
+    cJSON_AddNumberToObject(o, "y", t->pos.y);
+    cJSON_AddItemToObject(o, "resources", m_serialize_inventory(&t->items));
+
+    parr = cJSON_AddArrayToObject(o, "players");
+    for (p = t->players; p; p = p->next_on_tile)
+    {
+        cJSON_AddItemToArray(parr, cJSON_CreateNumber(p->id));
+    }
+    return o;
+}
+
+static cJSON* m_serialize_player(const player* p)
+{
+    cJSON* o;
+    cJSON *pos;
+
+    o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "id", p->id);
+
+    pos = cJSON_AddObjectToObject(o, "position");
+    cJSON_AddNumberToObject(pos, "x", p->pos.x);
+    cJSON_AddNumberToObject(pos, "y", p->pos.y);
+
+    cJSON_AddNumberToObject(o, "orientation", p->dir);
+    cJSON_AddNumberToObject(o, "level", p->level);
+    cJSON_AddStringToObject(o, "team", m_server.teams[p->team_id].name);
+    cJSON_AddItemToObject(o, "inventory", m_serialize_inventory(&p->inv));
+
+    return o;
+}
+
+char* m_serialize_server(void)
+{
+    cJSON* root;
+    cJSON* map;
+    cJSON* tiles;
+    cJSON* t;
+    cJSON* players;
+    cJSON* teams;
+    cJSON* game;
+    time_api* t_api;
+    player* p;
+    int y;
+    int x;
+    int i;
+    char* json;
+
+    t_api = time_api_get_local();
+
+    root = cJSON_CreateObject();
+    map = cJSON_AddObjectToObject(root, "map");
+    cJSON_AddNumberToObject(map, "width",  m_server.map_x);
+    cJSON_AddNumberToObject(map, "height", m_server.map_y);
+
+    tiles = cJSON_AddArrayToObject(map, "tiles");
+    for (y = 0; y < m_server.map_y; y++)
+    {
+      for (x = 0; x < m_server.map_x; x++)
+      {
+        cJSON_AddItemToArray(tiles, m_serialize_tile(MAP(x, y)));
+      }
+    }
+
+    players = cJSON_AddArrayToObject(root, "players");
+    for (i = 0; i < m_server.client_count; i++)
+    {
+        p = m_server.clients[i]->player;
+        if (!p)
+            continue;
+        cJSON_AddItemToArray(players, m_serialize_player(p));
+    }
+
+    game = cJSON_AddObjectToObject(root, "game");
+    cJSON_AddNumberToObject(game, "tick", t_api->t);
+    cJSON_AddNumberToObject(game, "time_unit", t_api->current_time_units);
+
+    teams = cJSON_AddArrayToObject(game, "teams");
+    for (i = 0; i < m_server.team_count; i++)
+    {
+        t = cJSON_CreateObject();
+        cJSON_AddStringToObject(t, "name", m_server.teams[i].name);
+        cJSON_AddNumberToObject(t, "player_count", m_server.teams[i].current_players);
+        cJSON_AddNumberToObject(t, "remaining_connections", m_server.teams[i].max_players - m_server.teams[i].current_players);
+        cJSON_AddItemToArray(teams, t);
+    }
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    return json;
+}
+
+static int m_send_map_observer(void* _p, void* _arg)
+{
+    observer *obs;
+    char *json;
+
+    (void)_arg;
+    obs = (observer*)_p;
+    json = m_serialize_server();
+    server_send_json(obs->socket_fd, json);
+    free(json);
+    return SUCCESS;
 }
 
 // static void m_print_map()
@@ -866,6 +993,21 @@ void game_get_map_size(int *width, int *height)
 {
     *width = m_server.map_x;
     *height = m_server.map_y;
+}
+
+int game_register_observer(int fd)
+{
+    observer* o;
+
+    o = malloc(sizeof(observer));
+    memset(o, 0, sizeof(observer));
+
+    o->socket_fd = fd;
+
+    time_api_schedule_client_event(NULL, &o->event_buffer,\
+     0, m_send_map_observer, o, NULL);
+
+    return SUCCESS;
 }
 
 int game_register_player(int fd, char *team_name)
