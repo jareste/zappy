@@ -31,6 +31,31 @@ public class Command {
         }
     }
 
+    public static int timeUnits(String cmd) {
+        switch (cmd) {
+            case "avance":
+            case "droite":
+            case "gauche":
+            case "voir":
+                return 7;
+            case "inventaire":
+                return 1;
+            case "prend":
+            case "pose":
+            case "expulse":
+            case "broadcast":
+                return 7;
+            case "incantation":
+                return 300;
+            case "fork":
+                return 42;
+            case "connect_nbr":
+                return 0;
+            default:
+                return 0; // Invalid command
+        }
+    }
+
     public String getName() {
         return name;
     }

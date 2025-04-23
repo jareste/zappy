@@ -12,12 +12,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Player {
-    private String name;
     private String team;
     private int id;
     private CommandManager cmdManager;
     private AI ai;
     private int level;
+    private int life;
     private World world;
     private Position position;
     private Map<String, Integer> inventory;
@@ -27,7 +27,8 @@ public class Player {
         this.ai = new AI(teamName);
         this.level = 1;
         this.id = id;
-        this.inventory = new HashMap<>(); 
+        this.inventory = new HashMap<>();
+        this.life = 1260; // time units
     }
 
     public void handleResponse(JsonObject msg) {
