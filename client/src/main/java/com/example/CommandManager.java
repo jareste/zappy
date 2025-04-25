@@ -92,7 +92,8 @@ public class CommandManager {
             int x = mapSize.get("x").getAsInt();
             int y = mapSize.get("y").getAsInt();
             // System.out.println("Map size: " + x + "x" + y);
-            this.player.setWorld(x, y);
+            AI ai = new AI(this.player);
+            this.player.setGameState(x, y, ai);
         }
         // send voir command instead:
         sendCommand(new Command("voir"));

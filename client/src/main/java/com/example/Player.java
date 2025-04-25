@@ -24,7 +24,7 @@ public class Player {
 
     public Player(String teamName, int id) {
         this.team = teamName;
-        this.ai = new AI(teamName);
+        // this.ai = new AI(teamName);
         this.level = 1;
         this.id = id;
         this.inventory = new HashMap<>();
@@ -88,6 +88,7 @@ public class Player {
                 break;
         }
 
+        this.life -= Command.timeUnits(cmd);
         List<Command> nextMoves = ai.decideNextMoves();
         for (Command c : nextMoves) {
             cmdManager.addCommand(c);
@@ -101,6 +102,7 @@ public class Player {
         if (status.equals("ok")) {
             // System.out.println("Move successful!");
             this.position.moveForward();
+            // this.life -= Command.timeUnits("avance");
             System.out.println("[CLIENT " + this.id + "] " + "New position: " + this.position);
         } else {
             System.out.println("[CLIENT " + this.id + "] " + "Move failed :(");
@@ -181,6 +183,18 @@ public class Player {
         return this.id;
     }
 
+    public int getLife() {
+        return this.life;
+    }
+
+    public Position getPosition() {
+        return this.position;
+    }
+
+    public Map<String, Integer> getInventory() {
+        return this.inventory;
+    }
+
     public int getInventoryCount(String item) {
         return this.inventory.getOrDefault(item, 0);
     }
@@ -195,9 +209,11 @@ public class Player {
         this.level = level;
     }
 
-    public void setWorld(int w, int h) {
+    public void setGameState(int w, int h, AI ai) {
         this.world = new World(w, h);
         this.position = new Position(w, h);
+        this.ai = ai;
+        this.ai.setWorld(this.world);
     }
 
     public void updateInventory(String item, int count) {
