@@ -35,11 +35,11 @@ public class Position {
     }
 
     public synchronized void turnLeft() {
-        direction.set((direction.get() + 3) % 4);
+        direction.set((getDirection() + 3) % 4);
     }
 
     public synchronized void turnRight() {
-        direction.set((direction.get() + 1) % 4);
+        direction.set((getDirection() + 1) % 4);
     }
 
     /********** GETTERS **********/
@@ -80,6 +80,6 @@ public class Position {
             case 3: dirStr = "West"; break;
             default: dirStr = "Unknown"; break;
         }
-        return String.format("Position(x=%d, y=%d, direction=%s)", x, y, dirStr);
+        return String.format("Position(x=%d, y=%d, direction=%s)", getX(), getY(), dirStr);
     }
 }
