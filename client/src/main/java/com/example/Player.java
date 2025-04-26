@@ -36,7 +36,7 @@ public class Player {
     public void handleResponse(JsonObject msg) {
         // msg == jsonResponse from server (from CommandManager)
         String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : msg.get("command").getAsString();
-        System.out.println("[CLIENT " + this.id + "] " + "Handling response of Command: " + cmd);
+        System.out.println("[CLIENT " + this.id + "] " + "Handling response of COMMAND: " + cmd);
         String status = "";
 
         switch (cmd) {
@@ -56,12 +56,10 @@ public class Player {
                 handleInventaireResponse(msg);
                 break;
             case "prend":
-                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("[CLIENT " + this.id + "] " + "Take an object response: " + status);
+                handlePrendResponse(msg);
                 break;
             case "pose":
-                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("[CLIENT " + this.id + "] " + "Drop an object response: " + status);
+                handlePoseResponse(msg);
                 break;
             case "expulse":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
@@ -91,9 +89,12 @@ public class Player {
         }
 
         addLife(-Command.timeUnits(cmd));
-        List<Command> nextMoves = ai.decideNextMoves();
-        for (Command c : nextMoves) {
-            cmdManager.addCommand(c);
+        
+        if (!cmd.equals("voir")) {
+            List<Command> nextMoves = ai.decideNextMovesRandom();
+            for (Command c : nextMoves) {
+                cmdManager.addCommand(c);
+            }
         }
     }
 
@@ -149,6 +150,10 @@ public class Player {
             System.out.println("[CLIENT " + this.id + "] " + "Tile " + i + ": " + data.get(i));
         }
         world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), getLevel(), data);
+        List<Command> nextMoves = ai.decideNextMovesViewBased(data);
+        for (Command c : nextMoves) {
+            cmdManager.addCommand(c);
+        }
     }
 
     private void handleInventaireResponse(JsonObject msg) {
@@ -160,6 +165,26 @@ public class Player {
         }
         for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
             System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());
+        }
+    }
+
+    private void handlePrendResponse(JsonObject msg) {
+        String status = msg.has("status") ? msg.get("status").getAsString() : "ko";
+        String item = msg.has("arg") ? msg.get("arg").getAsString() : "null";
+        System.out.println("[CLIENT " + this.id + "] " + "Take an object (" + item + ") response: " + status);
+        if (status.equals("ok")) {
+            addResource(item);
+            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
+        }
+    }
+
+    private void handlePoseResponse(JsonObject msg) {
+        String status = msg.has("status") ? msg.get("status").getAsString() : "ko";
+        String item = msg.has("arg") ? msg.get("arg").getAsString() : "null";
+        System.out.println("[CLIENT " + this.id + "] " + "Drop an object (" + item + ") response: " + status);
+        if (status.equals("ok")) {
+            removeResource(item);
+            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
         }
     }
 
@@ -232,6 +257,14 @@ public class Player {
 
     public void updateInventory(String item, int count) {
         this.inventory.put(item, count);
+    }
+
+    public void addResource(String item) {
+        this.inventory.compute(item, (k, v) -> (v == null) ? 1 : v + 1);
+    }
+
+    public void removeResource(String item) {
+        this.inventory.computeIfPresent(item, (k, v) -> (v > 1) ? v - 1 : null);
     }
 
     /********** UTILS **********/

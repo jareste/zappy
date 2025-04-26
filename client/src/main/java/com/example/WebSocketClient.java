@@ -85,7 +85,7 @@ public class WebSocketClient {
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("[CLIENT " + this.id + "] " + "RECEIVED message: " + message);
+        // System.out.println("[CLIENT " + this.id + "] " + "RECEIVED message: " + message);
         try {
             this.cmdManager.handleResponse(message);
         } catch (Exception e) {

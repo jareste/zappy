@@ -6,7 +6,7 @@ import java.util.Random;
 
 public class AI {
     // private String teamName;
-    private Player player;
+    private final Player player;
     private World world;
 
     // public AI(String teamName) {
@@ -19,7 +19,7 @@ public class AI {
 
     /********** DECISION MAKING **********/
 
-    public List<Command> decideNextMovesNew() {
+    public List<Command> decideNextMoves() {
         List<Command> commands = new ArrayList<>();
         if (player.getLife() < 300) {
             // moveToAndTake("nourriture");
@@ -32,7 +32,20 @@ public class AI {
         return commands;
     }
 
-    public List<Command> decideNextMoves() {
+    public List<Command> decideNextMovesViewBased(List<List<String>> viewData) {
+        List<Command> commands = new ArrayList<>();
+        int tileIdx = findItemInView(viewData, "nourriture");
+        if (tileIdx != -1) {
+            List<String> moves = getMovesToTile(tileIdx);
+            for (String move : moves) {
+                commands.add(new Command(move));
+            }
+            commands.add(new Command("prend", "nourriture"));
+        }
+        return commands;
+    }
+
+    public List<Command> decideNextMovesRandom() {
         List<Command> commands = new ArrayList<>();
         Random random = new Random();
     
@@ -42,6 +55,83 @@ public class AI {
         commands.add(new Command(randomCommand));
     
         return commands;
+    }
+
+    /********** FIND **********/
+
+    public int findItemInView(List<List<String>> viewData, String item) {
+        for (int i = 0; i < viewData.size(); i++) {
+            List<String> tileContents = viewData.get(i);
+            if (tileContents.contains(item)) {
+                return i;
+            }
+        }
+        return -1; // item not found
+    }
+
+    public int findClosestItem(String item, Position pos) {
+        return -1;
+    }
+
+    /********** MOVES **********/
+
+    // tileIdx in the terms of current view from findItemInView()
+    public List<String> getMovesToTile(int tileIdx) {
+        List<String> moves = new ArrayList<>();
+
+        if (tileIdx <= 0)
+            return moves;
+        
+        int level = 1;
+        int leftIdx = 1;
+        while (2 * level + 1 < tileIdx) {
+            leftIdx += 2 * level + 1;
+            level++;
+        }
+
+        int center = leftIdx + level;
+        int offset = tileIdx - center; // <0 => left, >0 => right
+        for (int i = 0; i < level; i++) {
+            moves.add("avance");
+        }
+        if (offset < 0) {
+            moves.add("gauche");
+        } else if (offset > 0) {
+            moves.add("droite");
+        }
+        for (int i = 0; i < Math.abs(offset); i++) {
+            moves.add("avance");
+        }
+
+        return moves;
+    }
+
+    /********** UTILS **********/
+
+    // for level=1 this will be:
+    // [-1, -1], [0, -1], [1, -1],
+    //           [0, 0]
+    public List<int[]> generateRelativeOffsets() {
+        int level = player.getLevel();
+        List<int[]> offsets = new ArrayList<>();
+        for (int l = 0; l <= level; l++) {
+            for (int i = -l; i <= l; i++) {
+                offsets.add(new int[]{i, -l}); // assuming player faces NORTH, adjust later
+            }
+        }
+        return offsets;
+    }
+
+    // TODO: implement this directly in prev function
+    // for not calling for each tile
+    public int[] rotate(int dx, int dy, int direction) {
+        switch (direction) {
+            case 0: return new int[]{dx, dy};         // ^ NORTH 
+            case 1: return new int[]{-dy, dx};        // > EAST
+            case 2: return new int[]{-dx, -dy};       // v SOUTH
+            case 3: return new int[]{dy, -dx};        // < WEST
+            default: throw new IllegalArgumentException("Invalid direction");
+        }
     }
 
     /********** SETTERS **********/
