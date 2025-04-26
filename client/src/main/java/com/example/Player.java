@@ -10,25 +10,27 @@ import java.util.Queue;
 import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Player {
     private String team;
     private int id;
     private CommandManager cmdManager;
     private AI ai;
-    private int level;
-    private int life;
+    private final AtomicInteger level;
+    private final AtomicInteger life;
     private World world;
     private Position position;
-    private Map<String, Integer> inventory;
+    private final Map<String, Integer> inventory;
 
     public Player(String teamName, int id) {
         this.team = teamName;
         // this.ai = new AI(teamName);
-        this.level = 1;
+        this.level = new AtomicInteger(1);
         this.id = id;
-        this.inventory = new HashMap<>();
-        this.life = 1260; // time units
+        this.inventory = new ConcurrentHashMap<>();
+        this.life = new AtomicInteger(1260); // time units
     }
 
     public void handleResponse(JsonObject msg) {
@@ -88,7 +90,7 @@ public class Player {
                 break;
         }
 
-        this.life -= Command.timeUnits(cmd);
+        addLife(-Command.timeUnits(cmd));
         List<Command> nextMoves = ai.decideNextMoves();
         for (Command c : nextMoves) {
             cmdManager.addCommand(c);
@@ -146,7 +148,7 @@ public class Player {
         for (int i = 0; i < data.size(); i++) {
             System.out.println("[CLIENT " + this.id + "] " + "Tile " + i + ": " + data.get(i));
         }
-        world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), level, data);
+        world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), getLevel(), data);
     }
 
     private void handleInventaireResponse(JsonObject msg) {
@@ -176,7 +178,7 @@ public class Player {
     }
 
     public int getLevel() {
-        return this.level;
+        return this.level.get();
     }
 
     public int getId() {
@@ -184,7 +186,7 @@ public class Player {
     }
 
     public int getLife() {
-        return this.life;
+        return this.life.get();
     }
 
     public Position getPosition() {
@@ -192,7 +194,7 @@ public class Player {
     }
 
     public Map<String, Integer> getInventory() {
-        return this.inventory;
+        return new ConcurrentHashMap<>(this.inventory); // returns a copy (to be safe)
     }
 
     public int getInventoryCount(String item) {
@@ -206,7 +208,19 @@ public class Player {
     }
 
     private void setLevel(int level) {
-        this.level = level;
+        this.level.set(level);
+    }
+
+    public void incrementLevel() {
+        this.level.incrementAndGet();
+    }
+
+    public void setLife(int life) {
+        this.life.set(life);
+    }
+
+    public void addLife(int life) {
+        this.life.addAndGet(life);
     }
 
     public void setGameState(int w, int h, AI ai) {
