@@ -11,6 +11,7 @@ public class Main {
         System.out.println("-n <team_name>  : Name of the team (required)");
         System.out.println("-p <port>       : Port number (required)");
         System.out.println("-h <hostname>   : Hostname (default: localhost)");
+        System.out.println("-c <client_cnt> : Number of clients to run (default: 1)");
     }
 
     private static Map<String, String> parseArguments(String[] args) {
@@ -20,6 +21,7 @@ public class Main {
                 case "-n":
                 case "-p":
                 case "-h":
+                case "-c":
                     if (i + 1 < args.length) {
                         arguments.put(args[i], args[i + 1]);
                         i++;
@@ -43,6 +45,7 @@ public class Main {
         String teamName = null;
         int port = -1;
         String hostname = "localhost"; // Default hostname
+        int clientCount = 1; // Default client count
 
         Map<String, String> arguments = parseArguments(args);
 
@@ -61,6 +64,15 @@ public class Main {
         if (arguments.containsKey("-h")) {
             hostname = arguments.get("-h");
         }
+        if (arguments.containsKey("-c")) {
+            try {
+                clientCount = Integer.parseInt(arguments.get("-c"));
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid client count.");
+                showUsage();
+                return;
+            }
+        }
 
         // Validate arguments
         if (teamName == null || port == -1) {
@@ -75,22 +87,49 @@ public class Main {
         System.out.println("Hostname: " + hostname);
         System.out.println("Connecting to server...");
 
-        CountDownLatch latch = new CountDownLatch(1);
-        WebSocketClient webSocketClient = new WebSocketClient(teamName, port, hostname, latch);
+        // CountDownLatch latch = new CountDownLatch(1);
+        // WebSocketClient webSocketClient = new WebSocketClient(teamName, port, hostname, latch);
 
-        // Registering shutdown hook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("Shutdown signal received. Closing connection...");
-            webSocketClient.close();
-        }));
+        // // Registering shutdown hook
+        // Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        //     System.out.println("Shutdown signal received. Closing connection...");
+        //     webSocketClient.close();
+        // }));
 
-        webSocketClient.startConnection();
+        // webSocketClient.startConnection();
 
-        try {
-            latch.await(); // Blocks until latch is counted down
-            System.out.println("Shutting down gracefully.");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        // try {
+        //     latch.await(); // Blocks until latch is counted down
+        //     System.out.println("Shutting down gracefully.");
+        // } catch (InterruptedException e) {
+        //     e.printStackTrace();
+        // }
+
+        final String finalTeamName = teamName;
+        final int finalPort = port;
+        final String finalHostname = hostname;
+
+        for (int i = 0; i < clientCount; i++) {
+            int clientId = i + 1; // for clarity in logs
+            new Thread(() -> {
+                CountDownLatch latch = new CountDownLatch(1);
+                WebSocketClient webSocketClient = new WebSocketClient(finalTeamName, finalPort, finalHostname, latch, clientId);
+
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    System.out.println("[CLIENT " + clientId + "] " + "Shutdown signal received. Closing connection...");
+                    webSocketClient.close();
+                }));
+
+                // System.out.println("Client " + clientId + " connecting...");
+                webSocketClient.startConnection();
+
+                try {
+                    latch.await();
+                    // System.out.println("Client " + clientId + " finished.");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
         }
     }
 }

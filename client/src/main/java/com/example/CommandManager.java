@@ -13,14 +13,16 @@ public class CommandManager {
     // private String teamName;
     private final Consumer<String> sendToServerFunction;
     private Session session;
+    private int id;
     private final Queue<Command> commandQueue = new LinkedList<>();
     private final Player player;
     private int pendingResponses = 0;
 
-    public CommandManager(Consumer<String> sendFunction, Player player, Session session) {
+    public CommandManager(Consumer<String> sendFunction, Player player, Session session, int id) {
         this.sendToServerFunction = sendFunction;
         this.player = player;
         this.session = session;
+        this.id = id;
     }
 
     public void sendMsg(String msg) {
@@ -57,7 +59,7 @@ public class CommandManager {
                 this.player.handleResponse(jsonResponse);
                 break;
             default:
-                System.out.println("Unknown message type: " + type);
+                System.out.println("[CLIENT " + this.id + "] " + "Unknown message type: " + type);
         }        
 
         if (!commandQueue.isEmpty()) {
@@ -76,21 +78,22 @@ public class CommandManager {
     /********** MESSAGE HANDLERS **********/
 
     private void handleBienvenueMsg(JsonObject jsonResponse) {
-        System.out.println("BIENVENUE message received: " + jsonResponse.get("msg").getAsString());
+        System.out.println("[CLIENT " + this.id + "] " + "BIENVENUE message received: " + jsonResponse.get("msg").getAsString());
         String loginMessage = createLoginJsonMessage();
         sendMsg(loginMessage);
     }
 
     private void handleWelcomeMsg(JsonObject jsonResponse) {
-        System.out.println("Welcome message received");
+        System.out.println("[CLIENT " + this.id + "] " + "Welcome message received");
         int remaining_clients = jsonResponse.get("remaining_clients").getAsInt();
-        System.out.println("Remaining clients: " + remaining_clients); // Integer.toString(remaining_clients)
+        System.out.println("[CLIENT " + this.id + "] " + "Remaining clients: " + remaining_clients); // Integer.toString(remaining_clients)
         if (jsonResponse.has("map_size") && jsonResponse.get("map_size").isJsonObject()) {
             JsonObject mapSize = jsonResponse.getAsJsonObject("map_size");
             int x = mapSize.get("x").getAsInt();
             int y = mapSize.get("y").getAsInt();
-            System.out.println("Map size: " + x + "x" + y);
-            this.player.setWorld(x, y);
+            // System.out.println("Map size: " + x + "x" + y);
+            AI ai = new AI(this.player);
+            this.player.setGameState(x, y, ai);
         }
         // send voir command instead:
         sendCommand(new Command("voir"));
@@ -98,32 +101,32 @@ public class CommandManager {
     }
 
     private void handleResponseMsg(JsonObject jsonResponse) {
-        System.out.println("Response received");
+        // System.out.println("Response received");
         pendingResponses--;
         this.player.handleResponse(jsonResponse);
     }
 
     private void handleBroadcastMsg(JsonObject jsonResponse) {
         int dir = jsonResponse.get("source_direction").getAsInt();
-        System.out.println("Message received: \"" + jsonResponse.get("arg").getAsString() + "\" from direction: " + dir);
+        System.out.println("[CLIENT " + this.id + "] " + "Message received: \"" + jsonResponse.get("arg").getAsString() + "\" from direction: " + dir);
         // handle properly
     }
 
     private void handleKickMsg(JsonObject jsonResponse) {
         int dir = jsonResponse.get("from_direction").getAsInt();
-        System.out.println("KICK message received from direction: " + dir);
+        System.out.println("[CLIENT " + this.id + "] " + "KICK message received from direction: " + dir);
         // handle properly
     }
 
     private void handleEventMsg(JsonObject jsonResponse) {
         String event = jsonResponse.get("event").getAsString();
-        System.out.println("Event received: " + event);
+        System.out.println("[CLIENT " + this.id + "] " + "Event received: " + event);
         // handle properly
     }
 
     private void handleErrorMsg(JsonObject jsonResponse) {
         String argument = jsonResponse.has("arg") ? jsonResponse.get("arg").getAsString() : "Unknown";
-        System.out.println("Error received: " + argument);
+        System.out.println("[CLIENT " + this.id + "] " + "Error received: " + argument);
         closeSession();
     }
 
@@ -181,7 +184,7 @@ public class CommandManager {
             try {
                 this.session.close();
             } catch (IOException e) {
-                System.err.println("Failed to close session: " + e.getMessage());
+                System.err.println("[CLIENT " + this.id + "] " + "Failed to close session: " + e.getMessage());
             }
         }
     }

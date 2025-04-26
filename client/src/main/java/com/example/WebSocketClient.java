@@ -14,25 +14,27 @@ public class WebSocketClient {
     private String teamName;
     private int port;
     private String hostname;
+    private int id;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Session session;
     private CommandManager cmdManager;
     private CountDownLatch latch;
 
-    public WebSocketClient(String teamName, int port, String hostname, CountDownLatch latch) {
+    public WebSocketClient(String teamName, int port, String hostname, CountDownLatch latch, int clientId) {
         this.teamName = teamName;
         this.port = port;
         this.hostname = hostname;
         this.latch = latch;
+        this.id = clientId;
     }
 
     @OnOpen
     public void onOpen(Session session) {
         this.session = session;
-        System.out.println("Connected to server");
+        System.out.println("[CLIENT " + this.id + "] " + "Connected to server");
 
-        Player player = new Player(this.teamName);
-        CommandManager cmdManager = new CommandManager(this::send, player, session);
+        Player player = new Player(this.teamName, this.id);
+        CommandManager cmdManager = new CommandManager(this::send, player, session, this.id);
         player.setCommandManager(cmdManager);
         this.cmdManager = cmdManager;
 
@@ -83,7 +85,7 @@ public class WebSocketClient {
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("RECEIVED message: " + message);
+        System.out.println("[CLIENT " + this.id + "] " + "RECEIVED message: " + message);
         try {
             this.cmdManager.handleResponse(message);
         } catch (Exception e) {
@@ -93,7 +95,7 @@ public class WebSocketClient {
 
     @OnClose
     public void onClose() {
-        System.out.println("Connection closed");
+        System.out.println("[CLIENT " + this.id + "] " + "Connection closed");
         scheduler.shutdown();  // Clean up the scheduler when the connection is closed
         latch.countDown(); // Unblock main thread
     }
@@ -102,7 +104,7 @@ public class WebSocketClient {
         try {
             if (session != null && session.isOpen()) {
                 session.close();
-                System.out.println("WebSocket session closed by client.");
+                System.out.println("[CLIENT " + this.id + "] " + "WebSocket session closed by client.");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -111,7 +113,7 @@ public class WebSocketClient {
 
     private void send(String msg) {
         if (session == null || !session.isOpen()) {
-            System.out.println("Tried to send after closed. Skipping.");
+            // System.out.println("[CLIENT " + this.id + "] " + "Tried to send after closed. Skipping.");
             return;
         }
         try {
@@ -125,7 +127,7 @@ public class WebSocketClient {
         // Build the server URI
         String serverUri = "wss://" + this.hostname + ":" + this.port;
         // String serverUri = "wss://echo.websocket.events";
-        System.out.println("Connecting to server: " + serverUri);
+        System.out.println("[CLIENT " + this.id + "] " + "Connecting to server: " + serverUri);
 
         try {
             // Connect to the WebSocket server
