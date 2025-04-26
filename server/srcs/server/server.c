@@ -9,6 +9,7 @@
 
 /* defines */
 #define SERVER_KEY "SOME_KEY"
+#define MAX_LOGIN_ROLES 3
 
 /* Typedefs */
 typedef enum
@@ -25,10 +26,15 @@ typedef struct
 } client_message;
 
 typedef int (*client_message_handler)(int fd, cJSON *root);
+typedef int (*login_handler)(int fd, cJSON *root);
 
 /* Prototypes */
 static int m_handle_login(int fd, cJSON *root);
 static int m_handle_cmd(int fd, cJSON *root);
+
+static int m_handle_login_client(int fd, cJSON *root);
+static int m_handle_login_admin(int fd, cJSON *root);
+static int m_handle_login_observer(int fd, cJSON *root);
 
 /* Locals */
 const client_message client_messages[] =
@@ -42,6 +48,20 @@ static client_message_handler m_handlers[type_unknown] =
 {
     m_handle_cmd, /* type_cmd */
     m_handle_login,
+};
+
+static const char* login_roles[MAX_LOGIN_ROLES] =
+{
+    "player",
+    "admin",
+    "observer"
+};
+
+static login_handler m_login_handlers[MAX_LOGIN_ROLES] =
+{
+    m_handle_login_client, /* player */
+    m_handle_login_admin, /* admin */
+    m_handle_login_observer  /* observer */
 };
 
 static int m_sock_server = -1;
@@ -181,43 +201,39 @@ static int m_handle_cmd(int fd, cJSON *root)
     return ret;
 }
 
-static int m_handle_login(int fd, cJSON *root)
+static int m_handle_login_admin(int fd, cJSON *root)
 {
-    cJSON*  key_value;
+    (void)root;
+
+    m_create_json_response(fd, "ko", "Not handled yet", NULL);
+    return ERROR;
+}
+
+static int m_handle_login_observer(int fd, cJSON *root)
+{
+    int ret;
+
+    (void)root;
+    ret = game_register_observer(fd);
+    if (ret == ERROR)
+    {
+        m_create_json_response(fd, "error", "Failed to register observer", NULL);
+        return ERROR;
+    }
+
+    m_create_json_response(fd, "ok", "Observer registered", NULL);
+    return ret;
+}
+
+static int m_handle_login_client(int fd, cJSON *root)
+{
     cJSON*  response;
+    cJSON*  key_value;
     cJSON*  map_size;
-    char*   json;
+    int     map_x;
+    int     map_y;
     int     ret;
-    int    map_x;
-    int    map_y;
-
-    printf("Handling login...\n");
-    printf("Buffer: %s\n", cJSON_Print(root));
-
-    key_value = cJSON_GetObjectItem(root, "key");
-    if (!key_value || !cJSON_IsString(key_value))
-        return ERROR;
-
-    if (strcmp(key_value->valuestring, SERVER_KEY) != 0)
-    {
-        /* Ignore rc as it's already an error
-        */
-        m_create_json_response(fd, "error", "Invalid key", NULL);
-        return ERROR;
-    }
-
-    /**/
-    key_value = cJSON_GetObjectItem(root, "role");
-    if (!key_value || !cJSON_IsString(key_value))
-    {
-        m_create_json_response(fd, "error", "Invalid team name", NULL);
-        return ERROR;
-    }
-    if (strcmp(key_value->valuestring, "player") != 0)
-    {
-        m_create_json_response(fd, "error", "Invalid role", NULL);
-        return ERROR;
-    }
+    char*   json;
 
     /**/
     key_value = cJSON_GetObjectItem(root, "team-name");
@@ -269,6 +285,53 @@ static int m_handle_login(int fd, cJSON *root)
     free(json);
     cJSON_Delete(response);
 
+    /* game execute_command must inform to the client if something would happen. */
+    return ret;
+}
+
+static int m_handle_login(int fd, cJSON *root)
+{
+    cJSON*  key_value;
+    int     ret;
+    int     i;
+
+    key_value = cJSON_GetObjectItem(root, "key");
+    if (!key_value || !cJSON_IsString(key_value))
+        return ERROR;
+
+    if (strcmp(key_value->valuestring, SERVER_KEY) != 0)
+    {
+        /* Ignore rc as it's already an error
+        */
+        m_create_json_response(fd, "error", "Invalid key", NULL);
+        return ERROR;
+    }
+
+    /**/
+    key_value = cJSON_GetObjectItem(root, "role");
+    if (!key_value || !cJSON_IsString(key_value))
+    {
+        m_create_json_response(fd, "error", "Invalid team name", NULL);
+        return ERROR;
+    }
+    for (i = 0; i < MAX_LOGIN_ROLES; ++i)
+    {
+        if (strcmp(key_value->valuestring, login_roles[i]) == 0)
+            break;
+    }
+
+    if (i == MAX_LOGIN_ROLES)
+    {
+        m_create_json_response(fd, "error", "Invalid role", NULL);
+        return ERROR;
+    }
+
+    ret = m_login_handlers[i](fd, root);
+    if (ret == ERROR)
+    {
+        /* error must be sent by prev func to client. */
+        return ERROR;
+    }
     return SUCCESS;
 }
 
@@ -440,5 +503,5 @@ void cleanup_server()
         }
     }
     cleanup_ssl_al();
+    ssl_table_free();
 }
-

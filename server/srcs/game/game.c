@@ -96,7 +96,7 @@ static int m_command_broadcast(void* _p, void* _arg);
 static int m_command_incantation(void* _p, void* _arg);
 static int m_command_fork(void* _p, void* _arg);
 
-server m_server = {0};
+static server m_server = {0};
 
 command_message command_messages[MAX_COMMANDS] =
 {
@@ -142,6 +142,8 @@ inventory_strings inventory_names[] =
     {UNKNOWN,    NULL}
 };
 
+spawn_ctx m_ctx;
+
 static const double DENSITY_NOURRITURE = 1.0;
 static const double DENSITY_LINEMATE   = 0.02;
 static const double DENSITY_DERAUMERE  = 0.02;
@@ -177,6 +179,139 @@ static int m_game_get_start_pos(int *x, int *y, direction* dir)
     *x = rand() % m_server.map_x;
     *y = rand() % m_server.map_y;
     *dir = rand() % 4; /* 0 = north, 1 = east, 2 = south, 3 = west */
+    return SUCCESS;
+}
+
+static inline int inventory_sum(const inventory* inv)
+{
+    return inv->nourriture + inv->linemate + inv->deraumere +
+           inv->sibur + inv->mendiane + inv->phiras + inv->thystame;
+}
+
+static cJSON* m_serialize_inventory(const inventory* inv)
+{
+    cJSON *o;
+
+    o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "nourriture", inv->nourriture);
+    cJSON_AddNumberToObject(o, "linemate", inv->linemate);
+    cJSON_AddNumberToObject(o, "deraumere", inv->deraumere);
+    cJSON_AddNumberToObject(o, "sibur", inv->sibur);
+    cJSON_AddNumberToObject(o, "mendiane", inv->mendiane);
+    cJSON_AddNumberToObject(o, "phiras", inv->phiras);
+    cJSON_AddNumberToObject(o, "thystame", inv->thystame);
+    return o;
+}
+
+static cJSON* m_serialize_tile(tile* t)
+{
+    cJSON *o;
+    cJSON *parr;
+    player* p;
+
+    o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "x", t->pos.x);
+    cJSON_AddNumberToObject(o, "y", t->pos.y);
+    cJSON_AddItemToObject(o, "resources", m_serialize_inventory(&t->items));
+
+    parr = cJSON_AddArrayToObject(o, "players");
+    for (p = t->players; p; p = p->next_on_tile)
+    {
+        cJSON_AddItemToArray(parr, cJSON_CreateNumber(p->id));
+    }
+    return o;
+}
+
+static cJSON* m_serialize_player(const player* p)
+{
+    cJSON* o;
+    cJSON *pos;
+
+    o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "id", p->id);
+
+    pos = cJSON_AddObjectToObject(o, "position");
+    cJSON_AddNumberToObject(pos, "x", p->pos.x);
+    cJSON_AddNumberToObject(pos, "y", p->pos.y);
+
+    cJSON_AddNumberToObject(o, "orientation", p->dir);
+    cJSON_AddNumberToObject(o, "level", p->level);
+    cJSON_AddStringToObject(o, "team", m_server.teams[p->team_id].name);
+    cJSON_AddItemToObject(o, "inventory", m_serialize_inventory(&p->inv));
+
+    return o;
+}
+
+char* m_serialize_server(void)
+{
+    cJSON* root;
+    cJSON* map;
+    cJSON* tiles;
+    cJSON* t;
+    cJSON* players;
+    cJSON* teams;
+    cJSON* game;
+    time_api* t_api;
+    player* p;
+    int y;
+    int x;
+    int i;
+    char* json;
+
+    t_api = time_api_get_local();
+
+    root = cJSON_CreateObject();
+    map = cJSON_AddObjectToObject(root, "map");
+    cJSON_AddNumberToObject(map, "width",  m_server.map_x);
+    cJSON_AddNumberToObject(map, "height", m_server.map_y);
+
+    tiles = cJSON_AddArrayToObject(map, "tiles");
+    for (y = 0; y < m_server.map_y; y++)
+    {
+      for (x = 0; x < m_server.map_x; x++)
+      {
+        cJSON_AddItemToArray(tiles, m_serialize_tile(MAP(x, y)));
+      }
+    }
+
+    players = cJSON_AddArrayToObject(root, "players");
+    for (i = 0; i < m_server.client_count; i++)
+    {
+        p = m_server.clients[i]->player;
+        if (!p)
+            continue;
+        cJSON_AddItemToArray(players, m_serialize_player(p));
+    }
+
+    game = cJSON_AddObjectToObject(root, "game");
+    cJSON_AddNumberToObject(game, "tick", t_api->t);
+    cJSON_AddNumberToObject(game, "time_unit", t_api->current_time_units);
+
+    teams = cJSON_AddArrayToObject(game, "teams");
+    for (i = 0; i < m_server.team_count; i++)
+    {
+        t = cJSON_CreateObject();
+        cJSON_AddStringToObject(t, "name", m_server.teams[i].name);
+        cJSON_AddNumberToObject(t, "player_count", m_server.teams[i].current_players);
+        cJSON_AddNumberToObject(t, "remaining_connections", m_server.teams[i].max_players - m_server.teams[i].current_players);
+        cJSON_AddItemToArray(teams, t);
+    }
+
+    json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    return json;
+}
+
+static int m_send_map_observer(void* _p, void* _arg)
+{
+    observer *obs;
+    char *json;
+
+    (void)_arg;
+    obs = (observer*)_p;
+    json = m_serialize_server();
+    server_send_json(obs->socket_fd, json);
+    free(json);
     return SUCCESS;
 }
 
@@ -389,7 +524,7 @@ int m_command_voir(void* _p, void* _arg)
 
     root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type",    "response");
-    cJSON_AddStringToObject(root, "command", "voir");
+    cJSON_AddStringToObject(root, "cmd", "voir");
 
     vision = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "vision", vision);
@@ -448,7 +583,7 @@ static int m_command_inventaire(void* _p, void* _arg)
 
     root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type", "response");
-    cJSON_AddStringToObject(root, "command", "inventaire");
+    cJSON_AddStringToObject(root, "cmd", "inventaire");
 
     inv = cJSON_CreateObject();
     cJSON_AddNumberToObject(inv, "nourriture", p->inv.nourriture);
@@ -581,6 +716,7 @@ static int m_command_prend(void* _p, void* _arg)
     char* arg;
     inventory_type type;
     int i;
+    int ret;
 
     p = (player*)_p;
     arg = (char*)_arg;
@@ -598,15 +734,17 @@ static int m_command_prend(void* _p, void* _arg)
         }
     }
 
-    free(arg);
-
     if (type == UNKNOWN)
         return server_create_response_to_command(p->id, "prend", "Unknown type.", "ko");
 
     if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, -1, type) == ERROR)
-        return server_create_response_to_command(p->id, "prend", "Failed to take item.", "ko");
+        return server_create_response_to_command(p->id, "prend", arg, "ko");
 
-    return server_create_response_to_command(p->id, "prend", NULL, "ok");
+    ret = server_create_response_to_command(p->id, "prend", arg, "ok");
+
+    free(_arg);
+
+    return ret;
 }
 
 static int m_command_pose(void* _p, void* _arg)
@@ -615,6 +753,7 @@ static int m_command_pose(void* _p, void* _arg)
     char* arg;
     inventory_type type;
     int i;
+    int ret;
 
     p = (player*)_p;
     arg = (char*)_arg;
@@ -631,24 +770,62 @@ static int m_command_pose(void* _p, void* _arg)
         }
     }
 
-    free(arg);
-
     if (type == UNKNOWN)
         return server_create_response_to_command(p->id, "pose", "Unknown type.", "ko");
 
     if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, 1, type) == ERROR)
-        return server_create_response_to_command(p->id, "pose", "Failed to drop item.", "ko");
+        return server_create_response_to_command(p->id, "pose", arg, "ko");
 
-    fprintf(stderr, "Player %d dropped %s\n", p->id, inventory_names[type].name);
-    return server_create_response_to_command(p->id, "pose", NULL, "ok");
+    ret = server_create_response_to_command(p->id, "pose", arg, "ok");
+
+    free(_arg);
+
+    return ret;
 }
 
 static int m_command_expulse(void* _p, void* _arg)
 {
     player* p;
-    (void)_arg;
+    player* it;
+    tile* t;
+    int new_x;
+    int new_y;
+    const char* dir_string;
+    static const char* direction_table[4][4] = {
+        /* NORTH */ {"1", "7", "5", "3"},
+        /* EAST  */ {"3", "1", "7", "5"},
+        /* SOUTH */ {"5", "3", "1", "7"},
+        /* WEST  */ {"7", "5", "3", "1"}
+                   /* N    E    S    W */
+    };
 
+    (void)_arg;
     p = (player*)_p;
+    t = MAP(p->pos.x, p->pos.y);
+    if (t->players == NULL)
+        return server_create_response_to_command(p->id, "expulse", NULL, "ok");
+
+    new_x = p->pos.x;
+    new_y = p->pos.y;
+
+    switch (p->dir)
+    {
+        case NORTH: new_y = (p->pos.y + m_server.map_y - 1) % m_server.map_y; break;
+        case EAST: new_x = (p->pos.x + 1) % m_server.map_x; break;
+        case SOUTH: new_y = (p->pos.y + 1) % m_server.map_y; break;
+        case WEST: new_x = (p->pos.x + m_server.map_x - 1) % m_server.map_x; break;
+    }
+
+    for (it = t->players; it; it = it->next_on_tile)
+    {
+        if (it->id == p->id)
+            continue;
+
+        dir_string = direction_table[p->dir][p->dir];
+
+        m_game_move_player(it, new_x, new_y);
+        server_create_response_to_command(it->id, "deplacement", NULL, (char*)dir_string);
+    }
 
     return server_create_response_to_command(p->id, "expulse", NULL, "ok");
 }
@@ -818,6 +995,21 @@ void game_get_map_size(int *width, int *height)
     *height = m_server.map_y;
 }
 
+int game_register_observer(int fd)
+{
+    observer* o;
+
+    o = malloc(sizeof(observer));
+    memset(o, 0, sizeof(observer));
+
+    o->socket_fd = fd;
+
+    time_api_schedule_client_event(NULL, &o->event_buffer,\
+     0, m_send_map_observer, o, NULL);
+
+    return SUCCESS;
+}
+
 int game_register_player(int fd, char *team_name)
 {
     client *c;
@@ -924,7 +1116,7 @@ int game_player_die(client *c)
     {
         fprintf(stderr, "Player %d has eaten food\n", c->socket_fd);
         c->player->inv.nourriture--;
-        c->player->die_time = c->player->start_time + LIFE_UNIT;
+        c->player->die_time = c->player->die_time + LIFE_UNIT;
         return SUCCESS;
     }
 
@@ -1012,7 +1204,6 @@ int game_play()
 
 int m_game_spawn_resources(void* data, void* arg)
 {
-    spawn_ctx *ctx;
     const int W = m_server.map_x;
     const int H = m_server.map_y;
     const int MAP_SZ = W * H;
@@ -1021,39 +1212,41 @@ int m_game_spawn_resources(void* data, void* arg)
     int x;
     int y;
     tile* T;
-
-    ctx = (spawn_ctx*)arg;
+    int i;
 
     batch = (MAP_SZ * 5 + 99) / 100;  
     if (batch < 1) batch = 1;
 
     if (batch > 1000) batch = 1000;
 
-    for (int i = 0; i < batch; i++)
+    for (i = 0; i < batch; i++)
     {
-        idx = (ctx->next_idx + i) % MAP_SZ;
+        idx = (m_ctx.next_idx + i) % MAP_SZ;
         x = idx % W;
         y = idx / W;
         T = MAP(x, y);
 
-        T->items.nourriture += m_game_random_resource_count(ctx->d_nourriture);
-        T->items.linemate   += m_game_random_resource_count(ctx->d_linemate);
-        T->items.deraumere  += m_game_random_resource_count(ctx->d_deraumere);
-        T->items.sibur      += m_game_random_resource_count(ctx->d_sibur);
-        T->items.mendiane   += m_game_random_resource_count(ctx->d_mendiane);
-        T->items.phiras     += m_game_random_resource_count(ctx->d_phiras);
-        T->items.thystame   += m_game_random_resource_count(ctx->d_thystame);
+        if (inventory_sum(&T->items) > 15)
+            continue;
+
+        T->items.nourriture += m_game_random_resource_count(m_ctx.d_nourriture);
+        T->items.linemate += m_game_random_resource_count(m_ctx.d_linemate);
+        T->items.deraumere += m_game_random_resource_count(m_ctx.d_deraumere);
+        T->items.sibur += m_game_random_resource_count(m_ctx.d_sibur);
+        T->items.mendiane += m_game_random_resource_count(m_ctx.d_mendiane);
+        T->items.phiras += m_game_random_resource_count(m_ctx.d_phiras);
+        T->items.thystame += m_game_random_resource_count(m_ctx.d_thystame);
     }
 
-    ctx->next_idx = (ctx->next_idx + batch) % MAP_SZ;
+    m_ctx.next_idx = (m_ctx.next_idx + batch) % MAP_SZ;
 
     time_api_schedule_client_event(
       NULL,
       &m_server.event_buffer,
-      ctx->period,
+      m_ctx.period,
       m_game_spawn_resources,
       data,
-      ctx
+      arg
     );
 
     return 0;
@@ -1084,31 +1277,49 @@ int game_init_map(int width, int height)
     return SUCCESS;
 }
 
-int game_init(int width, int height, char **teams, int nb_clients)
+void game_clean()
+{
+    int i;
+
+    for (i = 0; i < m_server.client_count; i++)
+    {
+        if (m_server.clients[i])
+        {
+            free(m_server.clients[i]->player);
+            free(m_server.clients[i]);
+        }
+    }
+    for (i = 0; i < m_server.team_count; i++)
+    {
+        free(m_server.teams[i].players);
+        free(m_server.teams[i].name);
+    }
+    free(m_server.clients);
+    free(m_server.teams);
+    free(m_server.map);
+}
+
+int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
 {
     int team_number;
     int i;
     int ret;
-
-    i = 0;
-    while (teams[i])
-        i++;
 
     m_server.map_x = width;
     m_server.map_y = height;
     m_server.map = malloc(sizeof(tile) * width * height);
     memset(m_server.map, 0, sizeof(tile) * width * height);
     game_init_map(width, height);
-    m_server.teams = malloc(sizeof(team) * nb_clients);
-    memset(m_server.teams, 0, sizeof(team) * nb_clients);
+    m_server.teams = malloc(sizeof(team) * nb_teams);
+    memset(m_server.teams, 0, sizeof(team) * nb_teams);
     m_server.clients = malloc(sizeof(client*) * nb_clients);
     memset(m_server.clients, 0, sizeof(client*) * nb_clients);
     m_server.client_count = nb_clients;
-    m_server.team_count = i;
+    m_server.team_count = nb_teams;
 
     i = 0;
     team_number = 0;
-    while (teams[i])
+    while (i < nb_teams)
     {
         ret = m_game_init_team(&m_server.teams[team_number], teams[i], m_server.client_count / m_server.team_count);
         if (ret == ERROR)
@@ -1121,17 +1332,17 @@ int game_init(int width, int height, char **teams, int nb_clients)
         i++;
     }
 
-    spawn_ctx *ctx = malloc(sizeof(spawn_ctx));
-    ctx->d_nourriture  = 0.5;
-    ctx->d_linemate    = 0.02;
-    ctx->d_deraumere   = 0.02;
-    ctx->d_sibur       = 0.04;
-    ctx->d_mendiane    = 0.04;
-    ctx->d_phiras      = 0.04;
-    ctx->d_thystame    = 0.005;
-    ctx->period        = 100;
+    m_ctx.d_nourriture  = 0.5;
+    m_ctx.d_linemate    = 0.02;
+    m_ctx.d_deraumere   = 0.02;
+    m_ctx.d_sibur       = 0.04;
+    m_ctx.d_mendiane    = 0.04;
+    m_ctx.d_phiras      = 0.04;
+    m_ctx.d_thystame    = 0.005;
+    m_ctx.period        = 100;
+    m_ctx.next_idx      = 0;
 
-    time_api_schedule_client_event(NULL, &m_server.event_buffer, ctx->period, m_game_spawn_resources, NULL, ctx);
+    time_api_schedule_client_event(NULL, &m_server.event_buffer, m_ctx.period, m_game_spawn_resources, NULL, NULL);
 
 
     return SUCCESS;

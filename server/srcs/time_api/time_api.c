@@ -34,6 +34,19 @@ void time_api_init_local(int t)
     m_time = time_api_init(t);
 }
 
+void time_api_free(time_api *api)
+{
+    if (api)
+    {
+        free(api);
+        api = NULL;
+        return;
+    }
+
+    free(m_time);
+    m_time = NULL;
+}
+
 /* Compute and return the current game time (in time units) */
 int time_get_current_time_units(time_api *_api)
 {
@@ -90,7 +103,7 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
 
     if (buffer->count >= MAX_EVENTS)
     {
-        fprintf(stderr, "Client event buffer is full. Event not scheduled.\n");
+        // fprintf(stderr, "Client event buffer is full. Event not scheduled.\n");
         return -1;
     }
 

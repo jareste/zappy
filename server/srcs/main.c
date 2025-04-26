@@ -2,6 +2,7 @@
 #include <server.h>
 #include <cJSON.h>
 #include <sys/signal.h>
+#include <stdbool.h>
 #include "server/ssl_al.h"
 #include "server/server.h"
 #include "game/game.h"
@@ -12,6 +13,16 @@
 #include <stdlib.h>
 
 #define PORT 8674
+
+static bool m_die = false;
+
+void signal_handler(int signum)
+{
+    if (signum == SIGINT || signum == SIGTERM)
+    {
+        m_die = true;
+    }
+}
 
 int main_loop()
 {
@@ -27,7 +38,7 @@ int main_loop()
 
     i = 0;
     sel_timeout = 0;
-    while (1)
+    while (!m_die)
     {
 #ifdef DEBUG
         gettimeofday(&start_time, NULL);
@@ -74,6 +85,8 @@ int main_loop()
         /* END_DEBUG */
     }
 
+    game_clean();
+    time_api_free(NULL);
     cleanup_server();
     cleanup_ssl_al();
     return 0;
@@ -142,10 +155,11 @@ int main(int argc, char **argv)
 
     time_api_init_local(args.time_unit);
 
-    game_init(args.width, args.height, args.teams, args.nb_clients);
+    game_init(args.width, args.height, args.teams, args.nb_clients, args.nb_teams);
 
     /* if server closes us something weird could happen */
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, signal_handler);
 
     main_loop();
     printf("Exiting...\n");
