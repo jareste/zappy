@@ -11,6 +11,13 @@
 #define SERVER_KEY "SOME_KEY"
 #define MAX_LOGIN_ROLES 3
 
+#define REMOVE_CLIENT(fd) \
+    do { \
+        FD_CLR(fd, &m_read_fds); \
+        game_kill_player(fd); \
+        close(fd); \
+    } while (0)
+
 /* Typedefs */
 typedef enum
 {
@@ -393,8 +400,7 @@ static int m_handle_client_event(int fd)
     {
         printf("Client fd=%d disconnected or error\n", fd);
         perror("recv");
-        FD_CLR(fd, &m_read_fds);
-        close(fd);
+        REMOVE_CLIENT(fd);
         return ERROR;
     }
 
@@ -416,8 +422,7 @@ int server_remove_client(int fd)
     if (fd < 0 || fd > m_max_fd)
         return ERROR;
 
-    FD_CLR(fd, &m_read_fds);
-    close(fd);
+    REMOVE_CLIENT(fd);
 
     return SUCCESS;
 }
@@ -466,8 +471,7 @@ int server_select(int sel_timeout)
                 /* by doing FD_CLR we will just ignore him so he will
                  * be disconnected by his side when tcp timeout occurs
                  */
-                FD_CLR(fd, &m_read_fds);
-                close(fd);
+                REMOVE_CLIENT(fd);
                 printf("Client fd=%d disconnected\n", fd);
             }
         }
@@ -498,8 +502,7 @@ void cleanup_server()
     {
         if (FD_ISSET(fd, &m_read_fds))
         {
-            close(fd);
-            FD_CLR(fd, &m_read_fds);
+            REMOVE_CLIENT(fd);
         }
     }
     cleanup_ssl_al();

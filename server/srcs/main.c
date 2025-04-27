@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     printf("Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
            args.width, args.height, args.nb_clients, args.time_unit);
 
-    int port = atoi(argv[1]);
+    int port = atoi(argc>1?argv[1]:"2");
     if (port != 2)
     {
         args.port = port;
