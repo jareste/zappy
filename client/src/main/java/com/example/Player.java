@@ -22,7 +22,7 @@ public class Player {
     private final AtomicInteger life;
     private World world;
     private Position position;
-    private final Map<String, Integer> inventory;
+    private final Map<Resource, Integer> inventory;
 
     public Player(String teamName, int id) {
         this.team = teamName;
@@ -160,12 +160,13 @@ public class Player {
         JsonObject inv = msg.getAsJsonObject("inventaire");
         for (Map.Entry<String, JsonElement> entry : inv.entrySet()) {
             String item = entry.getKey();
+            Resource resource = Resource.fromString(item);
             int count = entry.getValue().getAsInt();
-            updateInventory(item, count);
+            updateInventory(resource, count);
         }
-        for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
-            System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());
-        }
+        // for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
+        //     System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());
+        // }
     }
 
     private void handlePrendResponse(JsonObject msg) {
@@ -173,7 +174,8 @@ public class Player {
         String item = msg.has("arg") ? msg.get("arg").getAsString() : "null";
         System.out.println("[CLIENT " + this.id + "] " + "Take an object (" + item + ") response: " + status);
         if (status.equals("ok")) {
-            addResource(item);
+            Resource resource = Resource.fromString(item);
+            addResource(resource);
             System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
         }
     }
@@ -183,7 +185,8 @@ public class Player {
         String item = msg.has("arg") ? msg.get("arg").getAsString() : "null";
         System.out.println("[CLIENT " + this.id + "] " + "Drop an object (" + item + ") response: " + status);
         if (status.equals("ok")) {
-            removeResource(item);
+            Resource resource = Resource.fromString(item);
+            removeResource(resource);
             System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
         }
     }
@@ -218,11 +221,11 @@ public class Player {
         return this.position;
     }
 
-    public Map<String, Integer> getInventory() {
+    public Map<Resource, Integer> getInventory() {
         return new ConcurrentHashMap<>(this.inventory); // returns a copy (to be safe)
     }
 
-    public int getInventoryCount(String item) {
+    public int getInventoryCount(Resource item) {
         return this.inventory.getOrDefault(item, 0);
     }
 
@@ -255,15 +258,15 @@ public class Player {
         this.ai.setWorld(this.world);
     }
 
-    public void updateInventory(String item, int count) {
+    public void updateInventory(Resource item, int count) {
         this.inventory.put(item, count);
     }
 
-    public void addResource(String item) {
+    public void addResource(Resource item) {
         this.inventory.compute(item, (k, v) -> (v == null) ? 1 : v + 1);
     }
 
-    public void removeResource(String item) {
+    public void removeResource(Resource item) {
         this.inventory.computeIfPresent(item, (k, v) -> (v > 1) ? v - 1 : null);
     }
 

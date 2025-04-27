@@ -1,13 +1,31 @@
 package com.example;
 
-public class Resource {
-    private String type;
-    private int quantity;
+public enum Resource {
+    NOURRITURE("nourriture"),
+    LINEMATE("linemate"),
+    DERAUMERE("deraumere"),
+    SIBUR("sibur"),
+    MENDIANE("mendiane"),
+    PHIRAS("phiras"),
+    THYSTAME("thystame"),
+    PLAYER("player");
 
-    public Resource(String type, int quantity) {
-        this.type = type;
-        this.quantity = quantity;
+    private final String name;
+
+    Resource(String name) {
+        this.name = name;
     }
 
-    // Getters and setters omitted for brevity
+    public String getName() {
+        return name;
+    }
+
+    public static Resource fromString(String s) {
+        for (Resource type : values()) {
+            if (type.name.equalsIgnoreCase(s)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown resource: " + s);
+    }
 }

@@ -40,7 +40,7 @@ public class AI {
             for (String move : moves) {
                 commands.add(new Command(move));
             }
-            commands.add(new Command("prend", "nourriture"));
+            commands.add(new Command("prend", Resource.NOURRITURE.getName()));
         }
         return commands;
     }
