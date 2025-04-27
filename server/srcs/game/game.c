@@ -331,6 +331,10 @@ static int m_send_map_observer(void* _p, void* _arg)
 //                 printf("Players: %d\n", t->players->id);
 //             else
 //                 printf("No players\n");
+//             printf("Items: ");
+//             printf("Nourriture: %d, Linemate: %d, Deraumere: %d, Sibur: %d, Mendiane: %d, Phiras: %d, Thystame: %d\n",
+//                    t->items.nourriture, t->items.linemate, t->items.deraumere,
+//                    t->items.sibur, t->items.mendiane, t->items.phiras, t->items.thystame);
 //         }
 //     }
 // }
@@ -456,7 +460,7 @@ static inline int wrap(int v, int m)
     return r < 0 ? r + m : r;
 }
 
-static cJSON* build_tile_vision(tile *T)
+static cJSON* build_tile_vision(tile *T, player *p)
 {
     cJSON *tile_arr;
     // player* p;
@@ -473,7 +477,7 @@ static cJSON* build_tile_vision(tile *T)
     //     cJSON_AddItemToArray(tile_arr, obj);
     // }
 
-    if (T->players)
+    if (T->players && T->players->id != p->id && p->next_on_tile != NULL)
         cJSON_AddItemToArray(tile_arr, cJSON_CreateString("player"));
 
     // for (i = 0; i < T->items.nourriture; i++)
@@ -523,11 +527,23 @@ int m_command_voir(void* _p, void* _arg)
     lvl = p->level;
 
     root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "type",    "response");
+    cJSON_AddStringToObject(root, "type", "response");
     cJSON_AddStringToObject(root, "cmd", "voir");
 
     vision = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "vision", vision);
+
+    /* DEBUG */
+    // fprintf(stderr, "Player %d t(%d,%d) dir(", p->id, p->pos.x, p->pos.y);
+    // switch (p->dir)
+    // {
+    //     case NORTH: fprintf(stderr, "N"); break;
+    //     case EAST:  fprintf(stderr, "E");  break;
+    //     case SOUTH: fprintf(stderr, "S"); break;
+    //     case WEST:  fprintf(stderr, "W");  break;
+    // }
+    // fprintf(stderr, ") sees:\n");
+    /* DEBUG_END */
 
     for (d = 0; d <= lvl; d++)
     {
@@ -538,34 +554,53 @@ int m_command_voir(void* _p, void* _arg)
             {
                 case NORTH:
                     rel_x = p->pos.x - d + i;
-                    rel_y = p->pos.y - (d + 1);
+                    // rel_y = p->pos.y - (d + 1);
+                    rel_y = p->pos.y - d;
                     break;
                 case EAST:
-                    rel_x = p->pos.x + (d + 1);
+                    // rel_x = p->pos.x + (d + 1);
+                    rel_x = p->pos.x + d;
                     rel_y = p->pos.y - d + i;
                     break;
                 case SOUTH:
                     rel_x = p->pos.x + d - i;
-                    rel_y = p->pos.y + (d + 1);
+                    rel_y = p->pos.y + d;
+                    // rel_y = p->pos.y + (d + 1);
                     break;
                 case WEST:
-                    rel_x = p->pos.x - (d + 1);
+                    rel_x = p->pos.x - d;
+                    // rel_x = p->pos.x - (d + 1);
                     rel_y = p->pos.y + d - i;
                     break;
                 default:
                     rel_x = p->pos.x;
                     rel_y = p->pos.y;
             }
+            // fprintf(stderr, "rel_x: %d, rel_y: %d\n", rel_x, rel_y);
             x = wrap(rel_x, m_server.map_x);
             y = wrap(rel_y, m_server.map_y);
+            // fprintf(stderr, "x: %d, y: %d\n", x, y);
             T = MAP(x, y);
 
-            tile_arr = build_tile_vision(T);
+            tile_arr = build_tile_vision(T, p);
             cJSON_AddItemToArray(vision, tile_arr);
         }
     }
 
     server_send_json(p->id, root);
+    /* DEBUG */
+    // char* json = cJSON_Print(root);
+    // fprintf(stderr, "Player %d t(%d,%d) dir(", p->id, p->pos.x, p->pos.y);
+    // switch (p->dir)
+    // {
+    //     case NORTH: fprintf(stderr, "N"); break;
+    //     case EAST:  fprintf(stderr, "E");  break;
+    //     case SOUTH: fprintf(stderr, "S"); break;
+    //     case WEST:  fprintf(stderr, "W");  break;
+    // }
+    // fprintf(stderr, ") sees:\n%s\n", json);
+    /* DEBUG_END */
+
     cJSON_Delete(root);
 
     return SUCCESS;
@@ -944,6 +979,18 @@ static int m_command_avance(void* _p, void* _arg)
       case SOUTH: new_y = (p->pos.y + 1) % m_server.map_y;                   break;
       case WEST:  new_x = (p->pos.x + m_server.map_x - 1) % m_server.map_x;  break;
     }
+
+    /* DEBUG */
+    // printf("Player %d moved from (%d,%d) to (%d,%d)\n", p->id, p->pos.x, p->pos.y, new_x, new_y);
+    // printf("Player %d dir: %d(", p->id, p->dir);
+    // switch (p->dir)
+    // {
+    //     case NORTH: printf("N)\n"); break;
+    //     case EAST:  printf("E)\n"); break;
+    //     case SOUTH: printf("S)\n"); break;
+    //     case WEST:  printf("W)\n"); break;
+    // }
+    /* DEBUG_END */
 
     m_game_move_player(p, new_x, new_y);
  
@@ -1343,7 +1390,6 @@ int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
     m_ctx.next_idx      = 0;
 
     time_api_schedule_client_event(NULL, &m_server.event_buffer, m_ctx.period, m_game_spawn_resources, NULL, NULL);
-
 
     return SUCCESS;
 }
