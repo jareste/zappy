@@ -41,6 +41,8 @@ public class AI {
                 commands.add(new Command(move));
             }
             commands.add(new Command("prend", Resource.NOURRITURE.getName()));
+        } else {
+            commands.add(new Command("avance"));
         }
         return commands;
     }

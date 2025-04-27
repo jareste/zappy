@@ -62,7 +62,7 @@ public class CommandManager {
                 System.out.println("[CLIENT " + this.id + "] " + "Unknown message type: " + type);
         }        
 
-        if (!commandQueue.isEmpty()) {
+        while (!commandQueue.isEmpty() && pendingResponses < 10) {
             Command nextCommand = commandQueue.poll();
             sendCommand(nextCommand);
         }
