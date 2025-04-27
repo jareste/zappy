@@ -10,31 +10,33 @@ import java.util.Queue;
 import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Player {
     private String team;
     private int id;
     private CommandManager cmdManager;
     private AI ai;
-    private int level;
-    private int life;
+    private final AtomicInteger level;
+    private final AtomicInteger life;
     private World world;
     private Position position;
-    private Map<String, Integer> inventory;
+    private final Map<Resource, Integer> inventory;
 
     public Player(String teamName, int id) {
         this.team = teamName;
         // this.ai = new AI(teamName);
-        this.level = 1;
+        this.level = new AtomicInteger(1);
         this.id = id;
-        this.inventory = new HashMap<>();
-        this.life = 1260; // time units
+        this.inventory = new ConcurrentHashMap<>();
+        this.life = new AtomicInteger(1260); // time units
     }
 
     public void handleResponse(JsonObject msg) {
         // msg == jsonResponse from server (from CommandManager)
         String cmd = msg.has("cmd") ? msg.get("cmd").getAsString() : msg.get("command").getAsString();
-        System.out.println("[CLIENT " + this.id + "] " + "Handling response of Command: " + cmd);
+        System.out.println("[CLIENT " + this.id + "] " + "Handling response of COMMAND: " + cmd);
         String status = "";
 
         switch (cmd) {
@@ -54,12 +56,10 @@ public class Player {
                 handleInventaireResponse(msg);
                 break;
             case "prend":
-                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("[CLIENT " + this.id + "] " + "Take an object response: " + status);
+                handlePrendResponse(msg);
                 break;
             case "pose":
-                status = msg.has("status") ? msg.get("status").getAsString() : "ko";
-                System.out.println("[CLIENT " + this.id + "] " + "Drop an object response: " + status);
+                handlePoseResponse(msg);
                 break;
             case "expulse":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
@@ -88,10 +88,13 @@ public class Player {
                 break;
         }
 
-        this.life -= Command.timeUnits(cmd);
-        List<Command> nextMoves = ai.decideNextMoves();
-        for (Command c : nextMoves) {
-            cmdManager.addCommand(c);
+        addLife(-Command.timeUnits(cmd));
+        
+        if (!cmd.equals("voir")) {
+            List<Command> nextMoves = ai.decideNextMovesRandom();
+            for (Command c : nextMoves) {
+                cmdManager.addCommand(c);
+            }
         }
     }
 
@@ -146,18 +149,45 @@ public class Player {
         for (int i = 0; i < data.size(); i++) {
             System.out.println("[CLIENT " + this.id + "] " + "Tile " + i + ": " + data.get(i));
         }
-        world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), level, data);
+        world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), getLevel(), data);
+        List<Command> nextMoves = ai.decideNextMovesViewBased(data);
+        for (Command c : nextMoves) {
+            cmdManager.addCommand(c);
+        }
     }
 
     private void handleInventaireResponse(JsonObject msg) {
         JsonObject inv = msg.getAsJsonObject("inventaire");
         for (Map.Entry<String, JsonElement> entry : inv.entrySet()) {
             String item = entry.getKey();
+            Resource resource = Resource.fromString(item);
             int count = entry.getValue().getAsInt();
-            updateInventory(item, count);
+            updateInventory(resource, count);
         }
-        for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
-            System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());
+        // for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
+        //     System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());
+        // }
+    }
+
+    private void handlePrendResponse(JsonObject msg) {
+        String status = msg.has("status") ? msg.get("status").getAsString() : "ko";
+        String item = msg.has("arg") ? msg.get("arg").getAsString() : "null";
+        System.out.println("[CLIENT " + this.id + "] " + "Take an object (" + item + ") response: " + status);
+        if (status.equals("ok")) {
+            Resource resource = Resource.fromString(item);
+            addResource(resource);
+            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
+        }
+    }
+
+    private void handlePoseResponse(JsonObject msg) {
+        String status = msg.has("status") ? msg.get("status").getAsString() : "ko";
+        String item = msg.has("arg") ? msg.get("arg").getAsString() : "null";
+        System.out.println("[CLIENT " + this.id + "] " + "Drop an object (" + item + ") response: " + status);
+        if (status.equals("ok")) {
+            Resource resource = Resource.fromString(item);
+            removeResource(resource);
+            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
         }
     }
 
@@ -176,7 +206,7 @@ public class Player {
     }
 
     public int getLevel() {
-        return this.level;
+        return this.level.get();
     }
 
     public int getId() {
@@ -184,18 +214,18 @@ public class Player {
     }
 
     public int getLife() {
-        return this.life;
+        return this.life.get();
     }
 
     public Position getPosition() {
         return this.position;
     }
 
-    public Map<String, Integer> getInventory() {
-        return this.inventory;
+    public Map<Resource, Integer> getInventory() {
+        return new ConcurrentHashMap<>(this.inventory); // returns a copy (to be safe)
     }
 
-    public int getInventoryCount(String item) {
+    public int getInventoryCount(Resource item) {
         return this.inventory.getOrDefault(item, 0);
     }
 
@@ -206,7 +236,19 @@ public class Player {
     }
 
     private void setLevel(int level) {
-        this.level = level;
+        this.level.set(level);
+    }
+
+    public void incrementLevel() {
+        this.level.incrementAndGet();
+    }
+
+    public void setLife(int life) {
+        this.life.set(life);
+    }
+
+    public void addLife(int life) {
+        this.life.addAndGet(life);
     }
 
     public void setGameState(int w, int h, AI ai) {
@@ -216,8 +258,16 @@ public class Player {
         this.ai.setWorld(this.world);
     }
 
-    public void updateInventory(String item, int count) {
+    public void updateInventory(Resource item, int count) {
         this.inventory.put(item, count);
+    }
+
+    public void addResource(Resource item) {
+        this.inventory.compute(item, (k, v) -> (v == null) ? 1 : v + 1);
+    }
+
+    public void removeResource(Resource item) {
+        this.inventory.computeIfPresent(item, (k, v) -> (v > 1) ? v - 1 : null);
     }
 
     /********** UTILS **********/

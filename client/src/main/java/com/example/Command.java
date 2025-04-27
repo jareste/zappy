@@ -20,15 +20,7 @@ public class Command {
 
     public Command(String name, String argument) {
         this.name = name;
-
-        if (name.equals("prend") || name.equals("pose")) {
-            String[] possibleArgs = {"nourriture", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"};
-            String randomCommand = possibleArgs[random.nextInt(possibleArgs.length)];
-            this.argument = randomCommand;
-            System.out.println("Random argument for " + name + ": " + this.argument);
-        } else {
-            this.argument = argument;
-        }
+        this.argument = argument;
     }
 
     public static int timeUnits(String cmd) {
