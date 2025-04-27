@@ -381,6 +381,9 @@ static int m_game_get_client_from_fd(int fd, client **c)
 {
     int i;
 
+    if (!m_server.clients)
+        return ERROR;
+
     for (i = 0; i < m_server.client_count; i++)
     {
         if (m_server.clients[i] && m_server.clients[i]->socket_fd == fd)
@@ -1249,6 +1252,30 @@ int game_play()
     return SUCCESS;
 }
 
+int game_kill_player(int fd)
+{
+    client *c;
+    int ret;
+
+    ret = m_game_get_client_from_fd(fd, &c);
+    if (ret == ERROR)
+    {
+        fprintf(stderr, "Failed to get client from fd %d\n", fd);
+        return ERROR;
+    }
+
+    if (c->player == NULL)
+    {
+        fprintf(stderr, "Player %d is already dead\n", fd);
+        return ERROR;
+    }
+
+    c->player->die_time = 0;
+    c->player->inv.nourriture = 0;
+
+    return SUCCESS;
+}
+
 int m_game_spawn_resources(void* data, void* arg)
 {
     const int W = m_server.map_x;
@@ -1342,8 +1369,11 @@ void game_clean()
         free(m_server.teams[i].name);
     }
     free(m_server.clients);
+    m_server.clients = NULL;
     free(m_server.teams);
+    m_server.teams = NULL;
     free(m_server.map);
+    m_server.map = NULL;
 }
 
 int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)

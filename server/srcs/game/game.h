@@ -14,4 +14,6 @@ int game_get_client_count();
 int game_get_team_count();
 void game_get_map_size(int *width, int *height);
 
+int game_kill_player(int fd);
+
 #endif /* GAME_H */
