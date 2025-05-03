@@ -37,6 +37,6 @@ typedef struct s_args
     char*       key; /* key for SSL */
 } t_args;
 
-void parse_args(int argc, char *argv[], t_args* args);
+int parse_args(int argc, char *argv[], t_args* args);
 
 #endif /* PARSE_ARG_H */

@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <parse_arg.h>
+#include <error_codes.h>
 
 /***************************/
 /*        DEFINES          */
@@ -52,11 +53,11 @@ void check_params(t_args* args)
     }
 }
 
-void parse_args(int argc, char *argv[], t_args* args)
+int parse_args(int argc, char *argv[], t_args* args)
 {
     int         opt;
 
-    return;
+    return SUCCESS;
 
     static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
@@ -79,5 +80,6 @@ void parse_args(int argc, char *argv[], t_args* args)
 
     check_params(args);
 
+    return SUCCESS;
 }
 

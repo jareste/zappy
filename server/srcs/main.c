@@ -148,7 +148,8 @@ int main(int argc, char **argv)
     {
         ZAPPY_USAGE(EXIT_FAILURE);
     }
-    parse_args(argc, argv, &args);
+    if (parse_args(argc, argv, &args) == ERROR)
+        goto error;
 
     /* On failure will simply exit soooo :)
     */
