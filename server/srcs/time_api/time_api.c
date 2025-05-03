@@ -131,6 +131,36 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
     return 0;
 }
 
+int time_api_schedule_client_event_front(time_api *_api, event_buffer *buffer, int delay,\
+    int (*callback)(void *, void *), void *data, void *arg)
+{
+    time_api* api;
+    event new_event;
+
+    api = _api ? _api : m_time;
+    if (!api)
+    {
+        fprintf(stderr, "Time API not initialized.\n");
+        return -1;
+    }
+
+    if (m_is_event_buffer_full(buffer))
+        return -1;
+
+    time_api_update(NULL);
+
+    new_event.exec_time = api->current_time_units + delay;
+    new_event.callback  = callback;
+    new_event.data      = data;
+    new_event.arg       = arg;
+
+    /* move head backwards, insert there */
+    buffer->head = (buffer->head - 1 + MAX_EVENTS) % MAX_EVENTS;
+    buffer->events[buffer->head] = new_event;
+    buffer->count++;
+    return 0;
+}
+
 /* Process and execute all client events in the buffer that are due.
  * The function checks the event at the head of the circular buffer.
  */
@@ -146,20 +176,15 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
         return ERROR;
     }
 
-    while (buffer->count > 0)
+    if (buffer->count > 0)
     {
         ev = &buffer->events[buffer->head];
         if (ev->exec_time <= api->current_time_units)
         {
-            if (ev->callback)
-                ev->callback(ev->data, ev->arg);
-
             buffer->head = (buffer->head + 1) % MAX_EVENTS;
             buffer->count--;
-        }
-        else
-        {
-            break;
+            if (ev->callback)
+                ev->callback(ev->data, ev->arg);
         }
     }
     return SUCCESS;

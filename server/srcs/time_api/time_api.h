@@ -39,6 +39,8 @@ int time_api_update(time_api *_api);
  */
 int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int delay, int (*callback)(void *, void *), void *data, void *arg);
 
+int time_api_schedule_client_event_front(time_api *_api, event_buffer *buffer, int delay, int (*callback)(void *, void *), void *data, void *arg);
+
 /* Processes all scheduled client events in the provided event buffer whose execution
  * time is less than or equal to the current game time. Events are processed in FIFO order.
  */

@@ -32,11 +32,35 @@ typedef enum
     POSE,
     EXPULSE,
     BROADCAST,
-    INCARNATION,
+    INCANTATION,
     FORK,
     CONNECT_NBR,
     MAX_COMMANDS
 } command_type;
+
+typedef enum
+{
+    LEVEL_1,
+    LEVEL_2,
+    LEVEL_3,
+    LEVEL_4,
+    LEVEL_5,
+    LEVEL_6,
+    LEVEL_7,
+    LEVEL_MAX
+} level_type;
+
+typedef enum
+{
+    NOURRITURE = 0,
+    LINEMATE,
+    DERAUMERE,
+    SIBUR,
+    MENDIANE,
+    PHIRAS,
+    THYSTAME,
+    UNKNOWN
+} inventory_type;
 
 typedef struct 
 {
@@ -50,7 +74,7 @@ typedef struct
 {
     command_prototype prototype;
     int delay;
-}command;
+} command;
 
 typedef struct
 {
@@ -65,23 +89,17 @@ typedef struct
     int     next_idx;
 } spawn_ctx;
 
-typedef enum
-{
-    NOURRITURE = 0,
-    LINEMATE,
-    DERAUMERE,
-    SIBUR,
-    MENDIANE,
-    PHIRAS,
-    THYSTAME,
-    UNKNOWN
-} inventory_type;
-
 typedef struct
 {
     inventory_type type;
     char* name;
 } inventory_strings;
+
+typedef struct 
+{
+    int player_number;
+    inventory inv;
+} level_requisites;
 
 static int m_command_avance(void* _p, void* _arg);
 static int m_command_droite(void* _p, void* _arg);
@@ -97,8 +115,9 @@ static int m_command_incantation(void* _p, void* _arg);
 static int m_command_fork(void* _p, void* _arg);
 
 static server m_server = {0};
+spawn_ctx m_ctx;
 
-command_message command_messages[MAX_COMMANDS] =
+const command_message command_messages[MAX_COMMANDS] =
 {
     {AVANCE, "avance"},
     {DROITE, "droite"},
@@ -109,12 +128,12 @@ command_message command_messages[MAX_COMMANDS] =
     {POSE, "pose"},
     {EXPULSE, "expulse"},
     {BROADCAST, "broadcast"},
-    {INCARNATION, "incantation"},
+    {INCANTATION, "incantation"},
     {FORK, "fork"},
     {CONNECT_NBR, "connect_nbr"}
 };
 
-command command_prototypes[MAX_COMMANDS] =
+const command command_prototypes[MAX_COMMANDS] =
 {
     {m_command_avance, 7},
     {m_command_droite, 7},
@@ -125,12 +144,12 @@ command command_prototypes[MAX_COMMANDS] =
     {m_command_pose, 7},
     {m_command_expulse, 7},
     {m_command_broadcast, 7},
-    {m_command_incantation, 300},
+    {m_command_incantation, 0}, /* This is foo, just for checking if it could happen. */
     {m_command_fork, 42},
     {m_command_connect_nbr, 0},
 };
 
-inventory_strings inventory_names[] =
+const inventory_strings inventory_names[] =
 {
     {NOURRITURE, "nourriture"},
     {LINEMATE,   "linemate"},
@@ -142,7 +161,17 @@ inventory_strings inventory_names[] =
     {UNKNOWN,    NULL}
 };
 
-spawn_ctx m_ctx;
+const level_requisites level_reqs[LEVEL_MAX] =
+{
+/*   PL  N  L  D  S  M  P  T */
+    {1, {0, 1, 0, 0, 0, 0, 0}}, /* 1-2 */
+    {2, {0, 1, 1, 1, 0, 0, 0}}, /* 2-3 */
+    {2, {0, 2, 0, 1, 0, 2, 0}}, /* 3-4 */
+    {4, {0, 1, 1, 2, 0, 1, 0}}, /* 4-5 */
+    {4, {0, 1, 2, 1, 3, 0, 0}}, /* 5-6 */
+    {6, {0, 1, 2, 3, 0, 1, 0}}, /* 6-7 */
+    {6, {0, 2, 2, 2, 2, 2, 1}}  /* 7-8 */
+};
 
 static const double DENSITY_NOURRITURE = 1.0;
 static const double DENSITY_LINEMATE   = 0.02;
@@ -880,16 +909,135 @@ static int m_command_broadcast(void* _p, void* _arg)
     return server_create_response_to_command(p->id, "broadcast", NULL, "ok");
 }
 
+/* For incantation to happen, the tile where the player is must have
+ * enough items to satisfy the level requirements.
+ * Also, there must be enough players with required level to satisfy the
+ * level requirements.
+ */
+static int m_game_check_can_incantation(player* p, bool check_items)
+{
+    int i;
+    int p_count;
+    inventory_type type;
+    tile* t;
+    level_requisites* reqs;
+    player* p2;
+
+    if (p->level >= LEVEL_MAX)
+        return ERROR;
+
+    t = MAP(p->pos.x, p->pos.y);
+
+    reqs = &level_reqs[p->level];
+
+    /**/
+    if (check_items == true)
+    {
+        if (t->items.nourriture < reqs->inv.nourriture)
+            return ERROR;
+        if (t->items.linemate < reqs->inv.linemate)
+            return ERROR;
+        if (t->items.deraumere < reqs->inv.deraumere)
+            return ERROR;
+        if (t->items.sibur < reqs->inv.sibur)
+            return ERROR;
+        if (t->items.mendiane < reqs->inv.mendiane)
+            return ERROR;
+        if (t->items.phiras < reqs->inv.phiras)
+            return ERROR;
+        if (t->items.thystame < reqs->inv.thystame)
+            return ERROR;
+    }
+
+    p2 = t->players;
+    while (p2)
+    {
+        if (p2->level == p->level)
+            p_count++;
+        p2 = p2->next_on_tile;
+    }
+
+    if (p_count < reqs->player_number)
+        return ERROR;
+
+    return SUCCESS;
+}
+
+static int m_command_real_incantation(void* _p, void* _arg)
+{
+    player* p;
+    tile* t;
+    int i;
+    player* p2;
+    int initial_level;
+
+    p = (player*)_p;
+    t = MAP(p->pos.x, p->pos.y);
+
+    initial_level = atoi((char*)(_arg));
+
+    /* Already leveled up!! */
+    if (p->level != initial_level)
+        return server_create_response_to_command(p->id, "incantation", NULL, "ko");
+
+    if (m_game_check_can_incantation(p, false) == ERROR)
+        return server_create_response_to_command(p->id, "incantation", NULL, "ko");
+
+    p2 = t->players;
+    while (p2)
+    {
+        if (p2->level == initial_level)
+        {
+            p2->level++;
+            server_create_response_to_command(p2->id, "incantation", NULL, "Level up!");
+        }
+        p2 = p2->next_on_tile;
+    }
+
+    return server_create_response_to_command(p->id, "incantation", NULL, "ok");
+}
+
 static int m_command_incantation(void* _p, void* _arg)
 {
     player* p;
+    tile* t;
+    level_requisites* reqs;
+    client* c;
+    char level[2];
 
     p = (player*)_p;
+
+    if (p->level >= LEVEL_MAX)
+        return server_create_response_to_command(p->id, "incantation", NULL, "ko");
 
     if (_arg)
         free(_arg);
 
-    return server_create_response_to_command(p->id, "incantation", NULL, "ok");
+    if (m_game_check_can_incantation(p, true) == ERROR)
+        return server_create_response_to_command(p->id, "incantation", NULL, "ko");
+
+    t = MAP(p->pos.x, p->pos.y);
+    reqs = &level_reqs[p->level];
+
+    t->items.nourriture -= reqs->inv.nourriture;
+    t->items.linemate -= reqs->inv.linemate;
+    t->items.deraumere -= reqs->inv.deraumere;
+    t->items.sibur -= reqs->inv.sibur;
+    t->items.mendiane -= reqs->inv.mendiane;
+    t->items.phiras -= reqs->inv.phiras;
+    t->items.thystame -= reqs->inv.thystame;
+
+    if (m_game_get_client_from_fd(p->id, &c) == ERROR)
+    {
+        fprintf(stderr, "Failed to get client from fd %d\n", p->id);
+        return ERROR;
+    }
+
+    snprintf(level, sizeof(level), "%d", p->level);
+
+    time_api_schedule_client_event_front(NULL, &c->event_buffer, 300, m_command_real_incantation, p, strdup(level));
+
+    return server_create_response_to_command(p->id, "incantation", NULL, "in_progress");
 }
 
 static int m_command_fork(void* _p, void* _arg)
