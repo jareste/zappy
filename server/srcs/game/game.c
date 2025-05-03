@@ -9,6 +9,7 @@
 #include "game_structs.h"
 #include "../time_api/time_api.h"
 #include "../server/server.h"/* not liking it*/
+#include "../parse_arg/config_file.h"
 
 #define PLAYER_IS_ALIVE(x, current_time) ((x->player->die_time > current_time))
 #define CLIENT_HAS_ACTIONS(x, current_time) \
@@ -16,27 +17,9 @@
 
 #define TEAM_IS_FULL(id) (m_server.teams[id].current_players >= m_server.teams[id].max_players)
 
-#define LIFE_UNIT 126 /* Stated in the subject */
-#define TIME_TO_DIE (LIFE_UNIT*10) /* Stated in the subject */
+#define TIME_TO_DIE (LIFE_UNIT*START_LIFE_UNITS) /* Stated in the subject */
 
 #define MAP(x,y) (&(m_server.map[((y) * (m_server.map_x)) + (x)]))
-
-typedef enum
-{
-    AVANCE = 0,
-    DROITE,
-    GAUCHE,
-    VOIR,
-    INVENTAIRE,
-    PREND,
-    POSE,
-    EXPULSE,
-    BROADCAST,
-    INCANTATION,
-    FORK,
-    CONNECT_NBR,
-    MAX_COMMANDS
-} command_type;
 
 typedef enum
 {
@@ -68,27 +51,6 @@ typedef struct
     char *name;
 } command_message;
 
-typedef int (*command_prototype)(void* p, void* arg);
-
-typedef struct 
-{
-    command_prototype prototype;
-    int delay;
-} command;
-
-typedef struct
-{
-    double  d_nourriture;
-    double  d_linemate;
-    double  d_deraumere;
-    double  d_sibur;
-    double  d_mendiane;
-    double  d_phiras;
-    double  d_thystame;
-    int     period;
-    int     next_idx;
-} spawn_ctx;
-
 typedef struct
 {
     inventory_type type;
@@ -116,6 +78,8 @@ static int m_command_fork(void* _p, void* _arg);
 
 static server m_server = {0};
 spawn_ctx m_ctx;
+int LIFE_UNIT = 0;
+int START_LIFE_UNITS = 0;
 
 const command_message command_messages[MAX_COMMANDS] =
 {
@@ -133,7 +97,7 @@ const command_message command_messages[MAX_COMMANDS] =
     {CONNECT_NBR, "connect_nbr"}
 };
 
-const command command_prototypes[MAX_COMMANDS] =
+command command_prototypes[MAX_COMMANDS] =
 {
     {m_command_avance, 7},
     {m_command_droite, 7},
@@ -161,7 +125,7 @@ const inventory_strings inventory_names[] =
     {UNKNOWN,    NULL}
 };
 
-const level_requisites level_reqs[LEVEL_MAX] =
+level_requisites level_reqs[LEVEL_MAX] =
 {
 /*   PL  N  L  D  S  M  P  T */
     {1, {0, 1, 0, 0, 0, 0, 0}}, /* 1-2 */
@@ -172,14 +136,6 @@ const level_requisites level_reqs[LEVEL_MAX] =
     {6, {0, 1, 2, 3, 0, 1, 0}}, /* 6-7 */
     {6, {0, 2, 2, 2, 2, 2, 1}}  /* 7-8 */
 };
-
-static const double DENSITY_NOURRITURE = 1.0;
-static const double DENSITY_LINEMATE   = 0.02;
-static const double DENSITY_DERAUMERE  = 0.02;
-static const double DENSITY_SIBUR      = 0.04;
-static const double DENSITY_MENDIANE   = 0.04;
-static const double DENSITY_PHIRAS     = 0.04;
-static const double DENSITY_THYSTAME   = 0.005;
 
 static int m_game_init_team(team *team, char *name, int max_players)
 {
@@ -552,6 +508,8 @@ int m_command_voir(void* _p, void* _arg)
     cJSON* vision;
     cJSON* tile_arr;
 
+    (void)_arg;
+
     p = (player*)_p;
 
     lvl = p->level;
@@ -632,9 +590,6 @@ int m_command_voir(void* _p, void* _arg)
     /* DEBUG_END */
 
     cJSON_Delete(root);
-    if (_arg)
-        free(_arg);
-
     return SUCCESS;
 }
 
@@ -808,8 +763,6 @@ static int m_command_prend(void* _p, void* _arg)
     else
         ret = server_create_response_to_command(p->id, "prend", arg, "ok");
 
-    free(arg);
-
     return ret;
 }
 
@@ -843,8 +796,6 @@ static int m_command_pose(void* _p, void* _arg)
     else
         ret = server_create_response_to_command(p->id, "pose", arg, "ok");
 
-    free(arg);
-
     return ret;
 }
 
@@ -863,6 +814,8 @@ static int m_command_expulse(void* _p, void* _arg)
         /* WEST  */ {"7", "5", "3", "1"}
                    /* N    E    S    W */
     };
+
+    (void)_arg;
 
     p = (player*)_p;
     t = MAP(p->pos.x, p->pos.y);
@@ -891,9 +844,6 @@ static int m_command_expulse(void* _p, void* _arg)
         server_create_response_to_command(it->id, "deplacement", NULL, (char*)dir_string);
     }
 
-    if (_arg)
-        free(_arg);
-
     return server_create_response_to_command(p->id, "expulse", NULL, "ok");
 }
 
@@ -901,10 +851,9 @@ static int m_command_broadcast(void* _p, void* _arg)
 {
     player* p;
 
-    p = (player*)_p;
+    (void)_arg;
 
-    if (_arg)
-        free(_arg);
+    p = (player*)_p;
 
     return server_create_response_to_command(p->id, "broadcast", NULL, "ok");
 }
@@ -916,9 +865,7 @@ static int m_command_broadcast(void* _p, void* _arg)
  */
 static int m_game_check_can_incantation(player* p, bool check_items)
 {
-    int i;
     int p_count;
-    inventory_type type;
     tile* t;
     level_requisites* reqs;
     player* p2;
@@ -949,6 +896,7 @@ static int m_game_check_can_incantation(player* p, bool check_items)
             return ERROR;
     }
 
+    p_count = 0;
     p2 = t->players;
     while (p2)
     {
@@ -967,7 +915,6 @@ static int m_command_real_incantation(void* _p, void* _arg)
 {
     player* p;
     tile* t;
-    int i;
     player* p2;
     int initial_level;
 
@@ -1005,13 +952,12 @@ static int m_command_incantation(void* _p, void* _arg)
     client* c;
     char level[2];
 
+    (void)_arg;
+
     p = (player*)_p;
 
     if (p->level >= LEVEL_MAX)
         return server_create_response_to_command(p->id, "incantation", NULL, "ko");
-
-    if (_arg)
-        free(_arg);
 
     if (m_game_check_can_incantation(p, true) == ERROR)
         return server_create_response_to_command(p->id, "incantation", NULL, "ko");
@@ -1044,10 +990,9 @@ static int m_command_fork(void* _p, void* _arg)
 {
     player* p;
 
-    p = (player*)_p;
+    (void)_arg;
 
-    if (_arg)
-        free(_arg);
+    p = (player*)_p;
 
     return server_create_response_to_command(p->id, "fork", NULL, "ok");
 }
@@ -1057,12 +1002,11 @@ static int m_command_connect_nbr(void* _p, void* _arg)
     player* p;
     char number[10];
 
+    (void)_arg;
+
     p = (player*)_p;
     snprintf(number, sizeof(number),\
      "%d", m_server.teams[p->team_id].max_players - m_server.teams[p->team_id].current_players);
-
-    if (_arg)
-        free(_arg);
 
     return server_create_response_to_command(p->id, "connect_nbr", number,  NULL);
 }
@@ -1093,9 +1037,6 @@ static int m_command_droite(void* _p, void* _arg)
 
     ret = server_create_response_to_command(p->id, "droite", arg, "ok");
 
-    if (_arg)
-        free(_arg);
-
     return ret;
 }
 
@@ -1124,9 +1065,6 @@ static int m_command_gauche(void* _p, void* _arg)
     }
 
     ret = server_create_response_to_command(p->id, "gauche", arg, "ok");
-
-    if (_arg)
-        free(_arg);
 
     return ret;
 }
@@ -1166,9 +1104,6 @@ static int m_command_avance(void* _p, void* _arg)
     m_game_move_player(p, new_x, new_y);
  
     ret = server_create_response_to_command(p->id, "avance", arg, "ok");
-
-    if (_arg)
-        free(_arg);
 
     return ret;
 }
@@ -1334,6 +1269,7 @@ int game_execute_command(int fd, char *cmd, char *_arg)
 int game_player_die(client *c)
 {
     int ret;
+    int i;
 
     if (c->player->inv.nourriture > 0)
     {
@@ -1379,6 +1315,12 @@ int game_player_die(client *c)
     {
         fprintf(stderr, "Failed to remove client from server\n");
         return ERROR;
+    }
+
+    for (i = 0; i < MAX_EVENTS; i++)
+    {
+        if (c->event_buffer.events[i].arg)
+            free(c->event_buffer.events[i].arg);
     }
 
     free(c);
@@ -1503,6 +1445,11 @@ int game_init_map(int width, int height)
 {
     int i;
     int j;
+    spawn_ctx dst;
+
+    parse_set_life_unit(&LIFE_UNIT);
+    parse_set_start_life_units(&START_LIFE_UNITS);
+    parse_set_initial_density(&dst);
 
     for (i = 0; i < width; i++)
     {
@@ -1512,13 +1459,13 @@ int game_init_map(int width, int height)
             MAP(i, j)->pos.y = j;
             MAP(i, j)->players = NULL;
 
-            MAP(i, j)->items.nourriture = m_game_random_resource_count(DENSITY_NOURRITURE);
-            MAP(i, j)->items.linemate   = m_game_random_resource_count(DENSITY_LINEMATE);
-            MAP(i, j)->items.deraumere  = m_game_random_resource_count(DENSITY_DERAUMERE);
-            MAP(i, j)->items.sibur      = m_game_random_resource_count(DENSITY_SIBUR);
-            MAP(i, j)->items.mendiane   = m_game_random_resource_count(DENSITY_MENDIANE);
-            MAP(i, j)->items.phiras     = m_game_random_resource_count(DENSITY_PHIRAS);
-            MAP(i, j)->items.thystame   = m_game_random_resource_count(DENSITY_THYSTAME);
+            MAP(i, j)->items.nourriture = m_game_random_resource_count(dst.d_nourriture);
+            MAP(i, j)->items.linemate   = m_game_random_resource_count(dst.d_linemate);
+            MAP(i, j)->items.deraumere  = m_game_random_resource_count(dst.d_deraumere);
+            MAP(i, j)->items.sibur      = m_game_random_resource_count(dst.d_sibur);
+            MAP(i, j)->items.mendiane   = m_game_random_resource_count(dst.d_mendiane);
+            MAP(i, j)->items.phiras     = m_game_random_resource_count(dst.d_phiras);
+            MAP(i, j)->items.thystame   = m_game_random_resource_count(dst.d_thystame);
         }
     }
     return SUCCESS;
@@ -1561,6 +1508,8 @@ int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
     int i;
     int ret;
 
+    parse_set_commands_delay(command_prototypes);
+
     m_server.map_x = width;
     m_server.map_y = height;
     m_server.map = malloc(sizeof(tile) * width * height);
@@ -1588,17 +1537,9 @@ int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
         i++;
     }
 
-    m_ctx.d_nourriture  = 0.5;
-    m_ctx.d_linemate    = 0.02;
-    m_ctx.d_deraumere   = 0.02;
-    m_ctx.d_sibur       = 0.04;
-    m_ctx.d_mendiane    = 0.04;
-    m_ctx.d_phiras      = 0.04;
-    m_ctx.d_thystame    = 0.005;
-    m_ctx.period        = 100;
-    m_ctx.next_idx      = 0;
-
-    time_api_schedule_client_event(NULL, &m_server.event_buffer, m_ctx.period, m_game_spawn_resources, NULL, NULL);
+    parse_set_respawn_context(&m_ctx);
+    if (parse_respawn_resources())
+        time_api_schedule_client_event(NULL, &m_server.event_buffer, m_ctx.period, m_game_spawn_resources, NULL, NULL);
 
     return SUCCESS;
 }

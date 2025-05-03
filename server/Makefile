@@ -10,7 +10,7 @@ RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
 
 #########
-FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api
+FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api config_file
 
 SRC = $(addsuffix .c, $(FILES))
 

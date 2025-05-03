@@ -168,6 +168,7 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
 {
     time_api *api;
     event *ev;
+    int prev_head;
 
     api = _api ? _api : m_time;
     if (!api)
@@ -183,8 +184,15 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
         {
             buffer->head = (buffer->head + 1) % MAX_EVENTS;
             buffer->count--;
+            prev_head = buffer->head;
             if (ev->callback)
                 ev->callback(ev->data, ev->arg);
+
+            if (prev_head == buffer->head && ev->arg)
+            {
+                free(ev->arg);
+                ev->arg = NULL;
+            }
         }
     }
     return SUCCESS;

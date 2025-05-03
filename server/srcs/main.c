@@ -7,6 +7,7 @@
 #include "server/server.h"
 #include "game/game.h"
 #include "time_api/time_api.h"
+#include "parse_arg/config_file.h"
 
 /*debug*/
 #include <time.h>
@@ -151,6 +152,9 @@ int main(int argc, char **argv)
     if (parse_args(argc, argv, &args) == ERROR)
         goto error;
 
+    if (parse_config("config") == ERROR)
+        goto error;
+
     /* On failure will simply exit soooo :)
     */
     if (init_server(args.port, args.cert, args.key) == ERROR)
@@ -163,10 +167,11 @@ int main(int argc, char **argv)
      args.nb_clients, args.nb_teams) == ERROR)
         goto error;
 
+    parse_free_config();
+
     /* if server closes us something weird could happen */
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, signal_handler);
-
     main_loop();
     printf("Exiting...\n");
 

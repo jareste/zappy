@@ -11,6 +11,23 @@ typedef enum
     WEST
 } direction;
 
+typedef enum
+{
+    AVANCE = 0,
+    DROITE,
+    GAUCHE,
+    VOIR,
+    INVENTAIRE,
+    PREND,
+    POSE,
+    EXPULSE,
+    BROADCAST,
+    INCANTATION,
+    FORK,
+    CONNECT_NBR,
+    MAX_COMMANDS
+} command_type;
+
 typedef struct
 {
     int x;
@@ -27,6 +44,27 @@ typedef struct
     int phiras;
     int thystame;
 } inventory;
+
+typedef struct
+{
+    double  d_nourriture;
+    double  d_linemate;
+    double  d_deraumere;
+    double  d_sibur;
+    double  d_mendiane;
+    double  d_phiras;
+    double  d_thystame;
+    int     period;
+    int     next_idx;
+} spawn_ctx;
+
+typedef int (*command_prototype)(void* p, void* arg);
+
+typedef struct 
+{
+    command_prototype prototype;
+    int delay;
+} command;
 
 typedef struct player_s
 {
