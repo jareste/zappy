@@ -480,13 +480,13 @@ int server_select(int sel_timeout)
     return SUCCESS;
 }
 
-void init_server(int port, char* cert, char* key)
+int init_server(int port, char* cert, char* key)
 {
     m_sock_server = init_ssl_al(cert, key, port);
     if (m_sock_server == ERROR)
     {
         fprintf(stderr, "Failed to initialize SSL\n");
-        exit(EXIT_FAILURE);
+        return ERROR;
     }
 
     set_server_socket(m_sock_server);
@@ -494,6 +494,8 @@ void init_server(int port, char* cert, char* key)
     FD_ZERO(&m_read_fds);
     printf("Server socket initialized: fd=%d\n", m_sock_server);
     FD_SET(m_sock_server, &m_read_fds);
+
+    return SUCCESS;
 }
 
 void cleanup_server()

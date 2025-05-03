@@ -523,8 +523,6 @@ int m_command_voir(void* _p, void* _arg)
     cJSON* vision;
     cJSON* tile_arr;
 
-    (void)_arg;
-
     p = (player*)_p;
 
     lvl = p->level;
@@ -605,6 +603,8 @@ int m_command_voir(void* _p, void* _arg)
     /* DEBUG_END */
 
     cJSON_Delete(root);
+    if (_arg)
+        free(_arg);
 
     return SUCCESS;
 }
@@ -773,14 +773,13 @@ static int m_command_prend(void* _p, void* _arg)
     }
 
     if (type == UNKNOWN)
-        return server_create_response_to_command(p->id, "prend", "Unknown type.", "ko");
+        ret =  server_create_response_to_command(p->id, "prend", "Unknown type.", "ko");
+    else if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, -1, type) == ERROR)
+        ret = server_create_response_to_command(p->id, "prend", arg, "ko");
+    else
+        ret = server_create_response_to_command(p->id, "prend", arg, "ok");
 
-    if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, -1, type) == ERROR)
-        return server_create_response_to_command(p->id, "prend", arg, "ko");
-
-    ret = server_create_response_to_command(p->id, "prend", arg, "ok");
-
-    free(_arg);
+    free(arg);
 
     return ret;
 }
@@ -809,14 +808,13 @@ static int m_command_pose(void* _p, void* _arg)
     }
 
     if (type == UNKNOWN)
-        return server_create_response_to_command(p->id, "pose", "Unknown type.", "ko");
+        ret = server_create_response_to_command(p->id, "pose", "Unknown type.", "ko");
+    else if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, 1, type) == ERROR)
+        ret = server_create_response_to_command(p->id, "pose", arg, "ko");
+    else
+        ret = server_create_response_to_command(p->id, "pose", arg, "ok");
 
-    if (m_helper_items_to_tiles(MAP(p->pos.x, p->pos.y), p, 1, type) == ERROR)
-        return server_create_response_to_command(p->id, "pose", arg, "ko");
-
-    ret = server_create_response_to_command(p->id, "pose", arg, "ok");
-
-    free(_arg);
+    free(arg);
 
     return ret;
 }
@@ -837,7 +835,6 @@ static int m_command_expulse(void* _p, void* _arg)
                    /* N    E    S    W */
     };
 
-    (void)_arg;
     p = (player*)_p;
     t = MAP(p->pos.x, p->pos.y);
     if (t->players == NULL)
@@ -865,15 +862,20 @@ static int m_command_expulse(void* _p, void* _arg)
         server_create_response_to_command(it->id, "deplacement", NULL, (char*)dir_string);
     }
 
+    if (_arg)
+        free(_arg);
+
     return server_create_response_to_command(p->id, "expulse", NULL, "ok");
 }
 
 static int m_command_broadcast(void* _p, void* _arg)
 {
     player* p;
-    (void)_arg;
 
     p = (player*)_p;
+
+    if (_arg)
+        free(_arg);
 
     return server_create_response_to_command(p->id, "broadcast", NULL, "ok");
 }
@@ -881,9 +883,11 @@ static int m_command_broadcast(void* _p, void* _arg)
 static int m_command_incantation(void* _p, void* _arg)
 {
     player* p;
-    (void)_arg;
 
     p = (player*)_p;
+
+    if (_arg)
+        free(_arg);
 
     return server_create_response_to_command(p->id, "incantation", NULL, "ok");
 }
@@ -891,9 +895,11 @@ static int m_command_incantation(void* _p, void* _arg)
 static int m_command_fork(void* _p, void* _arg)
 {
     player* p;
-    (void)_arg;
 
     p = (player*)_p;
+
+    if (_arg)
+        free(_arg);
 
     return server_create_response_to_command(p->id, "fork", NULL, "ok");
 }
@@ -902,20 +908,22 @@ static int m_command_connect_nbr(void* _p, void* _arg)
 {
     player* p;
     char number[10];
-    
-    (void)_arg;
 
     p = (player*)_p;
     snprintf(number, sizeof(number),\
      "%d", m_server.teams[p->team_id].max_players - m_server.teams[p->team_id].current_players);
+
+    if (_arg)
+        free(_arg);
 
     return server_create_response_to_command(p->id, "connect_nbr", number,  NULL);
 }
 
 static int m_command_droite(void* _p, void* _arg)
 {
-    player *p;
-    char   *arg;
+    player* p;
+    char*   arg;
+    int     ret;
 
     p = (player*)_p;
     arg = (char*)_arg;
@@ -935,13 +943,19 @@ static int m_command_droite(void* _p, void* _arg)
             break;
     }
 
-    return server_create_response_to_command(p->id, "droite", arg, "ok");
+    ret = server_create_response_to_command(p->id, "droite", arg, "ok");
+
+    if (_arg)
+        free(_arg);
+
+    return ret;
 }
 
 static int m_command_gauche(void* _p, void* _arg)
 {
-    player *p;
-    char   *arg;
+    player* p;
+    char*   arg;
+    int     ret;
 
     p = (player*)_p;
     arg = (char*)_arg;
@@ -961,7 +975,12 @@ static int m_command_gauche(void* _p, void* _arg)
             break;
     }
 
-    return server_create_response_to_command(p->id, "gauche", arg, "ok");
+    ret = server_create_response_to_command(p->id, "gauche", arg, "ok");
+
+    if (_arg)
+        free(_arg);
+
+    return ret;
 }
 
 static int m_command_avance(void* _p, void* _arg)
@@ -970,6 +989,7 @@ static int m_command_avance(void* _p, void* _arg)
     char* arg;
     int new_x;
     int new_y;
+    int ret;
 
     p = (player*)_p;
     arg = (char*)_arg;
@@ -997,7 +1017,12 @@ static int m_command_avance(void* _p, void* _arg)
 
     m_game_move_player(p, new_x, new_y);
  
-    return server_create_response_to_command(p->id, "avance", arg, "ok");
+    ret = server_create_response_to_command(p->id, "avance", arg, "ok");
+
+    if (_arg)
+        free(_arg);
+
+    return ret;
 }
 
 static void m_game_print_players_on_tile(tile *t)
@@ -1354,11 +1379,17 @@ int game_init_map(int width, int height)
 void game_clean()
 {
     int i;
+    int j;
 
     for (i = 0; i < m_server.client_count; i++)
     {
         if (m_server.clients[i])
         {
+            for (j = 0; j < MAX_EVENTS; j++)
+            {
+                if (m_server.clients[i]->event_buffer.events[j].arg)
+                    free(m_server.clients[i]->event_buffer.events[j].arg);
+            }
             free(m_server.clients[i]->player);
             free(m_server.clients[i]);
         }

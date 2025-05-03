@@ -318,7 +318,7 @@ int ws_send(int fd, const void *buf, size_t len, int flags)
     return ret;
 }
 
-static int init_server(int port)
+static int _init_server(int port)
 {
     struct sockaddr_in addr = {0};
     int sockfd;
@@ -384,7 +384,7 @@ int init_ssl_al(char* cert, char* key, int port)
     */
     ssl_table_init();
 
-    server_sock = init_server(port);
+    server_sock = _init_server(port);
     if (server_sock == ERROR)
     {
         fprintf(stderr, "Failed to initialize server socket\n");

@@ -120,7 +120,8 @@ int main(int argc, char **argv)
     // args.height = 10000;
     args.height = 10;
     args.nb_clients = rand() % 100 + 10;
-    args.nb_teams = rand() % 14 + 1;
+    // args.nb_teams = rand() % 14 + 1;
+    args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
     args.time_unit = 800;
     printf("Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
@@ -151,11 +152,15 @@ int main(int argc, char **argv)
 
     /* On failure will simply exit soooo :)
     */
-    init_server(args.port, args.cert, args.key);
+    if (init_server(args.port, args.cert, args.key) == ERROR)
+        goto error;
 
-    time_api_init_local(args.time_unit);
+    if (time_api_init_local(args.time_unit) == ERROR)
+        goto error;
 
-    game_init(args.width, args.height, args.teams, args.nb_clients, args.nb_teams);
+    if (game_init(args.width, args.height, args.teams,\
+     args.nb_clients, args.nb_teams) == ERROR)
+        goto error;
 
     /* if server closes us something weird could happen */
     signal(SIGPIPE, SIG_IGN);
@@ -165,4 +170,11 @@ int main(int argc, char **argv)
     printf("Exiting...\n");
 
     return 0;
+
+error:
+    game_clean();
+    time_api_free(NULL);
+    cleanup_server();
+    cleanup_ssl_al();
+    return EXIT_FAILURE;
 }

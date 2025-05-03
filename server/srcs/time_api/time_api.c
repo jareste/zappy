@@ -29,9 +29,15 @@ time_api *time_api_init(int t)
     return api;
 }
 
-void time_api_init_local(int t)
+int time_api_init_local(int t)
 {
     m_time = time_api_init(t);
+    if (!m_time)
+    {
+        fprintf(stderr, "Failed to initialize time API.\n");
+        return ERROR;
+    }
+    return SUCCESS;
 }
 
 void time_api_free(time_api *api)

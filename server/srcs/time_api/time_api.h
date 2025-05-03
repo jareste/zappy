@@ -23,7 +23,7 @@ time_api *time_api_get_local();
 /* Initializes the local time_api with the time divider 't'.
  * This function should be called once at the start of the program.
  */
-void time_api_init_local(int t);
+int time_api_init_local(int t);
 
 /* Returns the current game time units based on the elapsed real time. */
 int time_get_current_time_units(time_api *api);
