@@ -88,9 +88,11 @@ public class Player {
                 break;
         }
 
-        addLife(-Command.timeUnits(cmd));
+        // addLife(-Command.timeUnits(cmd));
+        addLife(-CommandType.fromName(cmd).getTimeUnits());
         
-        if (!cmd.equals("voir")) {
+        if (!cmd.equals("voir") && cmdManager.getPendingResponses() == 0) {
+            System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves RANDOM...");
             List<Command> nextMoves = ai.decideNextMovesRandom();
             for (Command c : nextMoves) {
                 cmdManager.addCommand(c);

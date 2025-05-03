@@ -7,8 +7,8 @@ import java.util.EnumMap;
 public class ElevationRules {
 
     public static class Rule {
-        public final int players;
-        public final Map<Resource, Integer> stones;
+        public int players;
+        public Map<Resource, Integer> stones = new EnumMap<>(Resource.class);
 
         public Rule(int players, Map<Resource, Integer> stones) {
             this.players = players;

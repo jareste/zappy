@@ -96,8 +96,8 @@ public class CommandManager {
             this.player.setGameState(x, y, ai);
         }
         // send voir command instead:
-        sendCommand(new Command("voir"));
-        // sendCommand(new Command("avance"));
+        sendCommand(new Command(CommandType.VOIR));
+        // sendCommand(new Command(CommandType.AVANCE));
     }
 
     private void handleResponseMsg(JsonObject jsonResponse) {
@@ -152,12 +152,13 @@ public class CommandManager {
     public void addCommand(Command command) {
         commandQueue.add(command);
         // if (pendingResponses == 0) {
-        //     sendCommand(command.name + " " + command.argument);
+        //     sendCommand(command);
         //     pendingResponses++;
         // }
     }
 
     private void sendCommand(Command command) {
+        System.out.println("[CLIENT " + this.id + "] " + "Sending command: " + command);
         String cmdStr = createCommandJsonMessage(command);
         sendMsg(cmdStr);
         pendingResponses++;
@@ -175,6 +176,12 @@ public class CommandManager {
         }
 
         return jsonMessage.toString();
+    }
+
+    /********** GETTERS **********/
+
+    public int getPendingResponses() {
+        return pendingResponses;
     }
 
     /********** UTILS **********/

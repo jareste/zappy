@@ -3,56 +3,41 @@ package com.example;
 import java.util.Random;
 
 public class Command {
-    public String name;
+    public CommandType type;
     public String argument;
     private static final Random random = new Random(); // Define the Random instance
 
-    public Command(String name) {
-        this.name = name;
+    public Command(CommandType type) {
+        this.type = type;
         this.argument = "";
-        if (name.equals("prend") || name.equals("pose")) {
-            String[] possibleArgs = {"nourriture", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"};
-            String randomCommand = possibleArgs[random.nextInt(possibleArgs.length)];
-            this.argument = randomCommand;
-            System.out.println("Random argument for " + name + ": " + this.argument);
+
+        if (type == CommandType.PREND || type == CommandType.POSE) {
+            Resource[] possibleArgs = Resource.values(); // reuse your enum!
+            Resource randomResource = possibleArgs[random.nextInt(possibleArgs.length)];
+            this.argument = randomResource.toString();
+            System.out.println("Random argument for " + type + ": " + this.argument);
         }
     }
 
-    public Command(String name, String argument) {
-        this.name = name;
+    public Command(CommandType type, String argument) {
+        this.type = type;
         this.argument = argument;
     }
 
-    public static int timeUnits(String cmd) {
-        switch (cmd) {
-            case "avance":
-            case "droite":
-            case "gauche":
-            case "voir":
-                return 7;
-            case "inventaire":
-                return 1;
-            case "prend":
-            case "pose":
-            case "expulse":
-            case "broadcast":
-                return 7;
-            case "incantation":
-                return 300;
-            case "fork":
-                return 42;
-            case "connect_nbr":
-                return 0;
-            default:
-                return 0; // Invalid command
-        }
+    public int timeUnits() {
+        return type.getTimeUnits();
     }
 
     public String getName() {
-        return name;
+        return type.getName();
     }
 
     public String getArgument() {
         return argument;
+    }
+
+    @Override
+    public String toString() {
+        return argument.isEmpty() ? type.getName() : type.getName() + " " + argument;
     }
 }

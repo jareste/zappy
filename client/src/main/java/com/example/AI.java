@@ -23,7 +23,6 @@ public class AI {
         List<Command> commands = new ArrayList<>();
         if (player.getLife() < 300) {
             // moveToAndTake("nourriture");
-            // return;
         }
 
         // set priority ( nourriture, sibur, phiras .. ?)
@@ -36,13 +35,14 @@ public class AI {
         List<Command> commands = new ArrayList<>();
         int tileIdx = findItemInView(viewData, "nourriture");
         if (tileIdx != -1) {
-            List<String> moves = getMovesToTile(tileIdx);
-            for (String move : moves) {
+            List<CommandType> moves = getMovesToTile(tileIdx);
+            System.out.println("MOVES to nourriture: " + moves);
+            for (CommandType move : moves) {
                 commands.add(new Command(move));
             }
-            commands.add(new Command("prend", Resource.NOURRITURE.getName()));
+            commands.add(new Command(CommandType.PREND, Resource.NOURRITURE.getName()));
         } else {
-            commands.add(new Command("avance"));
+            commands.add(new Command(CommandType.AVANCE));
         }
         return commands;
     }
@@ -51,9 +51,10 @@ public class AI {
         List<Command> commands = new ArrayList<>();
         Random random = new Random();
     
-        String[] possibleCommands = {"avance", "gauche", "droite", "connect_nbr", "voir", "inventaire", "prend", "pose", "broadcast", "expulse"};
+        CommandType[] possibleCommands = {CommandType.AVANCE, CommandType.GAUCHE, CommandType.DROITE, CommandType.VOIR, CommandType.INVENTAIRE, CommandType.PREND, CommandType.POSE};
+        // CommandType[] possibleCommands = CommandType.values();
     
-        String randomCommand = possibleCommands[random.nextInt(possibleCommands.length)];
+        CommandType randomCommand = possibleCommands[random.nextInt(possibleCommands.length)];
         commands.add(new Command(randomCommand));
     
         return commands;
@@ -78,8 +79,8 @@ public class AI {
     /********** MOVES **********/
 
     // tileIdx in the terms of current view from findItemInView()
-    public List<String> getMovesToTile(int tileIdx) {
-        List<String> moves = new ArrayList<>();
+    public List<CommandType> getMovesToTile(int tileIdx) {
+        List<CommandType> moves = new ArrayList<>();
 
         if (tileIdx <= 0)
             return moves;
@@ -94,15 +95,15 @@ public class AI {
         int center = leftIdx + level;
         int offset = tileIdx - center; // <0 => left, >0 => right
         for (int i = 0; i < level; i++) {
-            moves.add("avance");
+            moves.add(CommandType.AVANCE);
         }
         if (offset < 0) {
-            moves.add("gauche");
+            moves.add(CommandType.GAUCHE);
         } else if (offset > 0) {
-            moves.add("droite");
+            moves.add(CommandType.DROITE);
         }
         for (int i = 0; i < Math.abs(offset); i++) {
-            moves.add("avance");
+            moves.add(CommandType.AVANCE);
         }
 
         return moves;
