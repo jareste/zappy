@@ -127,6 +127,7 @@ public class Main {
                     latch.await();
                     // System.out.println("Client " + clientId + " finished.");
                 } catch (InterruptedException e) {
+                    System.out.println("[CLIENT " + clientId + "] " + "Interrupted while waiting for latch.");
                     e.printStackTrace();
                 }
             }).start();

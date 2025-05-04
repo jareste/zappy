@@ -3,15 +3,17 @@ package com.example;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.EnumSet;
+import java.util.Map;
 
 public class AI {
     // private String teamName;
     private final Player player;
     private World world;
-
-    // public AI(String teamName) {
-    //     this.teamName = teamName;
-    // }
+    private Set<Resource> targets = EnumSet.noneOf(Resource.class);
+    private List<List<String>> curView = new ArrayList<>();
+    private int debugLevel = 1;
 
     public AI(Player player) {
         this.player = player;
@@ -21,30 +23,44 @@ public class AI {
 
     public List<Command> decideNextMoves() {
         List<Command> commands = new ArrayList<>();
-        if (player.getLife() < 300) {
-            // moveToAndTake("nourriture");
-        }
-
-        // set priority ( nourriture, sibur, phiras .. ?)
-
-        // if (needsMoreOf(target)) -> moveToAndTake(target);
+        addRandomMove(commands);
         return commands;
     }
 
     public List<Command> decideNextMovesViewBased(List<List<String>> viewData) {
-        List<Command> commands = new ArrayList<>();
-        int tileIdx = findItemInView(viewData, "nourriture");
-        if (tileIdx != -1) {
-            List<CommandType> moves = getMovesToTile(tileIdx);
-            System.out.println("MOVES to nourriture: " + moves);
-            for (CommandType move : moves) {
-                commands.add(new Command(move));
-            }
-            commands.add(new Command(CommandType.PREND, Resource.NOURRITURE.getName()));
-        } else {
-            commands.add(new Command(CommandType.AVANCE));
+        this.curView = viewData;
+        // List<Command> commands = new ArrayList<>();
+        setTargets();
+
+        // int tileIdx = findItemInView(Resource.NOURRITURE);
+        // if (tileIdx != -1) {
+        //     List<CommandType> moves = getMovesToTile(tileIdx);
+        //     System.out.println("MOVES to nourriture: " + moves);
+        //     for (CommandType move : moves) {
+        //         commands.add(new Command(move));
+        //     }
+        //     commands.add(new Command(CommandType.PREND, Resource.NOURRITURE.getName()));
+        // } else {
+        //     commands.add(new Command(CommandType.AVANCE));
+        // }
+
+        // return decideNextMovesRandom();
+
+        if (player.getLife() < 1500) {
+            System.out.println("[Client "+ player.getId() + "] I AM GOING FOR FOOD");
+            return searchForFood();
         }
-        return commands;
+        if (!readyToElevate()) {
+            System.out.println("[Client "+ player.getId() + "] I AM GOING FOR TARGET STONE");
+            return searchForTarget();
+        }
+        // player.setLevel(player.getLevel() + 1);
+        debugLevel++;
+        System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + debugLevel);
+        return checkInventaire();
+        
+
+        // return commands();
     }
 
     public List<Command> decideNextMovesRandom() {
@@ -60,12 +76,83 @@ public class AI {
         return commands;
     }
 
+    /********** ELEVATION **********/
+
+    private boolean readyToElevate() {
+        if (targets.isEmpty()) {
+            return true;
+        }
+        return false;
+    }
+
+    private List<Command> searchForTarget() {
+        List<Command> commands = new ArrayList<>();
+
+        // for (Resource target : targets) {
+        //     int tileIdx = findItemInView(curView, target.getName());
+        //     if (tileIdx != -1) {
+        //         addMovesToTile(tileIdx, target, commands);
+        //         return commands;
+        //     }
+        // }
+        List<Integer> sortedIndices = getViewIndicesSortedByDistance(player.getLevel());
+        for (int tileIdx : sortedIndices) {
+            for (Resource target : targets) {
+                if (curView.get(tileIdx).contains(target.getName())) {
+                    addMovesToTile(tileIdx, target, commands);
+                    return commands;
+                }
+            }
+        }
+
+        addRandomMove(commands);
+        return commands;
+    }
+
+    private List<Command> checkInventaire() {
+        List<Command> commands = new ArrayList<>();
+        commands.add(new Command(CommandType.INVENTAIRE));
+        return commands;
+    }
+
+    private void setTargets() {
+        int level = debugLevel; //player.getLevel();
+        ElevationRules.Rule rule = ElevationRules.getRule(level);
+        Map<Resource, Integer> resourcesNeeded = rule.getResources();
+        // Set<Resource> targets = new EnumSet<>();
+        targets.clear();
+
+        for (Map.Entry<Resource, Integer> entry : resourcesNeeded.entrySet()) {
+            Resource resource = entry.getKey();
+            int requiredAmount = entry.getValue();
+            int currentAmount = player.getInventoryCount(resource);
+            if (currentAmount < requiredAmount) {
+                targets.add(resource); // add to targets
+            }
+        }
+        // return targets;
+    }
+
     /********** FIND **********/
 
-    public int findItemInView(List<List<String>> viewData, String item) {
-        for (int i = 0; i < viewData.size(); i++) {
-            List<String> tileContents = viewData.get(i);
-            if (tileContents.contains(item)) {
+    private List<Command> searchForFood() {
+        List<Command> commands = new ArrayList<>();
+
+        int tileIdx = findItemInView(Resource.NOURRITURE);
+        if (tileIdx != -1) {
+            addMovesToTile(tileIdx, Resource.NOURRITURE, commands);
+        } else {
+            addRandomMove(commands);
+        }
+        return commands;
+    }
+
+    public int findItemInView(Resource item) {
+        List<Integer> sortedIndices = getViewIndicesSortedByDistance(player.getLevel());
+
+        for (int i : sortedIndices) {
+            List<String> tileContents = curView.get(i);
+            if (tileContents.contains(item.getName())) {
                 return i;
             }
         }
@@ -77,6 +164,12 @@ public class AI {
     }
 
     /********** MOVES **********/
+
+    private CommandType getRandomMove() {
+        Random random = new Random();
+        CommandType[] possibleMoves = {CommandType.AVANCE, CommandType.GAUCHE, CommandType.DROITE};
+        return possibleMoves[random.nextInt(possibleMoves.length)];
+    }
 
     // tileIdx in the terms of current view from findItemInView()
     public List<CommandType> getMovesToTile(int tileIdx) {
@@ -109,6 +202,20 @@ public class AI {
         return moves;
     }
 
+    private void addMovesToTile(int tileIdx, Resource target, List<Command> commands) {
+        List<CommandType> moves = getMovesToTile(tileIdx);
+        System.out.println("MOVES to " + target.getName() + ": " + moves);
+        for (CommandType move : moves) {
+            commands.add(new Command(move));
+        }
+        commands.add(new Command(CommandType.PREND, target.getName()));
+    }
+
+    private void addRandomMove(List<Command> commands) {
+        commands.add(new Command(getRandomMove()));
+        commands.add(new Command(CommandType.VOIR));
+    }
+
     /********** UTILS **********/
 
     // for level=1 this will be:
@@ -135,6 +242,29 @@ public class AI {
             case 3: return new int[]{dy, -dx};        // < WEST
             default: throw new IllegalArgumentException("Invalid direction");
         }
+    }
+
+    public static List<Integer> getViewIndicesSortedByDistance(int level) {
+        List<Integer> result = new ArrayList<>();
+        int index = 0;
+        result.add(index++); // always start with tile 0 (your current tile)
+
+        for (int l = 1; l <= level; l++) {
+            int rowSize = 2 * l + 1;
+            int rowStart = index;
+            int center = rowStart + rowSize / 2;
+
+            result.add(center);
+
+            for (int offset = 1; offset <= rowSize / 2; offset++) {
+                result.add(center - offset); // left
+                result.add(center + offset); // right
+            }
+
+            index += rowSize; // move to next row for next level
+        }
+
+        return result;
     }
 
     /********** SETTERS **********/

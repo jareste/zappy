@@ -15,7 +15,7 @@ public class WebSocketClient {
     private int port;
     private String hostname;
     private int id;
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    // private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Session session;
     private CommandManager cmdManager;
     private CountDownLatch latch;
@@ -94,11 +94,20 @@ public class WebSocketClient {
     }
 
     @OnClose
-    public void onClose() {
-        System.out.println("[CLIENT " + this.id + "] " + "Connection closed");
-        scheduler.shutdown();  // Clean up the scheduler when the connection is closed
+    public void onClose(Session session, CloseReason reason) {
+        this.cmdManager.setDead(true);
+        System.out.println("[CLIENT " + this.id + "] " + "Connection closed: " + reason.getReasonPhrase() + " (" + reason.getCloseCode() + ")" + " client is dead? " + this.cmdManager.isDead());
+        // scheduler.shutdown();  // Clean up the scheduler when the connection is closed
         latch.countDown(); // Unblock main thread
     }
+
+    @OnError
+    public void onError(Session session, Throwable throwable) {
+        this.cmdManager.setDead(true);
+        System.err.println("WebSocket error: " + throwable.getMessage());
+        throwable.printStackTrace();
+    }
+
 
     public void close() {
         try {
@@ -112,13 +121,22 @@ public class WebSocketClient {
     }
 
     private void send(String msg) {
-        if (session == null || !session.isOpen()) {
-            // System.out.println("[CLIENT " + this.id + "] " + "Tried to send after closed. Skipping.");
+        // System.out.println("[CLIENT " + this.id + "] " + " CLIENT IS DEAD? " + this.cmdManager.isDead());
+        if (session == null || !session.isOpen() || this.cmdManager.isDead()) {
+            System.out.println("[CLIENT " + this.id + "] " + "Tried to send after closed. Skipping.");
             return;
         }
         try {
-            this.session.getBasicRemote().sendText(msg);
-        } catch (IOException e) {
+            this.session.getAsyncRemote().sendText(msg);
+        } catch (RejectedExecutionException e) {
+            System.err.println("Send failed: thread pool shut down (session likely dead)");
+            e.printStackTrace();
+            // Optionally mark session as dead or reconnect here
+        } catch (RuntimeException e) {
+            System.err.println("IOException during send");
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Unexpected error during send");
             e.printStackTrace();
         }
     }
