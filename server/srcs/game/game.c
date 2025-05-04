@@ -80,6 +80,7 @@ static server m_server = {0};
 spawn_ctx m_ctx;
 int LIFE_UNIT = 0;
 int START_LIFE_UNITS = 0;
+int m_incantation_time = 0;
 
 const command_message command_messages[MAX_COMMANDS] =
 {
@@ -950,7 +951,7 @@ static int m_command_incantation(void* _p, void* _arg)
     tile* t;
     level_requisites* reqs;
     client* c;
-    char level[2];
+    char level[12];
 
     (void)_arg;
 
@@ -981,7 +982,7 @@ static int m_command_incantation(void* _p, void* _arg)
 
     snprintf(level, sizeof(level), "%d", p->level);
 
-    time_api_schedule_client_event_front(NULL, &c->event_buffer, 300, m_command_real_incantation, p, strdup(level));
+    time_api_schedule_client_event_front(NULL, &c->event_buffer, m_incantation_time, m_command_real_incantation, p, strdup(level));
 
     return server_create_response_to_command(p->id, "incantation", NULL, "in_progress");
 }
@@ -1509,6 +1510,11 @@ int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
     int ret;
 
     parse_set_commands_delay(command_prototypes);
+
+    /* Incantation it's done in two steps for validating it can be done before starting.
+    */
+    m_incantation_time = command_prototypes[INCANTATION].delay;
+    command_prototypes[INCANTATION].delay = 0;
 
     m_server.map_x = width;
     m_server.map_y = height;

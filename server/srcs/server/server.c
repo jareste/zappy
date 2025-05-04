@@ -3,6 +3,7 @@
 #include <sys/select.h>
 #include <ft_malloc.h>
 #include <error_codes.h>
+#include <ft_list.h>
 #include "ssl_table.h"
 #include "ssl_al.h"
 #include "../game/game.h"
@@ -31,6 +32,12 @@ typedef struct
     client_message_type type;
     const char *name;
 } client_message;
+
+typedef struct
+{
+    list_item_t item;
+    int fd;
+} client_list_t;
 
 typedef int (*client_message_handler)(int fd, cJSON *root);
 typedef int (*login_handler)(int fd, cJSON *root);
@@ -74,6 +81,7 @@ static login_handler m_login_handlers[MAX_LOGIN_ROLES] =
 static int m_sock_server = -1;
 static int m_max_fd = -1;
 static fd_set m_read_fds;
+static client_list_t* m_clients = NULL;
 
 /* Definitions */
 static client_message_type m_get_message_type(const char *str)
@@ -417,12 +425,32 @@ static int m_handle_client_event(int fd)
     return SUCCESS;
 }
 
+static void m_remove_clients()
+{
+    client_list_t* client;
+    client_list_t* next_client;
+
+    client = FT_LIST_GET_FIRST(&m_clients);
+    while (client)
+    {
+        next_client = FT_LIST_GET_NEXT(&m_clients, client);
+        REMOVE_CLIENT(client->fd);
+        free(client);
+        client = next_client;
+    }
+    m_clients = NULL;
+}
+
 int server_remove_client(int fd)
 {
+    client_list_t* client;
+
     if (fd < 0 || fd > m_max_fd)
         return ERROR;
 
-    REMOVE_CLIENT(fd);
+    client = malloc(sizeof(client_list_t));
+    client->fd = fd;
+    FT_LIST_ADD_LAST(&m_clients, client);
 
     return SUCCESS;
 }
@@ -477,6 +505,7 @@ int server_select(int sel_timeout)
         }
     }
 
+    m_remove_clients();
     return SUCCESS;
 }
 
