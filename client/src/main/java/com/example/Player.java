@@ -171,6 +171,7 @@ public class Player {
             Resource resource = Resource.fromString(item);
             int count = entry.getValue().getAsInt();
             updateInventory(resource, count);
+            this.ai.setInventaireChecked(true);
         }
         // for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
         //     System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());

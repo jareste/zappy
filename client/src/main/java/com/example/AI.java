@@ -6,6 +6,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.EnumSet;
 import java.util.Map;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 public class AI {
     // private String teamName;
@@ -14,6 +18,7 @@ public class AI {
     private Set<Resource> targets = EnumSet.noneOf(Resource.class);
     private List<List<String>> curView = new ArrayList<>();
     private int debugLevel = 1;
+    private boolean inventaireChecked = false;
 
     public AI(Player player) {
         this.player = player;
@@ -50,9 +55,15 @@ public class AI {
             System.out.println("[Client "+ player.getId() + "] I AM GOING FOR FOOD");
             return searchForFood();
         }
+        if (inventaireChecked && !readyToElevate()) {
+            setInventaireChecked(false);
+        }
         if (!readyToElevate()) {
             System.out.println("[Client "+ player.getId() + "] I AM GOING FOR TARGET STONE");
             return searchForTarget();
+        } else if (!inventaireChecked) {
+            System.out.println("[Client "+ player.getId() + "] I AM GOING TO ELEVATE, CHECKING INVENTAIRE");
+            return checkInventaire();
         }
         // player.setLevel(player.getLevel() + 1);
         debugLevel++;
@@ -83,6 +94,12 @@ public class AI {
             return true;
         }
         return false;
+    }
+
+    private List<Command> doElevation() {
+        List<Command> commands = new ArrayList<>();
+        // commands.add(new Command(CommandType.INCANTATION));
+        return commands;
     }
 
     private List<Command> searchForTarget() {
@@ -267,9 +284,23 @@ public class AI {
         return result;
     }
 
+    private String createBroadcastMessage(String event, String status, int level, int playersNeeded) {
+        JsonObject msg = new JsonObject();
+        msg.addProperty("event", event);
+        msg.addProperty("status", status);
+        msg.addProperty("level", level);
+        msg.addProperty("players_needed", playersNeeded);
+
+        return msg.toString();
+    }
+
     /********** SETTERS **********/
 
     public void setWorld(World world) {
         this.world = world;
+    }
+
+    public void setInventaireChecked(boolean inventaireChecked) {
+        this.inventaireChecked = inventaireChecked;
     }
 }
