@@ -20,6 +20,7 @@ public class Player {
     private AI ai;
     private final AtomicInteger level;
     private final AtomicInteger life;
+    private final AtomicInteger nour;
     private World world;
     private Position position;
     private final Map<Resource, Integer> inventory;
@@ -31,6 +32,7 @@ public class Player {
         this.id = id;
         this.inventory = new ConcurrentHashMap<>();
         this.life = new AtomicInteger(1260); // time units
+        this.nour = new AtomicInteger(0);
     }
 
     public void handleResponse(JsonObject msg) {
@@ -82,7 +84,8 @@ public class Player {
                 break;
             case "-":
                 handleDieResponse(msg);
-                break;
+                return;
+                // break;
             default:
                 System.out.println("[CLIENT " + this.id + "] " + "Not handled (yet) command in response message.");
                 break;
@@ -91,12 +94,15 @@ public class Player {
         // addLife(-Command.timeUnits(cmd));
         addLife(-CommandType.fromName(cmd).getTimeUnits());
         
+        System.out.println("[CLIENT " + this.id + "] " + "IN PLAYER Pending responses: " + cmdManager.getPendingResponses());
         if (!cmd.equals("voir") && cmdManager.getPendingResponses() == 0) {
-            System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves RANDOM...");
-            List<Command> nextMoves = ai.decideNextMovesRandom();
+            System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves ...");
+            List<Command> nextMoves = ai.decideNextMoves();
             for (Command c : nextMoves) {
                 cmdManager.addCommand(c);
             }
+        } else {
+            System.out.println("[CLIENT " + this.id + "] " + "Not deciding next moves, waiting responses ...");
         }
     }
 
@@ -178,7 +184,12 @@ public class Player {
         if (status.equals("ok")) {
             Resource resource = Resource.fromString(item);
             addResource(resource);
-            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
+            if (resource == Resource.NOURRITURE) {
+                addLife(126);
+                this.nour.addAndGet(1);
+                System.out.println("[CLIENT " + this.id + "] " + "Nourritures taken: " + this.nour.get());
+            }
+            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory + " (life: " + this.life + ")");
         }
     }
 
@@ -237,7 +248,7 @@ public class Player {
         this.cmdManager = commandManager;
     }
 
-    private void setLevel(int level) {
+    public void setLevel(int level) {
         this.level.set(level);
     }
 

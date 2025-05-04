@@ -8,15 +8,19 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CommandManager {
     // private String teamName;
     private final Consumer<String> sendToServerFunction;
     private Session session;
     private int id;
-    private final Queue<Command> commandQueue = new LinkedList<>();
+    private final Queue<Command> commandQueue = new ConcurrentLinkedQueue<>();
     private final Player player;
-    private int pendingResponses = 0;
+    private final AtomicInteger pendingResponses = new AtomicInteger(0);
+    private final AtomicBoolean dead = new AtomicBoolean(false);
 
     public CommandManager(Consumer<String> sendFunction, Player player, Session session, int id) {
         this.sendToServerFunction = sendFunction;
@@ -62,7 +66,8 @@ public class CommandManager {
                 System.out.println("[CLIENT " + this.id + "] " + "Unknown message type: " + type);
         }        
 
-        while (!commandQueue.isEmpty() && pendingResponses < 10) {
+        // System.out.println("[CLIENT " + this.id + "] " + "BEFORE SENDING Pending responses: " + pendingResponses.get() + " command queue size: " + commandQueue.size());
+        while (!commandQueue.isEmpty() && pendingResponses.get() < 10) {
             Command nextCommand = commandQueue.poll();
             sendCommand(nextCommand);
         }
@@ -102,7 +107,7 @@ public class CommandManager {
 
     private void handleResponseMsg(JsonObject jsonResponse) {
         // System.out.println("Response received");
-        pendingResponses--;
+        pendingResponses.decrementAndGet();
         this.player.handleResponse(jsonResponse);
     }
 
@@ -158,10 +163,15 @@ public class CommandManager {
     }
 
     private void sendCommand(Command command) {
+        if (isDead()) {
+            System.out.println("[CLIENT " + this.id + "] " + "Client is dead, cannot send command: " + command);
+            return;
+        }
         System.out.println("[CLIENT " + this.id + "] " + "Sending command: " + command);
         String cmdStr = createCommandJsonMessage(command);
+        pendingResponses.incrementAndGet();
+        // System.out.println("[CLIENT " + this.id + "] " + "Pending responses: " + pendingResponses.get());
         sendMsg(cmdStr);
-        pendingResponses++;
     }
 
     private String createCommandJsonMessage(Command cmd) {
@@ -181,7 +191,17 @@ public class CommandManager {
     /********** GETTERS **********/
 
     public int getPendingResponses() {
-        return pendingResponses;
+        return pendingResponses.get();
+    }
+
+    public boolean isDead() {
+        return dead.get();
+    }
+
+    /********** SETTERS **********/
+
+    public void setDead(boolean value) {
+        dead.set(value);
     }
 
     /********** UTILS **********/
