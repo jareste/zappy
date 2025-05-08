@@ -28,8 +28,10 @@
     };
     #endif
 
+    typedef int (*callback_success_SSL_accept)(int);
+
     /* functions that only make sense with SSL */
-    int init_ssl_al(char* cert, char* key, int port);
+    int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb);
     int cleanup_ssl_al();
     void set_server_socket(int sock);
 

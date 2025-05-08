@@ -1,7 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-int server_select(int timeout);
+int server_select();
 int init_server(int port, char* cert, char* key);
 void cleanup_server();
 

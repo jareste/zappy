@@ -3,14 +3,14 @@ NAME = zappy
 #########
 RM = rm -rf
 CC = cc
-CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
+CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL -lpthread #-DDEBUG
 # CFLAGS = -Werror -Wextra -Wall -g -fsanitize=address -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
 LDFLAGS = -L$(OPENSSL_BUILD_DIR)/lib -lssl -lcrypto -lm
 RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
 
 #########
-FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api config_file
+FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api config_file ssl_al_workers
 
 SRC = $(addsuffix .c, $(FILES))
 
@@ -48,7 +48,7 @@ all: .gitignore create_cert
 	$(MAKE) $(NAME)
 
 $(NAME): $(OBJ) $(CJSON_LIB) Makefile
-	$(CC) $(CFLAGS) $(OBJ) $(CJSON_LIB) -lssl -lcrypto -o $(NAME) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OBJ) $(CJSON_LIB) -lssl -lcrypto -ldl -lpthread -o $(NAME) $(LDFLAGS)
 	@echo "EVERYTHING DONE  "
 #	@./.add_path.sh
 
