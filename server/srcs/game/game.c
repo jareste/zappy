@@ -1282,6 +1282,7 @@ int game_player_die(client *c)
 
     m_game_print_players_on_tile(MAP(c->player->pos.x, c->player->pos.y));
     fprintf(stderr, "Player %d has died. '%d', '%d'\n", c->socket_fd, c->player->die_time, c->player->start_time);
+    fprintf(stderr, "Actual time: %d\n", time_api_get_local()->current_time_units);
 
     fprintf(stderr, "Player inventory:\n");
     fprintf(stderr, " - nourriture: %d\n", c->player->inv.nourriture);
@@ -1376,7 +1377,6 @@ int game_kill_player(int fd)
     ret = m_game_get_client_from_fd(fd, &c);
     if (ret == ERROR)
     {
-        fprintf(stderr, "Failed to get client from fd %d\n", fd);
         return ERROR;
     }
 

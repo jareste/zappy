@@ -19,6 +19,25 @@
         close(fd); \
     } while (0)
 
+/* DEBUG */
+static struct timeval m_start_time;
+static long m_elapsed_us = 0;
+static struct timeval m_end_time;
+#define START_TIMER \
+do { \
+    gettimeofday(&m_start_time, NULL); \
+} while (0)
+
+
+#define END_TIMER \
+do { \
+    gettimeofday(&m_end_time, NULL); \
+    m_elapsed_us = (m_end_time.tv_sec - m_start_time.tv_sec) * 1000000L + \
+                      (m_end_time.tv_usec - m_start_time.tv_usec); \
+    printf("Elapsed time: %ld microseconds\n", m_elapsed_us); \
+} while (0)
+/* DEBUG_END */
+
 /* Typedefs */
 typedef enum
 {
@@ -169,28 +188,39 @@ static int m_create_json_response(int fd, char* type, char* msg, char* args)
     return SUCCESS;
 }
 
+int cb_on_accept_success(int fd)
+{
+    int ret;
+
+    FD_SET(fd, &m_read_fds);
+    if (fd > m_max_fd)
+        m_max_fd = fd;
+
+    /**/
+    START_TIMER;
+    ret = m_create_json_response(fd, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
+    if (ret == ERROR)
+    {
+        return ERROR;
+    }
+    printf("Create JSON Response Timer:\n");
+    END_TIMER;
+    return SUCCESS;
+}
+
 static int m_handle_new_client(int fd)
 {
     int new_client;
-    int ret;
 
+    START_TIMER;
     new_client = accept(fd, NULL, NULL);
     if (new_client == ERROR)
     {
         perror("accept");
         return ERROR;
     }
-
-    FD_SET(new_client, &m_read_fds);
-    if (new_client > m_max_fd)
-        m_max_fd = new_client;
-
-    /**/
-    ret = m_create_json_response(new_client, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
-    if (ret == ERROR)
-    {
-        return ERROR;
-    }
+    printf("Accepting Timer:\n");
+    END_TIMER;
 
     return SUCCESS;
 }
@@ -455,18 +485,18 @@ int server_remove_client(int fd)
     return SUCCESS;
 }
 
-int server_select(int sel_timeout)
+int server_select()
 {
     fd_set read_fds;
-    struct timeval timeout;
     int ret;
     int fd;
+    struct timeval timeout;
 
     /* Cpy the read_fds set to avoid modifying the original. */
     memcpy(&read_fds, &m_read_fds, sizeof(m_read_fds));
 
     timeout.tv_sec = 0;
-    timeout.tv_usec = sel_timeout; /* Non-blocking select at all. */
+    timeout.tv_usec = 0;
 
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
@@ -490,6 +520,7 @@ int server_select(int sel_timeout)
         }
         else
         {
+            printf("Handling client fd=%d\n", fd);
             ret = m_handle_client_event(fd);
             if (ret == ERROR)
             {
@@ -501,17 +532,20 @@ int server_select(int sel_timeout)
                  */
                 REMOVE_CLIENT(fd);
                 printf("Client fd=%d disconnected\n", fd);
+                /* We remove the client but we don't want to close the server at all..
+                */
+                ret = SUCCESS;
             }
         }
     }
 
     m_remove_clients();
-    return SUCCESS;
+    return ret;
 }
 
 int init_server(int port, char* cert, char* key)
 {
-    m_sock_server = init_ssl_al(cert, key, port);
+    m_sock_server = init_ssl_al(cert, key, port, cb_on_accept_success);
     if (m_sock_server == ERROR)
     {
         fprintf(stderr, "Failed to initialize SSL\n");

@@ -29,36 +29,54 @@ int main_loop()
 {
     int sel_ret;
     int game_ret;
-    int sel_timeout;
+    /* DEBUG */
+    int initial_time_units;
+    int _initial_time_units;
+    int final_time_units;
+    int _final_time_units;
+    int time_to_select;
+    int time_to_play;
+    /* DEBUG_END */
 #ifdef DEBUG
     struct timeval start_time;
     struct timeval end_time;
+    int i;
+    i = 0;
 #endif
 
-    int i;
-
-    i = 0;
-    sel_timeout = 0;
     while (!m_die)
     {
+        time_api_update(NULL);
+        initial_time_units = time_api_get_local()->current_time_units;
+        _initial_time_units = initial_time_units;
 #ifdef DEBUG
         gettimeofday(&start_time, NULL);
 #endif
 
-        sel_ret = server_select(sel_timeout);
+        sel_ret = server_select();
         if (sel_ret == ERROR)
         {
             fprintf(stderr, "Failed to select\n");
             break;
         }
+        time_api_update(NULL);
 
+        final_time_units = time_api_get_local()->current_time_units;
+
+        time_to_select = final_time_units - initial_time_units;
+
+        initial_time_units = time_api_get_local()->current_time_units;
         game_ret = game_play();
         if (game_ret == ERROR)
         {
             fprintf(stderr, "Failed to play\n");
             break;
         }
+        time_api_update(NULL);
 
+        final_time_units = time_api_get_local()->current_time_units;
+
+        time_to_play = final_time_units - initial_time_units;
 #ifdef DEBUG
         gettimeofday(&end_time, NULL);
         long elapsed_us = (end_time.tv_sec - start_time.tv_sec) * 1000000L + 
@@ -66,24 +84,28 @@ int main_loop()
         printf("Loop completed in: %ld microseconds\n", elapsed_us);
 #endif
 
-        if (sel_ret == 0 && game_ret == 0)
+        if ((time_to_select + time_to_play) > 2)
         {
-            /* Release some CPU time or computer slows down */
-            // sel_timeout = 100; /* 10ms */
+            fprintf(stdout, "\033[1;31mServer exhausted, might lose some events. Selected(%d) in '%d'. Played in '%d' (%d)\033[0m\n", 
+                   sel_ret, time_to_select, time_to_play, time_get_current_time_units(NULL));
         }
-        else
+
+        time_api_update(NULL);
+        _final_time_units = time_api_get_local()->current_time_units;
+        if (_final_time_units - _initial_time_units > 5)
         {
-            /* We are busy so keep going */
-            sel_timeout = 0;
+            fprintf(stderr, "\033[1;31mLoop time deviation (%d) (%d)\033[0m\n", 
+                   _final_time_units - _initial_time_units, time_get_current_time_units(NULL));
         }
-        /* DEBUG */
+
+#ifdef DEBUG
         i++;
-        // if (i % 100 == 0)
-        // {
-        //     time_api *api = time_api_get_local();
-        //     printf("Current time units: %d\n", api->current_time_units);
-        // }
-        /* END_DEBUG */
+        if (i % 100 == 0)
+        {
+            time_api *api = time_api_get_local();
+            printf("Current time units: %d\n", api->current_time_units);
+        }
+#endif
     }
 
     game_clean();

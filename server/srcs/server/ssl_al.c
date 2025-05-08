@@ -23,9 +23,31 @@
 #include <ft_malloc.h>
 #include <error_codes.h>
 #include "ssl_table.h"
+#include "ssl_al_workers.h"
 
 static SSL_CTX *m_ctx = NULL;
 static int m_sock_server = -1;
+typedef int (*callback_success_SSL_accept)(int);
+
+callback_success_SSL_accept m_callback_success_SSL_accept = NULL;
+
+/*  DEBUG */
+static struct timeval m_start_time;
+static long m_elapsed_us = 0;
+static struct timeval m_end_time;
+#define START_TIMER \
+ do { \
+     gettimeofday(&m_start_time, NULL); \
+ } while (0)
+
+#define END_TIMER \
+ do { \
+     gettimeofday(&m_end_time, NULL); \
+     m_elapsed_us = (m_end_time.tv_sec - m_start_time.tv_sec) * 1000000L + \
+                       (m_end_time.tv_usec - m_start_time.tv_usec); \
+     printf("Elapsed time: %ld microseconds\n", m_elapsed_us); \
+ } while (0)
+/*  DEBUG_END */
 
 static void base64_encode(const unsigned char *input, int len, char *output)
 {
@@ -362,7 +384,35 @@ static int stop_server()
     return SUCCESS;
 }
 
-int init_ssl_al(char* cert, char* key, int port)
+void on_handshake_done(int fd, SSL *ssl)
+{
+    char buf[4096] = {0};
+    int ret;
+
+    ret = ssl_table_add(fd, ssl);
+    if (ret == ERROR) goto error;
+
+    ret = SSL_read(ssl, buf, sizeof(buf) - 1);
+    if (ret <= 0) goto error;
+
+    websocket_handshake(ssl, buf);
+
+    m_callback_success_SSL_accept(fd);
+
+error:
+    if (ssl)
+    {
+        ERR_print_errors_fp(stderr);
+        SSL_free(ssl);
+    }
+    if (client != -1)
+    {
+        close(client);
+    }
+    return ;
+}
+
+int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb)
 {
     int server_sock;
     const SSL_METHOD *method;
@@ -390,6 +440,10 @@ int init_ssl_al(char* cert, char* key, int port)
         fprintf(stderr, "Failed to initialize server socket\n");
         return ERROR;
     }
+
+    m_callback_success_SSL_accept = cb;
+
+    init_handshake_pool(on_handshake_done, m_ctx);
 
     return server_sock;
 }
@@ -425,50 +479,28 @@ int ws_close(int fd)
 
 int ssl_al_accept_client()
 {
-    char buf[4096] = {0};
     struct sockaddr_in client_addr;
     SSL* ssl;
     socklen_t len;
     int client;
-    int ret;
 
     ssl = NULL;
     client = -1;
     if (m_sock_server == -1)
         goto error;
 
+    START_TIMER;
     len = sizeof(client_addr);
     printf("Waiting for client connection...\n");
     client = accept(m_sock_server, (struct sockaddr*)&client_addr, &len);
     if (client == -1)
         goto error;
+    END_TIMER;
 
-    printf("Client connected: %s:%d\n",
-           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-    ssl = SSL_new(m_ctx);
-    if (!ssl)
-        goto error;
-
-    if (SSL_set_fd(ssl, client) == 0)
-        goto error;
-    
-    ret = ssl_table_add(client, ssl);
-    if (ret == ERROR)
-        goto error;
-
-    if (SSL_accept(ssl) <= 0)
-        goto error;
-
-    printf("Client connected: %s:%d\n",
-           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-    SSL_read(ssl, buf, sizeof(buf) - 1);
-    printf("Got handshake request:\n%s\n", buf);
-
-    websocket_handshake(ssl, buf);
-    printf("Handshake done. Sending welcome message.\n");
-
-    // ws_send(client, "Welcome to WSS WebSocket server!", strlen("Welcome to WSS WebSocket server!"), 0);
+    START_TIMER;
+    ssl_al_worker_queue(client);
+    printf("Accept queued TIMER:\n");
+    END_TIMER;
 
     return client;
 
@@ -483,7 +515,6 @@ error:
         close(client);
     }
     return ERROR;
-
 }
 
 void set_server_socket(int sock)
