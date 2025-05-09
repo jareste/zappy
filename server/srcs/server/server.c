@@ -15,11 +15,13 @@
 #define REMOVE_CLIENT(fd) \
     do { \
         FD_CLR(fd, &m_read_fds); \
+        printf("Removing client %d\n", fd); \
         game_kill_player(fd); \
         close(fd); \
     } while (0)
 
 /* DEBUG */
+/*
 static struct timeval m_start_time;
 static long m_elapsed_us = 0;
 static struct timeval m_end_time;
@@ -36,6 +38,7 @@ do { \
                       (m_end_time.tv_usec - m_start_time.tv_usec); \
     printf("Elapsed time: %ld microseconds\n", m_elapsed_us); \
 } while (0)
+*/
 /* DEBUG_END */
 
 /* Typedefs */
@@ -197,14 +200,15 @@ int cb_on_accept_success(int fd)
         m_max_fd = fd;
 
     /**/
-    START_TIMER;
+    // START_TIMER;
     ret = m_create_json_response(fd, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
     if (ret == ERROR)
     {
+        fprintf(stderr, "Failed to create JSON response\n");
         return ERROR;
     }
-    printf("Create JSON Response Timer:\n");
-    END_TIMER;
+    // printf("Create JSON Response Timer:\n");
+    // END_TIMER;
     return SUCCESS;
 }
 
@@ -212,15 +216,15 @@ static int m_handle_new_client(int fd)
 {
     int new_client;
 
-    START_TIMER;
+    // START_TIMER;
     new_client = accept(fd, NULL, NULL);
     if (new_client == ERROR)
     {
         perror("accept");
         return ERROR;
     }
-    printf("Accepting Timer:\n");
-    END_TIMER;
+    // printf("Accepting Timer:\n");
+    // END_TIMER;
 
     return SUCCESS;
 }
@@ -492,6 +496,9 @@ int server_select()
     int fd;
     struct timeval timeout;
 
+    /* Check for any delegated handshakes */
+    ssl_al_lookup_new_clients();
+
     /* Cpy the read_fds set to avoid modifying the original. */
     memcpy(&read_fds, &m_read_fds, sizeof(m_read_fds));
 
@@ -500,7 +507,11 @@ int server_select()
 
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
+    {
+        fprintf(stderr, "Select error: (%d) (%d) \n", ret, m_max_fd);
+        perror("select");
         return ERROR;
+    }
     else if (ret == 0) /* No new data to read. */
         return 0;
 
@@ -515,7 +526,7 @@ int server_select()
             if (ret == ERROR)
             {
                 fprintf(stderr, "Failed to accept new client\n");
-                return ERROR;
+                ret = 0;
             }
         }
         else
@@ -534,7 +545,7 @@ int server_select()
                 printf("Client fd=%d disconnected\n", fd);
                 /* We remove the client but we don't want to close the server at all..
                 */
-                ret = SUCCESS;
+                ret = 0;
             }
         }
     }

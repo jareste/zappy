@@ -34,6 +34,7 @@
     int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb);
     int cleanup_ssl_al();
     void set_server_socket(int sock);
+    int ssl_al_lookup_new_clients();
 
     int ssl_al_accept_client();
     int ws_close(int fd);

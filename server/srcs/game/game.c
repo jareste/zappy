@@ -1274,7 +1274,6 @@ int game_player_die(client *c)
 
     if (c->player->inv.nourriture > 0)
     {
-        fprintf(stderr, "Player %d has eaten food\n", c->socket_fd);
         c->player->inv.nourriture--;
         c->player->die_time = c->player->die_time + LIFE_UNIT;
         return SUCCESS;

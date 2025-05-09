@@ -32,6 +32,7 @@ typedef int (*callback_success_SSL_accept)(int);
 callback_success_SSL_accept m_callback_success_SSL_accept = NULL;
 
 /*  DEBUG */
+/*
 static struct timeval m_start_time;
 static long m_elapsed_us = 0;
 static struct timeval m_end_time;
@@ -47,6 +48,7 @@ static struct timeval m_end_time;
                        (m_end_time.tv_usec - m_start_time.tv_usec); \
      printf("Elapsed time: %ld microseconds\n", m_elapsed_us); \
  } while (0)
+*/
 /*  DEBUG_END */
 
 static void base64_encode(const unsigned char *input, int len, char *output)
@@ -384,6 +386,13 @@ static int stop_server()
     return SUCCESS;
 }
 
+/* Dequeue all delegated handshakes
+*/
+int ssl_al_lookup_new_clients()
+{
+    return ssl_al_worker_dequeue_all();
+}
+
 void on_handshake_done(int fd, SSL *ssl)
 {
     char buf[4096] = {0};
@@ -398,16 +407,12 @@ void on_handshake_done(int fd, SSL *ssl)
     websocket_handshake(ssl, buf);
 
     m_callback_success_SSL_accept(fd);
+    return ;
 
 error:
-    if (ssl)
+    if (fd != -1)
     {
-        ERR_print_errors_fp(stderr);
-        SSL_free(ssl);
-    }
-    if (client != -1)
-    {
-        close(client);
+        close(fd);
     }
     return ;
 }
@@ -421,7 +426,13 @@ int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb)
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
     method = TLS_server_method();
+    
     m_ctx = SSL_CTX_new(method);
+    if (!m_ctx)
+    {
+        ERR_print_errors_fp(stderr);
+        return ERROR;
+    }
 
     if (SSL_CTX_use_certificate_file(m_ctx, cert, SSL_FILETYPE_PEM) <= 0 ||
         SSL_CTX_use_PrivateKey_file(m_ctx, key, SSL_FILETYPE_PEM) <= 0)
@@ -442,8 +453,7 @@ int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb)
     }
 
     m_callback_success_SSL_accept = cb;
-
-    init_handshake_pool(on_handshake_done, m_ctx);
+    init_handshake_pool(on_handshake_done);
 
     return server_sock;
 }
@@ -489,18 +499,20 @@ int ssl_al_accept_client()
     if (m_sock_server == -1)
         goto error;
 
-    START_TIMER;
+    // START_TIMER;
     len = sizeof(client_addr);
-    printf("Waiting for client connection...\n");
     client = accept(m_sock_server, (struct sockaddr*)&client_addr, &len);
     if (client == -1)
         goto error;
-    END_TIMER;
+    // END_TIMER;
 
-    START_TIMER;
-    ssl_al_worker_queue(client);
-    printf("Accept queued TIMER:\n");
-    END_TIMER;
+    ssl = SSL_new(m_ctx);
+    if (!ssl)
+        goto error;
+    // START_TIMER;
+    ssl_al_worker_queue(client, ssl);
+    // printf("Accept queued TIMER:\n");
+    // END_TIMER;
 
     return client;
 
