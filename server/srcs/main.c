@@ -6,6 +6,7 @@
 #include "server/ssl_al.h"
 #include "server/server.h"
 #include "game/game.h"
+#include "log/log.h"
 #include "time_api/time_api.h"
 #include "parse_arg/config_file.h"
 
@@ -29,96 +30,72 @@ int main_loop()
 {
     int sel_ret;
     int game_ret;
-#ifdef CHECK_MAIN_LOOP_EFFICIENCY
-    /* DEBUG */
     int initial_time_units;
     int _initial_time_units;
     int final_time_units;
     int _final_time_units;
     int time_to_select;
     int time_to_play;
-    /* DEBUG_END */
-#endif /* CHECK_MAIN_LOOP_EFFICIENCY */
-
-#ifdef DEBUG
     struct timeval start_time;
     struct timeval end_time;
-    int i;
-    i = 0;
-#endif
+    long elapsed_us;
 
     while (!m_die)
     {
         time_api_update(NULL);
-#ifdef CHECK_MAIN_LOOP_EFFICIENCY
-        initial_time_units = time_api_get_local()->current_time_units;
-        _initial_time_units = initial_time_units;
-#endif /* CHECK_MAIN_LOOP_EFFICIENCY */
-
-#ifdef DEBUG
-        gettimeofday(&start_time, NULL);
-#endif
+        {
+            initial_time_units = time_api_get_local()->current_time_units;
+            _initial_time_units = initial_time_units;
+            gettimeofday(&start_time, NULL);
+        }
 
         sel_ret = server_select();
         if (sel_ret == ERROR)
         {
-            fprintf(stderr, "Failed to select\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to select\n");
             break;
         }
         time_api_update(NULL);
 
-#ifdef CHECK_MAIN_LOOP_EFFICIENCY
-        final_time_units = time_api_get_local()->current_time_units;
+        {
+            final_time_units = time_api_get_local()->current_time_units;
 
-        time_to_select = final_time_units - initial_time_units;
+            time_to_select = final_time_units - initial_time_units;
 
-        initial_time_units = time_api_get_local()->current_time_units;
-#endif /* CHECK_MAIN_LOOP_EFFICIENCY */
+            initial_time_units = time_api_get_local()->current_time_units;
+        }
 
         game_ret = game_play();
         if (game_ret == ERROR)
         {
-            fprintf(stderr, "Failed to play\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to play\n");
             break;
         }
-        time_api_update(NULL);
-#ifdef CHECK_MAIN_LOOP_EFFICIENCY
-        final_time_units = time_api_get_local()->current_time_units;
 
-        time_to_play = final_time_units - initial_time_units;
-#endif /* CHECK_MAIN_LOOP_EFFICIENCY */
-
-#ifdef DEBUG
-        gettimeofday(&end_time, NULL);
-        long elapsed_us = (end_time.tv_sec - start_time.tv_sec) * 1000000L + 
-                      (end_time.tv_usec - start_time.tv_usec);
-        printf("Loop completed in: %ld microseconds\n", elapsed_us);
-#endif
-
-#ifdef CHECK_MAIN_LOOP_EFFICIENCY
-        if ((time_to_select + time_to_play) > 2)
         {
-            fprintf(stdout, "\033[1;31mServer exhausted, might lose some events. Selected(%d) in '%d'. Played in '%d' (%d)\033[0m\n", 
-                   sel_ret, time_to_select, time_to_play, time_get_current_time_units(NULL));
-        }
+            time_api_update(NULL);
+            final_time_units = time_get_current_time_units(NULL);
 
-        time_api_update(NULL);
-        _final_time_units = time_api_get_local()->current_time_units;
-        if (_final_time_units - _initial_time_units > 5)
-        {
-            fprintf(stderr, "\033[1;31mLoop time deviation (%d) (%d)\033[0m\n", 
-                   _final_time_units - _initial_time_units, time_get_current_time_units(NULL));
-        }
-#endif /* CHECK_MAIN_LOOP_EFFICIENCY */
+            time_to_play = final_time_units - initial_time_units;
 
-#ifdef DEBUG
-        i++;
-        if (i % 100 == 0)
-        {
-            time_api *api = time_api_get_local();
-            printf("Current time units: %d\n", api->current_time_units);
+            gettimeofday(&end_time, NULL);
+            elapsed_us = (end_time.tv_sec - start_time.tv_sec) * 1000000L + 
+                        (end_time.tv_usec - start_time.tv_usec);
+            log_msg(LOG_LEVEL_DEBUG, "Loop completed in: %ld microseconds\n", elapsed_us);
+
+            if ((time_to_select + time_to_play) > 2)
+            {
+                log_msg(LOG_LEVEL_WARN, "Server exhausted, might lose some events. Selected(%d) in '%d'. Played in '%d' (%d)\n", 
+                    sel_ret, time_to_select, time_to_play, time_get_current_time_units(NULL));
+            }
+
+            _final_time_units = time_get_current_time_units(NULL);
+            if (_final_time_units - _initial_time_units > 5)
+            {
+                log_msg(LOG_LEVEL_DEBUG, "\033[1;31mLoop time deviation (%d) (%d)\033[0m\n", 
+                    _final_time_units - _initial_time_units, time_get_current_time_units(NULL));
+            }
         }
-#endif
     }
 
     game_clean();
@@ -159,8 +136,10 @@ int main(int argc, char **argv)
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
-    args.time_unit = 800;
-    printf("Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
+    args.time_unit = 2000;
+    log_init(LOG_LEVEL_WARN);
+
+    log_msg(LOG_LEVEL_BOOT, "Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
            args.width, args.height, args.nb_clients, args.time_unit);
 
     int port = atoi(argc>1?argv[1]:"2");
@@ -176,7 +155,7 @@ int main(int argc, char **argv)
 
     if (args.nb_teams > args.nb_clients)
     {
-        fprintf(stderr, "ERROR: there could not be more teams than clients.\n");
+        log_msg(LOG_LEVEL_ERROR, "ERROR: there could not be more teams than clients.\n");
         return ERROR;
     }
 
@@ -208,7 +187,8 @@ int main(int argc, char **argv)
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, signal_handler);
     main_loop();
-    printf("Exiting...\n");
+    log_msg(LOG_LEVEL_INFO, "Exiting...\n");
+    log_close();
 
     return 0;
 

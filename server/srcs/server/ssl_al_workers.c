@@ -6,6 +6,7 @@
 #include <openssl/sha.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include "../log/log.h"
 #include "ssl_al_workers.h"
 #include "ssl_table.h"
 
@@ -47,7 +48,7 @@ static void *handshake_worker(void *arg)
         task_head_q = (task_head_q + 1) % 1024;
         pthread_mutex_unlock(&task_mtx_q);
 
-        printf("Processing handshake for client fd %d\n", client_fd);
+        // log_msg(LOG_LEVEL_DEBUG, "Processing handshake for client fd %d\n", client_fd);
         gettimeofday(&start_time, NULL);
         
         if (SSL_set_fd(ssl, client_fd) == 0)
@@ -75,9 +76,9 @@ static void *handshake_worker(void *arg)
 
         /* DEBUG */
         gettimeofday(&end_time, NULL);
-        printf("Handshake (%d) completed in: %ld microseconds\n", client_fd,
-               (end_time.tv_sec - start_time.tv_sec) * 1000000L +
-               (end_time.tv_usec - start_time.tv_usec));
+        // log_msg(LOG_LEVEL_DEBUG, "Handshake (%d) completed in: %ld microseconds\n", client_fd,
+        //        (end_time.tv_sec - start_time.tv_sec) * 1000000L +
+        //        (end_time.tv_usec - start_time.tv_usec));
         /* DEBUG_END */
 
     }
@@ -92,8 +93,6 @@ int ssl_al_worker_queue(int client_fd, SSL *ssl)
     task_tail_q = (task_tail_q + 1) % 1024;
     pthread_cond_signal(&task_cond_q);
     pthread_mutex_unlock(&task_mtx_q);
-
-    printf("Queued task for client %d\n", client_fd);
     return 1;
 }
 
@@ -109,7 +108,6 @@ int ssl_al_worker_dequeue(int *client_fd, SSL **ssl)
     *ssl = task_fds_dq[task_head_dq].ssl;
     task_head_dq = (task_head_dq + 1) % 1024;
     pthread_mutex_unlock(&task_mtx_dq);
-    printf("Dequeued task for client %d\n", *client_fd);
     return 1;
 }
 
@@ -123,7 +121,6 @@ int ssl_al_worker_dequeue_all()
     if (ret == 0)
         return 0;
 
-    printf("Dequeueing all tasks...\n");
     if (on_handshake_done)
         on_handshake_done(client_fd, ssl);
 

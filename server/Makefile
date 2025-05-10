@@ -11,11 +11,11 @@ RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
 
 #########
-FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api config_file ssl_al_workers
+FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api config_file ssl_al_workers log
 
 SRC = $(addsuffix .c, $(FILES))
 
-vpath %.c srcs srcs/parse_arg srcs/server inc srcs/game srcs/time_api
+vpath %.c srcs srcs/parse_arg srcs/server inc srcs/game srcs/time_api srcs/log
 #########
 
 OBJ_DIR = objs
@@ -89,6 +89,7 @@ re: fclean
 		echo "*.pem" >> .gitignore; \
 		echo ".vscode/" >> ../.gitignore; \
 		echo ".gitignore" >> ../.gitignore; \
+		echo "log.txt" >> ../.gitignore; \
 		echo ".gitignore created and updated with entries."; \
 	else \
 		echo ".gitignore already exists."; \

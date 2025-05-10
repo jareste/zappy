@@ -7,6 +7,7 @@
 #include "ssl_table.h"
 #include "ssl_al.h"
 #include "../game/game.h"
+#include "../log/log.h"
 
 /* defines */
 #define SERVER_KEY "SOME_KEY"
@@ -15,7 +16,7 @@
 #define REMOVE_CLIENT(fd) \
     do { \
         FD_CLR(fd, &m_read_fds); \
-        printf("Removing client %d\n", fd); \
+        log_msg(LOG_LEVEL_INFO, "Removing client %d\n", fd); \
         game_kill_player(fd); \
         close(fd); \
     } while (0)
@@ -200,15 +201,14 @@ int cb_on_accept_success(int fd)
         m_max_fd = fd;
 
     /**/
-    // START_TIMER;
+
     ret = m_create_json_response(fd, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
     if (ret == ERROR)
     {
-        fprintf(stderr, "Failed to create JSON response\n");
+        log_msg(LOG_LEVEL_WARN, "Failed to create JSON response\n");
         return ERROR;
     }
-    // printf("Create JSON Response Timer:\n");
-    // END_TIMER;
+
     return SUCCESS;
 }
 
@@ -216,15 +216,12 @@ static int m_handle_new_client(int fd)
 {
     int new_client;
 
-    // START_TIMER;
     new_client = accept(fd, NULL, NULL);
     if (new_client == ERROR)
     {
         perror("accept");
         return ERROR;
     }
-    // printf("Accepting Timer:\n");
-    // END_TIMER;
 
     return SUCCESS;
 }
@@ -396,9 +393,9 @@ static int m_handle_client_message(int fd, char *buffer, int bytes)
     root = cJSON_Parse(buffer);
     if (!root)
     {
-        printf("Failed to parse JSON!\n");
-        printf("Error before: %s\n", cJSON_GetErrorPtr());
-        printf("Buffer: %s\n", buffer);
+        log_msg(LOG_LEVEL_ERROR, "Failed to parse JSON!\n");
+        log_msg(LOG_LEVEL_ERROR, "Error before: %s\n", cJSON_GetErrorPtr());
+        log_msg(LOG_LEVEL_ERROR, "Buffer: %s\n", buffer);
         return ERROR;
     }
     
@@ -440,8 +437,7 @@ static int m_handle_client_event(int fd)
     bytes = recv(fd, buffer, sizeof(buffer), 0);
     if (bytes <= 0)
     {
-        printf("Client fd=%d disconnected or error\n", fd);
-        perror("recv");
+        log_msg(LOG_LEVEL_WARN, "Client fd=%d disconnected or error\n", fd);
         REMOVE_CLIENT(fd);
         return ERROR;
     }
@@ -450,12 +446,11 @@ static int m_handle_client_event(int fd)
     if (ret == ERROR)
     {
         return ERROR;
-        // printf("Sent '%s' to fd=%d\n", buffer, fd);
     }
     else
     {
-        // printf("Handled JSON message from fd=%d\n", fd);
     }
+
     return SUCCESS;
 }
 
@@ -508,8 +503,7 @@ int server_select()
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
     {
-        fprintf(stderr, "Select error: (%d) (%d) \n", ret, m_max_fd);
-        perror("select");
+        log_msg(LOG_LEVEL_ERROR, "Select error: (%d) (%d) \n", ret, m_max_fd);
         return ERROR;
     }
     else if (ret == 0) /* No new data to read. */
@@ -525,24 +519,22 @@ int server_select()
             ret = m_handle_new_client(fd);
             if (ret == ERROR)
             {
-                fprintf(stderr, "Failed to accept new client\n");
+                log_msg(LOG_LEVEL_ERROR, "Failed to accept new client\n");
                 ret = 0;
             }
         }
         else
         {
-            printf("Handling client fd=%d\n", fd);
             ret = m_handle_client_event(fd);
             if (ret == ERROR)
             {
-                fprintf(stderr, "Failed to handle client event\n");
-                fprintf(stderr, "##################################\n");
+                log_msg(LOG_LEVEL_ERROR, "Failed to handle client event\n");
                 /* remove client */
                 /* by doing FD_CLR we will just ignore him so he will
                  * be disconnected by his side when tcp timeout occurs
                  */
                 REMOVE_CLIENT(fd);
-                printf("Client fd=%d disconnected\n", fd);
+                log_msg(LOG_LEVEL_INFO, "Client fd=%d disconnected\n", fd);
                 /* We remove the client but we don't want to close the server at all..
                 */
                 ret = 0;
@@ -559,14 +551,14 @@ int init_server(int port, char* cert, char* key)
     m_sock_server = init_ssl_al(cert, key, port, cb_on_accept_success);
     if (m_sock_server == ERROR)
     {
-        fprintf(stderr, "Failed to initialize SSL\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to initialize SSL\n");
         return ERROR;
     }
 
     set_server_socket(m_sock_server);
     m_max_fd = m_sock_server;
     FD_ZERO(&m_read_fds);
-    printf("Server socket initialized: fd=%d\n", m_sock_server);
+    log_msg(LOG_LEVEL_BOOT, "Server socket initialized: fd=%d\n", m_sock_server);
     FD_SET(m_sock_server, &m_read_fds);
 
     return SUCCESS;

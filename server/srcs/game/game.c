@@ -10,6 +10,7 @@
 #include "../time_api/time_api.h"
 #include "../server/server.h"/* not liking it*/
 #include "../parse_arg/config_file.h"
+#include "../log/log.h"
 
 #define PLAYER_IS_ALIVE(x, current_time) ((x->player->die_time > current_time))
 #define CLIENT_HAS_ACTIONS(x, current_time) \
@@ -976,7 +977,7 @@ static int m_command_incantation(void* _p, void* _arg)
 
     if (m_game_get_client_from_fd(p->id, &c) == ERROR)
     {
-        fprintf(stderr, "Failed to get client from fd %d\n", p->id);
+        log_msg(LOG_LEVEL_WARN, "Failed to get client from fd %d\n", p->id);
         return ERROR;
     }
 
@@ -1113,10 +1114,10 @@ static void m_game_print_players_on_tile(tile *t)
 {
     player *it;
 
-    printf("Players on tile (%d,%d):\n", t->pos.x, t->pos.y);
+    log_msg(LOG_LEVEL_DEBUG, "Players on tile (%d,%d):\n", t->pos.x, t->pos.y);
     for (it = t->players; it; it = it->next_on_tile)
     {
-        printf(" - Player %d (team %d, lvl %d, dir %d)\n", it->id, it->team_id+1, it->level, it->dir);
+        log_msg(LOG_LEVEL_DEBUG, " - Player %d (team %d, lvl %d, dir %d)\n", it->id, it->team_id+1, it->level, it->dir);
     }
 }
 
@@ -1179,13 +1180,13 @@ int game_register_player(int fd, char *team_name)
     team_id = m_game_get_team_id(team_name);
     if (team_id < 0)
     {
-        fprintf(stderr, "Failed to get team id for team %s\n", team_name);
+        log_msg(LOG_LEVEL_ERROR, "Failed to get team id for team %s\n", team_name);
         return team_id;
     }
 
     if (TEAM_IS_FULL(team_id))
     {
-        fprintf(stderr, "Team %s is full\n", team_name);
+        log_msg(LOG_LEVEL_WARN, "Team %s is full\n", team_name);
         return ERROR;
     }
 
@@ -1218,7 +1219,7 @@ int game_register_player(int fd, char *team_name)
     /* add player to server */
     m_add_client_to_server(c);
 
-    fprintf(stderr, "Spawned player %d on tile (%d,%d,%d) for team %s\n", p->id, p->pos.x, p->pos.y, p->dir,team_name);
+    log_msg(LOG_LEVEL_DEBUG, "Spawned player %d on tile (%d,%d,%d) for team %s\n", p->id, p->pos.x, p->pos.y, p->dir,team_name);
 
     return SUCCESS;
 }
@@ -1234,7 +1235,7 @@ int game_execute_command(int fd, char *cmd, char *_arg)
     ret = m_game_get_client_from_fd(fd, &c);
     if (ret == ERROR)
     {
-        fprintf(stderr, "Failed to get client from fd %d\n", fd);
+        log_msg(LOG_LEVEL_ERROR, "Failed to get client from fd %d\n", fd);
         return ERROR;
     }
 
@@ -1250,7 +1251,7 @@ int game_execute_command(int fd, char *cmd, char *_arg)
 
     if (command == MAX_COMMANDS)
     {
-        fprintf(stderr, "Unknown command %s\n", cmd);
+        log_msg(LOG_LEVEL_WARN, "Unknown command %s\n", cmd);
         return ERROR;
     }
 
@@ -1280,29 +1281,29 @@ int game_player_die(client *c)
     }
 
     m_game_print_players_on_tile(MAP(c->player->pos.x, c->player->pos.y));
-    fprintf(stderr, "Player %d has died. '%d', '%d'\n", c->socket_fd, c->player->die_time, c->player->start_time);
-    fprintf(stderr, "Actual time: %d\n", time_api_get_local()->current_time_units);
+    log_msg(LOG_LEVEL_DEBUG, "Player %d has died. '%d', '%d'\n", c->socket_fd, c->player->die_time, c->player->start_time);
+    log_msg(LOG_LEVEL_DEBUG, "Actual time: %d\n", time_api_get_local()->current_time_units);
 
-    fprintf(stderr, "Player inventory:\n");
-    fprintf(stderr, " - nourriture: %d\n", c->player->inv.nourriture);
-    fprintf(stderr, " - linemate:   %d\n", c->player->inv.linemate);
-    fprintf(stderr, " - deraumere:  %d\n", c->player->inv.deraumere);
-    fprintf(stderr, " - sibur:      %d\n", c->player->inv.sibur);
-    fprintf(stderr, " - mendiane:   %d\n", c->player->inv.mendiane);
-    fprintf(stderr, " - phiras:     %d\n", c->player->inv.phiras);
-    fprintf(stderr, " - thystame:   %d\n", c->player->inv.thystame);
-    fprintf(stderr, "Player position: (%d,%d)\n", c->player->pos.x, c->player->pos.y);
+    log_msg(LOG_LEVEL_DEBUG, "Player inventory:\n");
+    log_msg(LOG_LEVEL_DEBUG, " - nourriture: %d\n", c->player->inv.nourriture);
+    log_msg(LOG_LEVEL_DEBUG, " - linemate:   %d\n", c->player->inv.linemate);
+    log_msg(LOG_LEVEL_DEBUG, " - deraumere:  %d\n", c->player->inv.deraumere);
+    log_msg(LOG_LEVEL_DEBUG, " - sibur:      %d\n", c->player->inv.sibur);
+    log_msg(LOG_LEVEL_DEBUG, " - mendiane:   %d\n", c->player->inv.mendiane);
+    log_msg(LOG_LEVEL_DEBUG, " - phiras:     %d\n", c->player->inv.phiras);
+    log_msg(LOG_LEVEL_DEBUG, " - thystame:   %d\n", c->player->inv.thystame);
+    log_msg(LOG_LEVEL_DEBUG, "Player position: (%d,%d)\n", c->player->pos.x, c->player->pos.y);
 
     ret = m_remove_client_from_server(c);
     if (ret == ERROR)
     {
-        fprintf(stderr, "Failed to remove client from server\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to remove client from server\n");
         return ERROR;
     }
     ret = m_team_remove_player_from_team(c->player);
     if (ret == ERROR)
     {
-        fprintf(stderr, "Failed to remove player from team\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to remove player from team\n");
         return ERROR;
     }
 
@@ -1310,11 +1311,11 @@ int game_player_die(client *c)
     free(c->player);
 
     server_create_response_to_command(c->socket_fd, "-", "die", NULL);
-    fprintf(stderr, "Player %d has died\n", c->socket_fd);
+    log_msg(LOG_LEVEL_DEBUG, "Player %d has died\n", c->socket_fd);
     ret = server_remove_client(c->socket_fd);
     if (ret == ERROR)
     {
-        fprintf(stderr, "Failed to remove client from server\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to remove client from server\n");
         return ERROR;
     }
 
@@ -1381,7 +1382,7 @@ int game_kill_player(int fd)
 
     if (c->player == NULL)
     {
-        fprintf(stderr, "Player %d is already dead\n", fd);
+        log_msg(LOG_LEVEL_WARN, "Player %d is already dead\n", fd);
         return ERROR;
     }
 
@@ -1534,7 +1535,7 @@ int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
         ret = m_game_init_team(&m_server.teams[team_number], teams[i], m_server.client_count / m_server.team_count);
         if (ret == ERROR)
         {
-            fprintf(stderr, "Failed to initialize team %s\n", teams[i]);
+            log_msg(LOG_LEVEL_ERROR, "Failed to initialize team %s\n", teams[i]);
             return ERROR;
         }
 

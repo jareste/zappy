@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include "../log/log.h"
 
 time_api* m_time = NULL;
 
@@ -43,7 +44,7 @@ int time_api_init_local(int t)
     m_time = time_api_init(t);
     if (!m_time)
     {
-        fprintf(stderr, "Failed to initialize time API.\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to initialize time API.\n");
         return ERROR;
     }
     return SUCCESS;
@@ -71,7 +72,7 @@ int time_get_current_time_units(time_api *_api)
     api= _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return -1;
     }
 
@@ -88,7 +89,7 @@ int time_api_update(time_api *_api)
     api= _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return ERROR;
     }
 
@@ -112,7 +113,7 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
     api= _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return -1;
     }
 
@@ -146,7 +147,7 @@ int time_api_schedule_client_event_front(time_api *_api, event_buffer *buffer, i
     api = _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return -1;
     }
 
@@ -177,7 +178,7 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
     api = _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return ERROR;
     }
 

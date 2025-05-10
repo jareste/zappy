@@ -24,6 +24,7 @@
 #include <error_codes.h>
 #include "ssl_table.h"
 #include "ssl_al_workers.h"
+#include "../log/log.h"
 
 static SSL_CTX *m_ctx = NULL;
 static int m_sock_server = -1;
@@ -161,7 +162,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
     ssl = ssl_table_get(fd);
     if (!ssl)
     {
-        fprintf(stderr, "SSL not found for fd %d\n", fd);
+        log_msg(LOG_LEVEL_ERROR, "SSL not found for fd %d\n", fd);
         return ERROR;
     }
 
@@ -170,7 +171,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         r = SSL_read(ssl, header + offset, 2 - offset);
         if (r <= 0)
         {
-            fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
+            log_msg(LOG_LEVEL_ERROR, "SSL_read error[%d]: %d\n", __LINE__, r);
             return ERROR;
         }
 
@@ -197,7 +198,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
             r = SSL_read(ssl, ping_payload, payload_len);
             if (r != (int)payload_len)
             {
-                fprintf(stderr, "Failed to read ping payload\n");
+                log_msg(LOG_LEVEL_ERROR, "Failed to read ping payload\n");
                 /* try sending empty PONG frame */
                 m_ws_send_control_frame(ssl, 0xA, NULL, 0);
                 return 1;
@@ -211,7 +212,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
     }
     else if (opcode != 0x1) /* 2 would mean binary data */
     {
-        fprintf(stderr, "Unsupported opcode: 0x%x — closing connection\n", opcode);
+        log_msg(LOG_LEVEL_ERROR, "Unsupported opcode: 0x%x — closing connection\n", opcode);
         ws_send_close(fd, 1002, "Protocol error: unsupported opcode");
         return 0; /* 0 will fall into a disconnect */
     }
@@ -221,7 +222,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         r = SSL_read(ssl, header + offset, 2);
         if (r != 2)
         {
-            fprintf(stderr, "Failed to read extended payload length\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to read extended payload length\n");
             return ERROR;
         }
 
@@ -233,7 +234,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         r = SSL_read(ssl, header + offset, 8);
         if (r != 8)
         {
-            fprintf(stderr, "Failed to read extended payload length\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to read extended payload length\n");
             return ERROR;
         }
 
@@ -245,14 +246,14 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
 
     if (payload_len > bufsize)
     {
-        fprintf(stderr, "Payload too large for buffer: %zu > %zu\n", payload_len, bufsize);
+        log_msg(LOG_LEVEL_ERROR, "Payload too large for buffer: %zu > %zu\n", payload_len, bufsize);
         return ERROR;
     }
     
     r = SSL_read(ssl, mask, 4);
     if (r != 4)
     {
-        fprintf(stderr, "Failed to read mask: read %d bytes\n", r);
+        log_msg(LOG_LEVEL_ERROR, "Failed to read mask: read %d bytes\n", r);
         ws_send_close(fd, 1002, "Malformed frame");
         return 0; /* 0 will fall into a disconnect */
     }
@@ -265,18 +266,18 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         {
             if (SSL_get_error(ssl, r) == SSL_ERROR_WANT_READ)
             {
-                fprintf(stderr, "SSL_read would block\n");
+                log_msg(LOG_LEVEL_ERROR, "SSL_read would block\n");
                 return ERROR;
             }
             else if (SSL_get_error(ssl, r) == SSL_ERROR_SYSCALL)
             {
-                fprintf(stderr, "SSL_read syscall error\n");
+                log_msg(LOG_LEVEL_ERROR, "SSL_read syscall error\n");
                 return ERROR;
             }
             else
             {
-                fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
-                fprintf(stderr, "Received %zu bytes\n", received);
+                log_msg(LOG_LEVEL_ERROR, "SSL_read error[%d]: %d\n", __LINE__, r);
+                log_msg(LOG_LEVEL_ERROR, "Received %zu bytes\n", received);
                 return ERROR;
             }
         }
@@ -359,7 +360,7 @@ static int _init_server(int port)
 
     if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
     {
-        fprintf(stderr, "bind failed\n");
+        log_msg(LOG_LEVEL_ERROR, "bind failed\n");
         perror("bind");
         close(sockfd);
         return ERROR;
@@ -367,12 +368,12 @@ static int _init_server(int port)
 
     if (listen(sockfd, 1) == -1)
     {
-        fprintf(stderr, "listen failed\n");
+        log_msg(LOG_LEVEL_ERROR, "listen failed\n");
         close(sockfd);
         return ERROR;
     }
 
-    printf("WSS server listening on port %d...\n", port);
+    log_msg(LOG_LEVEL_BOOT, "WSS server listening on port %d...\n", port);
     return sockfd;
 }
 
@@ -448,7 +449,7 @@ int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb)
     server_sock = _init_server(port);
     if (server_sock == ERROR)
     {
-        fprintf(stderr, "Failed to initialize server socket\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to initialize server socket\n");
         return ERROR;
     }
 
@@ -511,7 +512,6 @@ int ssl_al_accept_client()
         goto error;
     // START_TIMER;
     ssl_al_worker_queue(client, ssl);
-    // printf("Accept queued TIMER:\n");
     // END_TIMER;
 
     return client;
