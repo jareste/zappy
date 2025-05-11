@@ -2,6 +2,7 @@
 #define LOG_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #define LOG_FILE "log.txt"
 
@@ -12,12 +13,19 @@ typedef enum
     LOG_LEVEL_WARN,
     LOG_LEVEL_INFO,
     LOG_LEVEL_DEBUG,
-} log_level_t;
+} log_level;
 
-int log_init(log_level_t threshold);
+typedef struct
+{
+    log_level LOG_LEVEL;
+    char* LOG_FILE_PATH;
+    bool LOG_ERASE;
+} log_config;
+
+int log_init();
 
 void log_close(void);
 
-void log_msg(log_level_t level, const char *fmt, ...);
+void log_msg(log_level level, const char *fmt, ...);
 
 #endif

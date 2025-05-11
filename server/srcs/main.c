@@ -137,6 +137,10 @@ int main(int argc, char **argv)
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
     args.time_unit = 2000;
+    
+    if (parse_config("config") == ERROR)
+            goto error;
+
     log_init(LOG_LEVEL_WARN);
 
     log_msg(LOG_LEVEL_BOOT, "Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
@@ -166,9 +170,6 @@ int main(int argc, char **argv)
     if (parse_args(argc, argv, &args) == ERROR)
         goto error;
 
-    if (parse_config("config") == ERROR)
-        goto error;
-
     /* On failure will simply exit soooo :)
     */
     if (init_server(args.port, args.cert, args.key) == ERROR)
@@ -193,6 +194,7 @@ int main(int argc, char **argv)
     return 0;
 
 error:
+    parse_free_config();
     game_clean();
     time_api_free(NULL);
     cleanup_server();

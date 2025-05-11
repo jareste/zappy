@@ -38,3 +38,14 @@ SPAWN_MORE_RESOURCES_SIBUR=0.04 /* double */
 SPAWN_MORE_RESOURCES_MENDIANE=0.04 /* double */
 SPAWN_MORE_RESOURCES_PHIRAS=0.04 /* double */
 SPAWN_MORE_RESOURCES_THYSTAME=0.005 /* double */
+
+/* LOG_LEVEL= pick one option otherwise default it's WARN
+ * ERROR = 0
+ * BOOT = 1
+ * WARN = 2
+ * INFO = 3
+ * DEBUG = 4
+ */
+LOG_LEVEL=2 /* Only applies to TERMINAL, on logfile everything will be printed. */
+LOG_FILE_PATH=/tmp/log.txt /* PATH to save the log file, default will be ./log.txt */
+LOG_ERASE=NO /* erase log_file on each execution or append */

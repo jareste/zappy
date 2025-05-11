@@ -9,8 +9,8 @@
 #include "game_structs.h"
 #include "../time_api/time_api.h"
 #include "../server/server.h"/* not liking it*/
-#include "../parse_arg/config_file.h"
 #include "../log/log.h"
+#include "../parse_arg/config_file.h"
 
 #define PLAYER_IS_ALIVE(x, current_time) ((x->player->die_time > current_time))
 #define CLIENT_HAS_ACTIONS(x, current_time) \

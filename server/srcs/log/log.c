@@ -4,15 +4,22 @@
 #include <string.h>
 #include <stdbool.h>
 #include "../time_api/time_api.h"
+#include "../parse_arg/config_file.h"
 
 static FILE *m_log_fp        = NULL;
-static log_level_t  m_log_threshold = LOG_LEVEL_INFO;
+static log_level  m_log_threshold = LOG_LEVEL_INFO;
+static log_config m_log_config;
 
-int log_init(log_level_t threshold)
+int log_init()
 {
-    m_log_threshold = threshold;
+    char* options;
+
+    options = m_log_config.LOG_ERASE == true ? "w+" : "a";
+    m_log_threshold = m_log_config.LOG_LEVEL;
     
-    m_log_fp = fopen(LOG_FILE, "w+");
+    parse_set_log_config(&m_log_config);
+
+    m_log_fp = fopen(m_log_config.LOG_FILE_PATH, options);
     if (!m_log_fp)
     {
         perror("fopen");
@@ -30,7 +37,7 @@ void log_close(void)
     }
 }
 
-void log_msg(log_level_t level, const char *fmt, ...)
+void log_msg(log_level level, const char *fmt, ...)
 {
     va_list args, args_copy;
     static bool inside_logger = false;

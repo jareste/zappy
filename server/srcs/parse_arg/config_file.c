@@ -9,6 +9,7 @@
 
 #include <error_codes.h>
 #include "../game/game_structs.h"
+#include "../log/log.h"
 
 typedef struct
 {
@@ -45,6 +46,11 @@ typedef struct
     double SPAWN_MORE_RESOURCES_MENDIANE;
     double SPAWN_MORE_RESOURCES_PHIRAS;
     double SPAWN_MORE_RESOURCES_THYSTAME;
+
+    log_level LOG_LEVEL;
+    char* LOG_FILE_PATH;
+    bool LOG_ERASE;
+
 } config_t;
 
 config_t* m_config_content = NULL;
@@ -86,6 +92,10 @@ static void m_init_config_content()
     m_config_content->SPAWN_MORE_RESOURCES_MENDIANE  = 0.04;
     m_config_content->SPAWN_MORE_RESOURCES_PHIRAS    = 0.04;
     m_config_content->SPAWN_MORE_RESOURCES_THYSTAME  = 0.005;
+
+    m_config_content->LOG_LEVEL = LOG_LEVEL_WARN;
+    m_config_content->LOG_FILE_PATH = strdup("log.txt");
+    m_config_content->LOG_ERASE = true;
 }
 
 void parse_set_initial_density(spawn_ctx* ctx)
@@ -133,6 +143,13 @@ void parse_set_respawn_context(spawn_ctx* ctx)
     ctx->d_thystame    = m_config_content->SPAWN_MORE_RESOURCES_THYSTAME;
 }
 
+void parse_set_log_config(log_config* log)
+{
+    log->LOG_ERASE = m_config_content->LOG_ERASE;
+    log->LOG_FILE_PATH = m_config_content->LOG_FILE_PATH;
+    log->LOG_LEVEL = m_config_content->LOG_LEVEL;
+}
+
 bool parse_respawn_resources()
 {
     if (!m_config_content)
@@ -165,12 +182,13 @@ void parse_free_config()
 
 int parse_config(const char *filename)
 {
-    char line[256];
-    FILE *fp;
-    char* p;
-    char* eq;
-    char* key;
-    char* val;
+    char    line[256];
+    FILE*   fp;
+    char*   p;
+    char*   eq;
+    char*   key;
+    char*   val;
+    char    c;
 
     m_config_content = malloc(sizeof(config_t));
 
@@ -251,7 +269,7 @@ int parse_config(const char *filename)
             m_config_content->DELAY_CONNECT_NBR = atoi(val);
         else if (strcmp(key, "SPAWN_MORE_RESOURCES") == 0)
         {
-            char c = val[0];
+            c = val[0];
             m_config_content->SPAWN_MORE_RESOURCES = (c=='y'||c=='Y'||c=='1');
         }
         else if (strcmp(key, "SPAWN_MORE_RESOURCES_TIME") == 0)
@@ -270,6 +288,19 @@ int parse_config(const char *filename)
             m_config_content->SPAWN_MORE_RESOURCES_PHIRAS = strtod(val, NULL);
         else if (strcmp(key, "SPAWN_MORE_RESOURCES_THYSTAME") == 0)
             m_config_content->SPAWN_MORE_RESOURCES_THYSTAME = strtod(val, NULL);
+        else if (strcmp(key, "LOG_LEVEL") == 0)
+            m_config_content->LOG_LEVEL = atoi(val);
+        else if (strcmp(key, "LOG_FILE_PATH") == 0)
+        {
+            free(m_config_content->LOG_FILE_PATH);
+            m_config_content->LOG_FILE_PATH = strdup(val);
+        }
+        else if (strcmp(key, "LOG_ERASE") == 0)
+        {
+            c = val[0];
+            m_config_content->LOG_ERASE = (c=='y'||c=='Y'||c=='1');
+        }
+        
     }
 
     fclose(fp);
