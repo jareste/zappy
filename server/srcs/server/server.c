@@ -303,7 +303,7 @@ static int m_handle_login_client(int fd, cJSON *root)
         return ERROR;
     
     cJSON_AddStringToObject(response, "type", "welcome");
-    cJSON_AddNumberToObject(response, "remaining_clients", game_get_client_count());
+    cJSON_AddNumberToObject(response, "remaining_clients", game_get_team_remaining_clients(fd));
     
     map_size = cJSON_CreateObject();
     if (!map_size)
@@ -439,7 +439,7 @@ static int m_handle_client_event(int fd)
     {
         log_msg(LOG_LEVEL_WARN, "Client fd=%d disconnected or error\n", fd);
         REMOVE_CLIENT(fd);
-        return ERROR;
+        return SUCCESS;
     }
 
     ret = m_handle_client_message(fd, buffer, bytes);

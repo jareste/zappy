@@ -849,15 +849,85 @@ static int m_command_expulse(void* _p, void* _arg)
     return server_create_response_to_command(p->id, "expulse", NULL, "ok");
 }
 
+static int minimal_delta(int delta, int max)
+{
+    if (delta >  max/2) delta -= max;
+    if (delta < -max/2) delta += max;
+    return delta;
+}
+
+int compute_broadcast_direction(int listener_x, int listener_y, int listener_dir,
+        int emitter_x, int emitter_y, int width, int height)
+{
+    int dy;
+    int dx;
+    int dyp;
+    int dxp;
+    int K;
+    double dxw;
+    double dyw;
+    double phi;
+    
+    dx = minimal_delta(emitter_x - listener_x, width);
+    dy = minimal_delta(emitter_y - listener_y, height);
+
+    if (dx == 0 && dy == 0)
+        return 0;
+
+    switch (listener_dir & 3)
+    {
+      case 0:
+        dxp = dx;      dyp = dy;
+        break;
+      case 1:
+        dxp =  dy;     dyp = -dx;
+        break;
+      case 2:
+        dxp = -dx;     dyp = -dy;
+        break;
+      case 3:
+        dxp = -dy;     dyp =  dx;
+        break;
+    }
+
+    dxw =  dxp;
+    dyw = -dyp;
+    phi = atan2(dyw, dxw) - M_PI/2.0;
+    if (phi < 0) phi += 2*M_PI;
+
+    K = (int)floor((phi + M_PI/8.0) / (M_PI/4.0)) + 1;
+    if (K > 8) K = 1;
+
+    return K;
+}
+
 static int m_command_broadcast(void* _p, void* _arg)
 {
-    player* p;
+    player *emitter = (player*)_p;
+    char *text = (char*)_arg;
+    int i;
+    int K;
+    char k_str[4];
+    client* c;
+    player* receiver;
 
-    (void)_arg;
+    for (i = 0; i < m_server.client_count; i++)
+    {
+        c = m_server.clients[i];
+        if (!c || !c->player)
+            continue;
 
-    p = (player*)_p;
+        receiver = c->player;
 
-    return server_create_response_to_command(p->id, "broadcast", NULL, "ok");
+        K = compute_broadcast_direction(receiver->pos.x, receiver->pos.y, receiver->dir,
+                emitter->pos.x,   emitter->pos.y, m_server.map_x,   m_server.map_y);
+
+        snprintf(k_str, sizeof(k_str), "%d", K);
+
+        server_create_response_to_command(receiver->id, "message", k_str, text);
+    }
+
+    return server_create_response_to_command(emitter->id, "broadcast", NULL, "ok");
 }
 
 /* For incantation to happen, the tile where the player is must have
@@ -1139,6 +1209,18 @@ static int m_game_random_resource_count(double lambda)
     return count;
 }
 
+int game_get_team_remaining_clients(int fd)
+{
+    client *c;
+    int ret;
+
+    ret = m_game_get_client_from_fd(fd, &c);
+    if (ret == ERROR)
+        return ERROR;
+
+    return m_server.teams[c->player->team_id].max_players - m_server.teams[c->player->team_id].current_players;
+}
+
 int game_get_client_count()
 {
     return m_server.client_count;
@@ -1235,8 +1317,8 @@ int game_execute_command(int fd, char *cmd, char *_arg)
     ret = m_game_get_client_from_fd(fd, &c);
     if (ret == ERROR)
     {
-        log_msg(LOG_LEVEL_ERROR, "Failed to get client from fd %d\n", fd);
-        return ERROR;
+        /* Assume client has died */
+        return SUCCESS;
     }
 
     command = MAX_COMMANDS;

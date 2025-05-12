@@ -64,7 +64,7 @@ void time_api_free(time_api *api)
 }
 
 /* Compute and return the current game time (in time units) */
-int time_get_current_time_units(time_api *_api)
+uint64_t time_get_current_time_units(time_api *_api)
 {
     time_api *api;
     long now;
@@ -78,7 +78,7 @@ int time_get_current_time_units(time_api *_api)
 
     now = get_current_time_ms();
     /* Each time unit lasts 1000/t milliseconds */
-    return (int)((now - api->start_time_ms) * api->t / 1000);
+    return (uint64_t)((now - api->start_time_ms) * api->t / 1000);
 }
 
 /* Update the current game time stored in the API */

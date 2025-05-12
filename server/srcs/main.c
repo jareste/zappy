@@ -36,9 +36,6 @@ int main_loop()
     int _final_time_units;
     int time_to_select;
     int time_to_play;
-    struct timeval start_time;
-    struct timeval end_time;
-    long elapsed_us;
 
     while (!m_die)
     {
@@ -46,7 +43,6 @@ int main_loop()
         {
             initial_time_units = time_api_get_local()->current_time_units;
             _initial_time_units = initial_time_units;
-            gettimeofday(&start_time, NULL);
         }
 
         sel_ret = server_select();
@@ -78,11 +74,6 @@ int main_loop()
 
             time_to_play = final_time_units - initial_time_units;
 
-            gettimeofday(&end_time, NULL);
-            elapsed_us = (end_time.tv_sec - start_time.tv_sec) * 1000000L + 
-                        (end_time.tv_usec - start_time.tv_usec);
-            log_msg(LOG_LEVEL_DEBUG, "Loop completed in: %ld microseconds\n", elapsed_us);
-
             if ((time_to_select + time_to_play) > 2)
             {
                 log_msg(LOG_LEVEL_WARN, "Server exhausted, might lose some events. Selected(%d) in '%d'. Played in '%d' (%d)\n", 
@@ -92,7 +83,7 @@ int main_loop()
             _final_time_units = time_get_current_time_units(NULL);
             if (_final_time_units - _initial_time_units > 5)
             {
-                log_msg(LOG_LEVEL_DEBUG, "\033[1;31mLoop time deviation (%d) (%d)\033[0m\n", 
+                log_msg(LOG_LEVEL_DEBUG, "Loop time deviation (%d) (%d)\n", 
                     _final_time_units - _initial_time_units, time_get_current_time_units(NULL));
             }
         }
@@ -132,11 +123,11 @@ int main(int argc, char **argv)
     // args.height = rand() % 1000 + 4;
     // args.height = 10000;
     args.height = 10;
-    args.nb_clients = rand() % 100 + 10;
+    args.nb_clients = 1000;
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
-    args.time_unit = 2000;
+    args.time_unit = 800;
     
     if (parse_config("config") == ERROR)
             goto error;

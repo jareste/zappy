@@ -1,6 +1,8 @@
 #ifndef GAME_STRUCTS_H
 #define GAME_STRUCTS_H
 
+#include <stdint.h>
+
 #define MAX_EVENTS 10
 
 typedef enum
@@ -74,8 +76,8 @@ typedef struct player_s
     position pos;
     direction dir;
     inventory inv;
-    int die_time; /* life units (1260 time units) */
-    int start_time; /* time when the player was created */
+    uint64_t die_time; /* life units (1260 time units) */
+    uint64_t start_time; /* time when the player was created */
 
     struct player_s* next_on_tile;
     struct player_s* prev_on_tile;
@@ -99,7 +101,7 @@ typedef struct
 
 typedef struct
 {
-    int exec_time;
+    uint64_t exec_time;
     int (*callback)(void *, void *);
     void* data;
     void* arg;
