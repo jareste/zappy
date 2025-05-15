@@ -1,0 +1,10 @@
+{
+    "type": "response",
+    "cmd": "inventaire",
+    "inventory": {
+      "nourriture": 345,
+      "sibur": 3,
+      "phiras": 5,
+      "deraumere": 0
+    }
+}

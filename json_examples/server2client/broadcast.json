@@ -1,0 +1,10 @@
+{
+    "type": "broadcast",
+    "source_direction": 3,
+    "arg": {
+      "event": "elevation",
+      "status": "call",
+      "level": 4,
+      "players_needed": 3
+    }
+  }

@@ -1,0 +1,51 @@
+# Game modifiers
+INITIAL_LIFE_UNITS=10 /* How many life units the player will have on start */
+LIFE_UNIT_TO_TIME=126 /* each life unit how many time unit survives */
+
+# INITIAL_DENSITY_RESOURCES
+/* Initial density of resources on the map must be a double*/
+DENSITY_NOURRITURE=1.0
+DENSITY_LINEMATE= 0.02
+DENSITY_DERAUMERE= 0.02
+DENSITY_SIBUR=0.04
+DENSITY_MENDIANE=0.04
+DENSITY_PHIRAS=0.04
+DENSITY_THYSTAME=0.005
+
+# COMMANDS_DELAYS
+/* COMMAND DELAYS all will be interpreted as integers. */
+DELAY_AVANCE=7
+DELAY_DROITE=7
+DELAY_GAUCHE=7
+DELAY_VOIR=7
+DELAY_INVENTAIRE=1
+DELAY_PREND=7
+DELAY_POSE=7
+DELAY_EXPULSE=7
+DELAY_BROADCAST=7
+DELAY_INCANTATION=300
+DELAY_FORK=42
+DELAY_CONNECT_NBR=0
+
+# RESPAWN_RESOURCES_PARAMS
+/* For spawning more resources and it's spawn density rate */
+SPAWN_MORE_RESOURCES=y /* y/n/yes/no*/
+SPAWN_MORE_RESOURCES_TIME=100 /* int */
+SPAWN_MORE_RESOURCES_NOURRITURE=0.5 /* double */
+SPAWN_MORE_RESOURCES_LINEMATE=0.02 /* double */
+SPAWN_MORE_RESOURCES_DERAUMERE=0.02 /* double */
+SPAWN_MORE_RESOURCES_SIBUR=0.04 /* double */
+SPAWN_MORE_RESOURCES_MENDIANE=0.04 /* double */
+SPAWN_MORE_RESOURCES_PHIRAS=0.04 /* double */
+SPAWN_MORE_RESOURCES_THYSTAME=0.005 /* double */
+
+/* LOG_LEVEL= pick one option otherwise default it's WARN
+ * ERROR = 0
+ * BOOT = 1
+ * WARN = 2
+ * INFO = 3
+ * DEBUG = 4
+ */
+LOG_LEVEL=2 /* Only applies to TERMINAL, on logfile everything will be printed. */
+LOG_FILE_PATH=/tmp/log.txt /* PATH to save the log file, default will be ./log.txt */
+LOG_ERASE=NO /* erase log_file on each execution or append */

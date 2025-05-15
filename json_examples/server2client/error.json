@@ -1,0 +1,4 @@
+{
+    "type": "error",
+    "arg": "Command queue limit exceeded. Max 10 commands allowed."
+}

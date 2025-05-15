@@ -1,0 +1,14 @@
+{
+    "type": "batch",
+    "cmds": [
+      {
+        "cmd": "voir"
+      },
+      {
+        "cmd": "inventaire"
+      },
+      {
+        "cmd": "avance"
+      }
+    ]
+}

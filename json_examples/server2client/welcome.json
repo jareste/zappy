@@ -1,0 +1,8 @@
+{
+    "type": "welcome",
+    "remaining_clients": 3,
+    "map_size": {
+      "x": 10,
+      "y": 10
+    }
+}
