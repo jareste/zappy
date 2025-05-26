@@ -366,7 +366,7 @@ static int _init_server(int port)
         return ERROR;
     }
 
-    if (listen(sockfd, 1) == -1)
+    if (listen(sockfd, 3) == -1)
     {
         log_msg(LOG_LEVEL_ERROR, "listen failed\n");
         close(sockfd);
