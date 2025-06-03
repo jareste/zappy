@@ -15,6 +15,18 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>5.10.0</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>5.12.0</version>
+        <scope>test</scope>
+    </dependency>
      <!-- WebSocket API (JSR 356) -->
     <!-- <dependency>
         <groupId>org.eclipse.ee4j</groupId>
@@ -54,6 +66,12 @@
                 <source>17</source> <!-- Java source version -->
                 <target>17</target> <!-- Java target version -->
             </configuration>
+        </plugin>
+
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version> <!-- Or latest -->
         </plugin>
 
         <plugin>

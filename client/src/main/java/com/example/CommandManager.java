@@ -182,7 +182,7 @@ public class CommandManager {
         // }
     }
 
-    private void sendCommand(Command command) {
+    public void sendCommand(Command command) {
         if (isDead()) {
             System.out.println("[CLIENT " + this.id + "] " + "Client is dead, cannot send command: " + command);
             return;
@@ -194,7 +194,7 @@ public class CommandManager {
         sendMsg(cmdStr);
     }
 
-    private String createCommandJsonMessage(Command cmd) {
+    public String createCommandJsonMessage(Command cmd) {
         JsonObject jsonMessage = new JsonObject();
         String commandName = cmd.getName();
         String argument = cmd.getArgument();
@@ -210,12 +210,28 @@ public class CommandManager {
 
     /********** GETTERS **********/
 
+    public int getId() {
+        return id;
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public Session getSession() {
+        return session;
+    }
+
     public int getPendingResponses() {
         return pendingResponses.get();
     }
 
     public boolean isDead() {
         return dead.get();
+    }
+
+    public Queue<Command> getCommandQueue() {
+        return commandQueue;
     }
 
     /********** SETTERS **********/
