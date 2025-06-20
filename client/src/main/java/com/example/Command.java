@@ -32,6 +32,10 @@ public class Command {
         return type.getName();
     }
 
+    public CommandType getType() {
+        return type;
+    }
+
     public String getArgument() {
         return argument;
     }

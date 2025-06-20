@@ -213,6 +213,21 @@ public class Player {
         }
     }
 
+    /********** BROADCAST **********/
+
+    public Command broadcast(String event, String status, String level, String playersNeeded) {
+        JsonObject broadcastMessage = new JsonObject();
+        broadcastMessage.addProperty("event", event);
+        broadcastMessage.addProperty("status", status);
+        if (level != null) {
+            broadcastMessage.addProperty("level", level);
+        }
+        if (playersNeeded != null) {
+            broadcastMessage.addProperty("players_needed", playersNeeded);
+        }
+        return new Command(CommandType.BROADCAST, broadcastMessage.toString());
+    }
+
     /********** GETTERS **********/
 
     public String getTeamName() {
