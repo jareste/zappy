@@ -78,4 +78,18 @@ public class AITest {
         assertEquals(CommandType.DROITE, moves.get(1)); // turn right
         assertEquals(CommandType.AVANCE, moves.get(2)); // move forward
     }
+
+    @Test
+    void testDoElevation_Level1() {
+        when(mockPlayer.getId()).thenReturn(1);
+        ai.setDebugLevel(1); // you can add a setter if needed
+
+        List<Command> cmds = ai.doElevation();
+
+        assertEquals(2, cmds.size());
+        assertEquals(CommandType.POSE, cmds.get(0).getType());
+        assertEquals("linemate", cmds.get(0).getArgument());
+
+        assertEquals(CommandType.INCANTATION, cmds.get(1).getType());
+    }
 }

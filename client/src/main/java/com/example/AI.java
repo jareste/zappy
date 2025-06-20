@@ -28,6 +28,10 @@ public class AI {
 
     public List<Command> decideNextMoves() {
         List<Command> commands = new ArrayList<>();
+
+        if (inventaireChecked && readyToElevate()) {
+            //doElevation();
+        }
         addRandomMove(commands);
         return commands;
     }
@@ -68,7 +72,7 @@ public class AI {
         // player.setLevel(player.getLevel() + 1);
         debugLevel++;
         System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + debugLevel);
-        return checkInventaire();
+        return checkInventaire(); // doElevation();
         
 
         // return commands();
@@ -96,9 +100,26 @@ public class AI {
         return false;
     }
 
-    private List<Command> doElevation() {
+    public List<Command> doElevation() {
         List<Command> commands = new ArrayList<>();
-        // commands.add(new Command(CommandType.INCANTATION));
+        int level = debugLevel; //player.getLevel();
+        ElevationRules.Rule rule = ElevationRules.getRule(level);
+        Map<Resource, Integer> resourcesNeeded = rule.getResources();
+
+        // do pose of each target
+        for (Map.Entry<Resource, Integer> entry : resourcesNeeded.entrySet()) {
+            Resource resource = entry.getKey();
+            int requiredAmount = entry.getValue();
+            for (int i = 0; i < requiredAmount; i++) {
+                // add pose command for this resource
+                commands.add(new Command(CommandType.POSE, resource.getName()));
+                System.out.println("[Client " + player.getId() + "] Posing " + resource.getName());
+            }
+        }
+        // if level > 1 -> broadcast to all players
+
+        // add CommandType.INCANTATION
+        commands.add(new Command(CommandType.INCANTATION));
         return commands;
     }
 
@@ -302,5 +323,9 @@ public class AI {
 
     public void setInventaireChecked(boolean inventaireChecked) {
         this.inventaireChecked = inventaireChecked;
+    }
+
+    public void setDebugLevel(int debugLevel) {
+        this.debugLevel = debugLevel;
     }
 }
