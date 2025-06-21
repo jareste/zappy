@@ -19,13 +19,15 @@ public class WebSocketClient {
     private Session session;
     private CommandManager cmdManager;
     private CountDownLatch latch;
+    private boolean useSecure;
 
-    public WebSocketClient(String teamName, int port, String hostname, CountDownLatch latch, int clientId) {
+    public WebSocketClient(String teamName, int port, String hostname, CountDownLatch latch, int clientId, boolean useSecure) {
         this.teamName = teamName;
         this.port = port;
         this.hostname = hostname;
         this.latch = latch;
         this.id = clientId;
+        this.useSecure = useSecure;
     }
 
     @OnOpen
@@ -143,8 +145,9 @@ public class WebSocketClient {
 
     public void startConnection() {
         // Build the server URI
-        String serverUri = "wss://" + this.hostname + ":" + this.port;
-        // String serverUri = "wss://echo.websocket.events";
+        String scheme = this.useSecure ? "wss" : "ws";
+        String serverUri = scheme + "://" + this.hostname + ":" + this.port;
+        // String serverUri = "wss://" + this.hostname + ":" + this.port;
         System.out.println("[CLIENT " + this.id + "] " + "Connecting to server: " + serverUri);
 
         try {

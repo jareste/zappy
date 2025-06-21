@@ -31,6 +31,9 @@ public class Main {
                         System.exit(1);
                     }
                     break;
+                case "--insecure":
+                    arguments.put("--insecure", "true");
+                    break;
                 default:
                     System.out.println("Error: Unrecognized argument " + args[i]);
                     showUsage();
@@ -46,6 +49,7 @@ public class Main {
         int port = -1;
         String hostname = "localhost"; // Default hostname
         int clientCount = 1; // Default client count
+        boolean secure = true;
 
         Map<String, String> arguments = parseArguments(args);
 
@@ -73,6 +77,7 @@ public class Main {
                 return;
             }
         }
+        secure = !arguments.containsKey("--insecure");
 
         // Validate arguments
         if (teamName == null || port == -1) {
@@ -108,12 +113,13 @@ public class Main {
         final String finalTeamName = teamName;
         final int finalPort = port;
         final String finalHostname = hostname;
+        final boolean useSecure = secure;
 
         for (int i = 0; i < clientCount; i++) {
             int clientId = i + 1; // for clarity in logs
             new Thread(() -> {
                 CountDownLatch latch = new CountDownLatch(1);
-                WebSocketClient webSocketClient = new WebSocketClient(finalTeamName, finalPort, finalHostname, latch, clientId);
+                WebSocketClient webSocketClient = new WebSocketClient(finalTeamName, finalPort, finalHostname, latch, clientId, useSecure);
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     System.out.println("[CLIENT " + clientId + "] " + "Shutdown signal received. Closing connection...");
