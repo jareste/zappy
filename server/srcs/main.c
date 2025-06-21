@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     // args.height = rand() % 1000 + 4;
     // args.height = 10000;
     args.height = 10;
-    args.nb_clients = 1000;
+    args.nb_clients = 100;
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
@@ -174,6 +174,7 @@ int main(int argc, char **argv)
         goto error;
 
     parse_free_config();
+    printf("Server started on port %d\n", args.port);
 
     /* if server closes us something weird could happen */
     signal(SIGPIPE, SIG_IGN);
