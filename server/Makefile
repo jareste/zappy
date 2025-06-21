@@ -3,18 +3,20 @@ NAME = zappy
 #########
 RM = rm -rf
 CC = cc
-CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
+# CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc  -lpthread #-DDEBUG
+CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc  -lpthread -DUSE_SSL #-DDEBUG
 # CFLAGS = -Werror -Wextra -Wall -g -fsanitize=address -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
+# CFLAGS = -Werror -Wextra -Wall -g -fsanitize=thread -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
 LDFLAGS = -L$(OPENSSL_BUILD_DIR)/lib -lssl -lcrypto -lm
 RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
 #########
 
 #########
-FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api config_file
+FILES = main parse_arg ssl_al ssl_table server ft_list ft_malloc game time_api config_file ssl_al_workers log
 
 SRC = $(addsuffix .c, $(FILES))
 
-vpath %.c srcs srcs/parse_arg srcs/server inc srcs/game srcs/time_api
+vpath %.c srcs srcs/parse_arg srcs/server inc srcs/game srcs/time_api srcs/log
 #########
 
 OBJ_DIR = objs
@@ -48,7 +50,7 @@ all: .gitignore create_cert
 	$(MAKE) $(NAME)
 
 $(NAME): $(OBJ) $(CJSON_LIB) Makefile
-	$(CC) $(CFLAGS) $(OBJ) $(CJSON_LIB) -lssl -lcrypto -o $(NAME) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OBJ) $(CJSON_LIB) -lssl -lcrypto -ldl -lpthread -o $(NAME) $(LDFLAGS)
 	@echo "EVERYTHING DONE  "
 #	@./.add_path.sh
 
@@ -88,6 +90,7 @@ re: fclean
 		echo "*.pem" >> .gitignore; \
 		echo ".vscode/" >> ../.gitignore; \
 		echo ".gitignore" >> ../.gitignore; \
+		echo "log.txt" >> ../.gitignore; \
 		echo ".gitignore created and updated with entries."; \
 	else \
 		echo ".gitignore already exists."; \

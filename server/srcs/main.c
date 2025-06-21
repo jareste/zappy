@@ -6,6 +6,7 @@
 #include "server/ssl_al.h"
 #include "server/server.h"
 #include "game/game.h"
+#include "log/log.h"
 #include "time_api/time_api.h"
 #include "parse_arg/config_file.h"
 
@@ -29,61 +30,63 @@ int main_loop()
 {
     int sel_ret;
     int game_ret;
-    int sel_timeout;
-#ifdef DEBUG
-    struct timeval start_time;
-    struct timeval end_time;
-#endif
+    int initial_time_units;
+    int _initial_time_units;
+    int final_time_units;
+    int _final_time_units;
+    int time_to_select;
+    int time_to_play;
 
-    int i;
-
-    i = 0;
-    sel_timeout = 0;
     while (!m_die)
     {
-#ifdef DEBUG
-        gettimeofday(&start_time, NULL);
-#endif
+        time_api_update(NULL);
+        {
+            initial_time_units = time_api_get_local()->current_time_units;
+            _initial_time_units = initial_time_units;
+        }
 
-        sel_ret = server_select(sel_timeout);
+        sel_ret = server_select();
         if (sel_ret == ERROR)
         {
-            fprintf(stderr, "Failed to select\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to select\n");
             break;
+        }
+        time_api_update(NULL);
+
+        {
+            final_time_units = time_api_get_local()->current_time_units;
+
+            time_to_select = final_time_units - initial_time_units;
+
+            initial_time_units = time_api_get_local()->current_time_units;
         }
 
         game_ret = game_play();
         if (game_ret == ERROR)
         {
-            fprintf(stderr, "Failed to play\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to play\n");
             break;
         }
 
-#ifdef DEBUG
-        gettimeofday(&end_time, NULL);
-        long elapsed_us = (end_time.tv_sec - start_time.tv_sec) * 1000000L + 
-                      (end_time.tv_usec - start_time.tv_usec);
-        printf("Loop completed in: %ld microseconds\n", elapsed_us);
-#endif
+        {
+            time_api_update(NULL);
+            final_time_units = time_get_current_time_units(NULL);
 
-        if (sel_ret == 0 && game_ret == 0)
-        {
-            /* Release some CPU time or computer slows down */
-            // sel_timeout = 100; /* 10ms */
+            time_to_play = final_time_units - initial_time_units;
+
+            if ((time_to_select + time_to_play) > 2)
+            {
+                log_msg(LOG_LEVEL_WARN, "Server exhausted, might lose some events. Selected(%d) in '%d'. Played in '%d' (%d)\n", 
+                    sel_ret, time_to_select, time_to_play, time_get_current_time_units(NULL));
+            }
+
+            _final_time_units = time_get_current_time_units(NULL);
+            if (_final_time_units - _initial_time_units > 5)
+            {
+                log_msg(LOG_LEVEL_DEBUG, "Loop time deviation (%d) (%d)\n", 
+                    _final_time_units - _initial_time_units, time_get_current_time_units(NULL));
+            }
         }
-        else
-        {
-            /* We are busy so keep going */
-            sel_timeout = 0;
-        }
-        /* DEBUG */
-        i++;
-        // if (i % 100 == 0)
-        // {
-        //     time_api *api = time_api_get_local();
-        //     printf("Current time units: %d\n", api->current_time_units);
-        // }
-        /* END_DEBUG */
     }
 
     game_clean();
@@ -120,12 +123,18 @@ int main(int argc, char **argv)
     // args.height = rand() % 1000 + 4;
     // args.height = 10000;
     args.height = 10;
-    args.nb_clients = rand() % 100 + 10;
+    args.nb_clients = 1000;
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
     args.time_unit = 800;
-    printf("Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
+    
+    if (parse_config("config") == ERROR)
+            goto error;
+
+    log_init(LOG_LEVEL_WARN);
+
+    log_msg(LOG_LEVEL_BOOT, "Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
            args.width, args.height, args.nb_clients, args.time_unit);
 
     int port = atoi(argc>1?argv[1]:"2");
@@ -141,7 +150,7 @@ int main(int argc, char **argv)
 
     if (args.nb_teams > args.nb_clients)
     {
-        fprintf(stderr, "ERROR: there could not be more teams than clients.\n");
+        log_msg(LOG_LEVEL_ERROR, "ERROR: there could not be more teams than clients.\n");
         return ERROR;
     }
 
@@ -150,9 +159,6 @@ int main(int argc, char **argv)
         ZAPPY_USAGE(EXIT_FAILURE);
     }
     if (parse_args(argc, argv, &args) == ERROR)
-        goto error;
-
-    if (parse_config("config") == ERROR)
         goto error;
 
     /* On failure will simply exit soooo :)
@@ -173,11 +179,13 @@ int main(int argc, char **argv)
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, signal_handler);
     main_loop();
-    printf("Exiting...\n");
+    log_msg(LOG_LEVEL_INFO, "Exiting...\n");
+    log_close();
 
     return 0;
 
 error:
+    parse_free_config();
     game_clean();
     time_api_free(NULL);
     cleanup_server();

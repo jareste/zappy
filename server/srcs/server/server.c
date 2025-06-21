@@ -7,6 +7,7 @@
 #include "ssl_table.h"
 #include "ssl_al.h"
 #include "../game/game.h"
+#include "../log/log.h"
 
 /* defines */
 #define SERVER_KEY "SOME_KEY"
@@ -15,9 +16,31 @@
 #define REMOVE_CLIENT(fd) \
     do { \
         FD_CLR(fd, &m_read_fds); \
+        log_msg(LOG_LEVEL_INFO, "Removing client %d\n", fd); \
         game_kill_player(fd); \
         close(fd); \
     } while (0)
+
+/* DEBUG */
+/*
+static struct timeval m_start_time;
+static long m_elapsed_us = 0;
+static struct timeval m_end_time;
+#define START_TIMER \
+do { \
+    gettimeofday(&m_start_time, NULL); \
+} while (0)
+
+
+#define END_TIMER \
+do { \
+    gettimeofday(&m_end_time, NULL); \
+    m_elapsed_us = (m_end_time.tv_sec - m_start_time.tv_sec) * 1000000L + \
+                      (m_end_time.tv_usec - m_start_time.tv_usec); \
+    printf("Elapsed time: %ld microseconds\n", m_elapsed_us); \
+} while (0)
+*/
+/* DEBUG_END */
 
 /* Typedefs */
 typedef enum
@@ -169,26 +192,34 @@ static int m_create_json_response(int fd, char* type, char* msg, char* args)
     return SUCCESS;
 }
 
+int cb_on_accept_success(int fd)
+{
+    int ret;
+
+    FD_SET(fd, &m_read_fds);
+    if (fd > m_max_fd)
+        m_max_fd = fd;
+
+    /**/
+
+    ret = m_create_json_response(fd, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
+    if (ret == ERROR)
+    {
+        log_msg(LOG_LEVEL_WARN, "Failed to create JSON response\n");
+        return ERROR;
+    }
+
+    return SUCCESS;
+}
+
 static int m_handle_new_client(int fd)
 {
     int new_client;
-    int ret;
 
     new_client = accept(fd, NULL, NULL);
     if (new_client == ERROR)
     {
         perror("accept");
-        return ERROR;
-    }
-
-    FD_SET(new_client, &m_read_fds);
-    if (new_client > m_max_fd)
-        m_max_fd = new_client;
-
-    /**/
-    ret = m_create_json_response(new_client, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
-    if (ret == ERROR)
-    {
         return ERROR;
     }
 
@@ -272,7 +303,7 @@ static int m_handle_login_client(int fd, cJSON *root)
         return ERROR;
     
     cJSON_AddStringToObject(response, "type", "welcome");
-    cJSON_AddNumberToObject(response, "remaining_clients", game_get_client_count());
+    cJSON_AddNumberToObject(response, "remaining_clients", game_get_team_remaining_clients(fd));
     
     map_size = cJSON_CreateObject();
     if (!map_size)
@@ -362,9 +393,9 @@ static int m_handle_client_message(int fd, char *buffer, int bytes)
     root = cJSON_Parse(buffer);
     if (!root)
     {
-        printf("Failed to parse JSON!\n");
-        printf("Error before: %s\n", cJSON_GetErrorPtr());
-        printf("Buffer: %s\n", buffer);
+        log_msg(LOG_LEVEL_ERROR, "Failed to parse JSON!\n");
+        log_msg(LOG_LEVEL_ERROR, "Error before: %s\n", cJSON_GetErrorPtr());
+        log_msg(LOG_LEVEL_ERROR, "Buffer: %s\n", buffer);
         return ERROR;
     }
     
@@ -406,22 +437,20 @@ static int m_handle_client_event(int fd)
     bytes = recv(fd, buffer, sizeof(buffer), 0);
     if (bytes <= 0)
     {
-        printf("Client fd=%d disconnected or error\n", fd);
-        perror("recv");
+        log_msg(LOG_LEVEL_WARN, "Client fd=%d disconnected or error\n", fd);
         REMOVE_CLIENT(fd);
-        return ERROR;
+        return SUCCESS;
     }
 
     ret = m_handle_client_message(fd, buffer, bytes);
     if (ret == ERROR)
     {
         return ERROR;
-        // printf("Sent '%s' to fd=%d\n", buffer, fd);
     }
     else
     {
-        // printf("Handled JSON message from fd=%d\n", fd);
     }
+
     return SUCCESS;
 }
 
@@ -455,22 +484,28 @@ int server_remove_client(int fd)
     return SUCCESS;
 }
 
-int server_select(int sel_timeout)
+int server_select()
 {
     fd_set read_fds;
-    struct timeval timeout;
     int ret;
     int fd;
+    struct timeval timeout;
+
+    /* Check for any delegated handshakes */
+    ssl_al_lookup_new_clients();
 
     /* Cpy the read_fds set to avoid modifying the original. */
     memcpy(&read_fds, &m_read_fds, sizeof(m_read_fds));
 
     timeout.tv_sec = 0;
-    timeout.tv_usec = sel_timeout; /* Non-blocking select at all. */
+    timeout.tv_usec = 0;
 
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
+    {
+        log_msg(LOG_LEVEL_ERROR, "Select error: (%d) (%d) \n", ret, m_max_fd);
         return ERROR;
+    }
     else if (ret == 0) /* No new data to read. */
         return 0;
 
@@ -484,8 +519,8 @@ int server_select(int sel_timeout)
             ret = m_handle_new_client(fd);
             if (ret == ERROR)
             {
-                fprintf(stderr, "Failed to accept new client\n");
-                return ERROR;
+                log_msg(LOG_LEVEL_ERROR, "Failed to accept new client\n");
+                ret = 0;
             }
         }
         else
@@ -493,35 +528,37 @@ int server_select(int sel_timeout)
             ret = m_handle_client_event(fd);
             if (ret == ERROR)
             {
-                fprintf(stderr, "Failed to handle client event\n");
-                fprintf(stderr, "##################################\n");
+                log_msg(LOG_LEVEL_ERROR, "Failed to handle client event\n");
                 /* remove client */
                 /* by doing FD_CLR we will just ignore him so he will
                  * be disconnected by his side when tcp timeout occurs
                  */
                 REMOVE_CLIENT(fd);
-                printf("Client fd=%d disconnected\n", fd);
+                log_msg(LOG_LEVEL_INFO, "Client fd=%d disconnected\n", fd);
+                /* We remove the client but we don't want to close the server at all..
+                */
+                ret = 0;
             }
         }
     }
 
     m_remove_clients();
-    return SUCCESS;
+    return ret;
 }
 
 int init_server(int port, char* cert, char* key)
 {
-    m_sock_server = init_ssl_al(cert, key, port);
+    m_sock_server = init_ssl_al(cert, key, port, cb_on_accept_success);
     if (m_sock_server == ERROR)
     {
-        fprintf(stderr, "Failed to initialize SSL\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to initialize SSL\n");
         return ERROR;
     }
 
     set_server_socket(m_sock_server);
     m_max_fd = m_sock_server;
     FD_ZERO(&m_read_fds);
-    printf("Server socket initialized: fd=%d\n", m_sock_server);
+    log_msg(LOG_LEVEL_BOOT, "Server socket initialized: fd=%d\n", m_sock_server);
     FD_SET(m_sock_server, &m_read_fds);
 
     return SUCCESS;

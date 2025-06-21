@@ -2,20 +2,30 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <time.h>
+#include "../log/log.h"
 
 time_api* m_time = NULL;
 
 /* Helper function to get the current system time in milliseconds */
+// static long get_current_time_ms()
+// {
+//     struct timeval tv;
+//     gettimeofday(&tv, NULL);
+//     return tv.tv_sec * 1000L + tv.tv_usec / 1000;
+// }
+
 static long get_current_time_ms()
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000L + tv.tv_usec / 1000;
+    struct timespec ts;
+    /* Supposed to be faster than gettimeofday() */
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000L + ts.tv_nsec / 1000000;
 }
 
 time_api *time_api_get_local()
 {
-    time_api_update(NULL);
+    // time_api_update(NULL);
     return m_time;
 }
 
@@ -34,7 +44,7 @@ int time_api_init_local(int t)
     m_time = time_api_init(t);
     if (!m_time)
     {
-        fprintf(stderr, "Failed to initialize time API.\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to initialize time API.\n");
         return ERROR;
     }
     return SUCCESS;
@@ -54,7 +64,7 @@ void time_api_free(time_api *api)
 }
 
 /* Compute and return the current game time (in time units) */
-int time_get_current_time_units(time_api *_api)
+uint64_t time_get_current_time_units(time_api *_api)
 {
     time_api *api;
     long now;
@@ -62,13 +72,13 @@ int time_get_current_time_units(time_api *_api)
     api= _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return -1;
     }
 
     now = get_current_time_ms();
     /* Each time unit lasts 1000/t milliseconds */
-    return (int)((now - api->start_time_ms) * api->t / 1000);
+    return (uint64_t)((now - api->start_time_ms) * api->t / 1000);
 }
 
 /* Update the current game time stored in the API */
@@ -79,7 +89,7 @@ int time_api_update(time_api *_api)
     api= _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return ERROR;
     }
 
@@ -103,17 +113,14 @@ int time_api_schedule_client_event(time_api *_api, event_buffer *buffer, int del
     api= _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return -1;
     }
 
     if (buffer->count >= MAX_EVENTS)
     {
-        // fprintf(stderr, "Client event buffer is full. Event not scheduled.\n");
         return -1;
     }
-
-    time_api_update(NULL);
 
     if (buffer->count > 0)
         new_event.exec_time = buffer->events[buffer->tail].exec_time + delay;
@@ -140,14 +147,12 @@ int time_api_schedule_client_event_front(time_api *_api, event_buffer *buffer, i
     api = _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return -1;
     }
 
     if (m_is_event_buffer_full(buffer))
         return -1;
-
-    time_api_update(NULL);
 
     new_event.exec_time = api->current_time_units + delay;
     new_event.callback  = callback;
@@ -173,7 +178,7 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer)
     api = _api ? _api : m_time;
     if (!api)
     {
-        fprintf(stderr, "Time API not initialized.\n");
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return ERROR;
     }
 

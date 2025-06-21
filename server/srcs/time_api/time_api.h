@@ -5,12 +5,13 @@
 #include "../game/game_structs.h"
 #include <error_codes.h>
 #include <ft_malloc.h>
+#include <stdint.h>
 
 typedef struct
 {
     int t;
     long start_time_ms;
-    int current_time_units;
+    uint64_t current_time_units; /* No overflow protection, but goodluck trying to overflow :) */
 } time_api;
 
 /* Initializes the time_api with the time divider 't'.
@@ -26,7 +27,7 @@ time_api *time_api_get_local();
 int time_api_init_local(int t);
 
 /* Returns the current game time units based on the elapsed real time. */
-int time_get_current_time_units(time_api *api);
+uint64_t time_get_current_time_units(time_api *api);
 
 /* Updates the API's notion of current game time.
  * Should be called periodically in the main loop.

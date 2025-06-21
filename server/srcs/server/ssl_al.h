@@ -28,10 +28,13 @@
     };
     #endif
 
+    typedef int (*callback_success_SSL_accept)(int);
+
     /* functions that only make sense with SSL */
-    int init_ssl_al(char* cert, char* key, int port);
+    int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb);
     int cleanup_ssl_al();
     void set_server_socket(int sock);
+    int ssl_al_lookup_new_clients();
 
     int ssl_al_accept_client();
     int ws_close(int fd);
@@ -42,10 +45,49 @@
     #define recv(sockfd, buf, len, flags) ws_read(sockfd, buf, len, flags)
     #define close(sockfd) ws_close(sockfd)
 #else
+    #include <unistd.h>
     #include <sys/socket.h>
-    #define init_ssl_al(cert, key, port) SUCCESS
-    #define cleanup_ssl_al() SUCCESS
-    #define set_server_socket(sock) SUCCESS
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+
+
+    #define cleanup_ssl_al() NULL
+    #define set_server_socket(sock) NULL
+    #define ssl_al_lookup_new_clients() NULL
+
+    static inline int init_ssl_al(char* cert, char* key, int port, void* cb)
+    {
+        int sockfd;
+        struct sockaddr_in addr;
+
+        (void)cert;
+        (void)key;
+        (void)cb;
+
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd == -1)
+        {
+            return ERROR;
+        }
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        addr.sin_addr.s_addr = INADDR_ANY;
+
+        if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
+        {
+            close(sockfd);
+            return ERROR;
+        }
+
+        if (listen(sockfd, 3) == -1)
+        {
+            close(sockfd);
+            return ERROR;
+        }
+        return sockfd;
+    }
+
+
 #endif
 
 

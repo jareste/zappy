@@ -23,9 +23,34 @@
 #include <ft_malloc.h>
 #include <error_codes.h>
 #include "ssl_table.h"
+#include "ssl_al_workers.h"
+#include "../log/log.h"
 
 static SSL_CTX *m_ctx = NULL;
 static int m_sock_server = -1;
+typedef int (*callback_success_SSL_accept)(int);
+
+callback_success_SSL_accept m_callback_success_SSL_accept = NULL;
+
+/*  DEBUG */
+/*
+static struct timeval m_start_time;
+static long m_elapsed_us = 0;
+static struct timeval m_end_time;
+#define START_TIMER \
+ do { \
+     gettimeofday(&m_start_time, NULL); \
+ } while (0)
+
+#define END_TIMER \
+ do { \
+     gettimeofday(&m_end_time, NULL); \
+     m_elapsed_us = (m_end_time.tv_sec - m_start_time.tv_sec) * 1000000L + \
+                       (m_end_time.tv_usec - m_start_time.tv_usec); \
+     printf("Elapsed time: %ld microseconds\n", m_elapsed_us); \
+ } while (0)
+*/
+/*  DEBUG_END */
 
 static void base64_encode(const unsigned char *input, int len, char *output)
 {
@@ -137,7 +162,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
     ssl = ssl_table_get(fd);
     if (!ssl)
     {
-        fprintf(stderr, "SSL not found for fd %d\n", fd);
+        log_msg(LOG_LEVEL_ERROR, "SSL not found for fd %d\n", fd);
         return ERROR;
     }
 
@@ -146,7 +171,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         r = SSL_read(ssl, header + offset, 2 - offset);
         if (r <= 0)
         {
-            fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
+            log_msg(LOG_LEVEL_ERROR, "SSL_read error[%d]: %d\n", __LINE__, r);
             return ERROR;
         }
 
@@ -173,7 +198,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
             r = SSL_read(ssl, ping_payload, payload_len);
             if (r != (int)payload_len)
             {
-                fprintf(stderr, "Failed to read ping payload\n");
+                log_msg(LOG_LEVEL_ERROR, "Failed to read ping payload\n");
                 /* try sending empty PONG frame */
                 m_ws_send_control_frame(ssl, 0xA, NULL, 0);
                 return 1;
@@ -187,7 +212,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
     }
     else if (opcode != 0x1) /* 2 would mean binary data */
     {
-        fprintf(stderr, "Unsupported opcode: 0x%x — closing connection\n", opcode);
+        log_msg(LOG_LEVEL_ERROR, "Unsupported opcode: 0x%x — closing connection\n", opcode);
         ws_send_close(fd, 1002, "Protocol error: unsupported opcode");
         return 0; /* 0 will fall into a disconnect */
     }
@@ -197,7 +222,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         r = SSL_read(ssl, header + offset, 2);
         if (r != 2)
         {
-            fprintf(stderr, "Failed to read extended payload length\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to read extended payload length\n");
             return ERROR;
         }
 
@@ -209,7 +234,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         r = SSL_read(ssl, header + offset, 8);
         if (r != 8)
         {
-            fprintf(stderr, "Failed to read extended payload length\n");
+            log_msg(LOG_LEVEL_ERROR, "Failed to read extended payload length\n");
             return ERROR;
         }
 
@@ -221,14 +246,14 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
 
     if (payload_len > bufsize)
     {
-        fprintf(stderr, "Payload too large for buffer: %zu > %zu\n", payload_len, bufsize);
+        log_msg(LOG_LEVEL_ERROR, "Payload too large for buffer: %zu > %zu\n", payload_len, bufsize);
         return ERROR;
     }
     
     r = SSL_read(ssl, mask, 4);
     if (r != 4)
     {
-        fprintf(stderr, "Failed to read mask: read %d bytes\n", r);
+        log_msg(LOG_LEVEL_ERROR, "Failed to read mask: read %d bytes\n", r);
         ws_send_close(fd, 1002, "Malformed frame");
         return 0; /* 0 will fall into a disconnect */
     }
@@ -241,18 +266,18 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         {
             if (SSL_get_error(ssl, r) == SSL_ERROR_WANT_READ)
             {
-                fprintf(stderr, "SSL_read would block\n");
+                log_msg(LOG_LEVEL_ERROR, "SSL_read would block\n");
                 return ERROR;
             }
             else if (SSL_get_error(ssl, r) == SSL_ERROR_SYSCALL)
             {
-                fprintf(stderr, "SSL_read syscall error\n");
+                log_msg(LOG_LEVEL_ERROR, "SSL_read syscall error\n");
                 return ERROR;
             }
             else
             {
-                fprintf(stderr, "SSL_read error[%d]: %d\n", __LINE__, r);
-                fprintf(stderr, "Received %zu bytes\n", received);
+                log_msg(LOG_LEVEL_ERROR, "SSL_read error[%d]: %d\n", __LINE__, r);
+                log_msg(LOG_LEVEL_ERROR, "Received %zu bytes\n", received);
                 return ERROR;
             }
         }
@@ -335,20 +360,20 @@ static int _init_server(int port)
 
     if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
     {
-        fprintf(stderr, "bind failed\n");
+        log_msg(LOG_LEVEL_ERROR, "bind failed\n");
         perror("bind");
         close(sockfd);
         return ERROR;
     }
 
-    if (listen(sockfd, 1) == -1)
+    if (listen(sockfd, 3) == -1)
     {
-        fprintf(stderr, "listen failed\n");
+        log_msg(LOG_LEVEL_ERROR, "listen failed\n");
         close(sockfd);
         return ERROR;
     }
 
-    printf("WSS server listening on port %d...\n", port);
+    log_msg(LOG_LEVEL_BOOT, "WSS server listening on port %d...\n", port);
     return sockfd;
 }
 
@@ -362,7 +387,38 @@ static int stop_server()
     return SUCCESS;
 }
 
-int init_ssl_al(char* cert, char* key, int port)
+/* Dequeue all delegated handshakes
+*/
+int ssl_al_lookup_new_clients()
+{
+    return ssl_al_worker_dequeue_all();
+}
+
+void on_handshake_done(int fd, SSL *ssl)
+{
+    char buf[4096] = {0};
+    int ret;
+
+    ret = ssl_table_add(fd, ssl);
+    if (ret == ERROR) goto error;
+
+    ret = SSL_read(ssl, buf, sizeof(buf) - 1);
+    if (ret <= 0) goto error;
+
+    websocket_handshake(ssl, buf);
+
+    m_callback_success_SSL_accept(fd);
+    return ;
+
+error:
+    if (fd != -1)
+    {
+        close(fd);
+    }
+    return ;
+}
+
+int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb)
 {
     int server_sock;
     const SSL_METHOD *method;
@@ -371,7 +427,13 @@ int init_ssl_al(char* cert, char* key, int port)
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
     method = TLS_server_method();
+    
     m_ctx = SSL_CTX_new(method);
+    if (!m_ctx)
+    {
+        ERR_print_errors_fp(stderr);
+        return ERROR;
+    }
 
     if (SSL_CTX_use_certificate_file(m_ctx, cert, SSL_FILETYPE_PEM) <= 0 ||
         SSL_CTX_use_PrivateKey_file(m_ctx, key, SSL_FILETYPE_PEM) <= 0)
@@ -387,9 +449,12 @@ int init_ssl_al(char* cert, char* key, int port)
     server_sock = _init_server(port);
     if (server_sock == ERROR)
     {
-        fprintf(stderr, "Failed to initialize server socket\n");
+        log_msg(LOG_LEVEL_ERROR, "Failed to initialize server socket\n");
         return ERROR;
     }
+
+    m_callback_success_SSL_accept = cb;
+    init_handshake_pool(on_handshake_done);
 
     return server_sock;
 }
@@ -425,50 +490,29 @@ int ws_close(int fd)
 
 int ssl_al_accept_client()
 {
-    char buf[4096] = {0};
     struct sockaddr_in client_addr;
     SSL* ssl;
     socklen_t len;
     int client;
-    int ret;
 
     ssl = NULL;
     client = -1;
     if (m_sock_server == -1)
         goto error;
 
+    // START_TIMER;
     len = sizeof(client_addr);
-    printf("Waiting for client connection...\n");
     client = accept(m_sock_server, (struct sockaddr*)&client_addr, &len);
     if (client == -1)
         goto error;
+    // END_TIMER;
 
-    printf("Client connected: %s:%d\n",
-           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     ssl = SSL_new(m_ctx);
     if (!ssl)
         goto error;
-
-    if (SSL_set_fd(ssl, client) == 0)
-        goto error;
-    
-    ret = ssl_table_add(client, ssl);
-    if (ret == ERROR)
-        goto error;
-
-    if (SSL_accept(ssl) <= 0)
-        goto error;
-
-    printf("Client connected: %s:%d\n",
-           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-    SSL_read(ssl, buf, sizeof(buf) - 1);
-    printf("Got handshake request:\n%s\n", buf);
-
-    websocket_handshake(ssl, buf);
-    printf("Handshake done. Sending welcome message.\n");
-
-    // ws_send(client, "Welcome to WSS WebSocket server!", strlen("Welcome to WSS WebSocket server!"), 0);
+    // START_TIMER;
+    ssl_al_worker_queue(client, ssl);
+    // END_TIMER;
 
     return client;
 
@@ -483,7 +527,6 @@ error:
         close(client);
     }
     return ERROR;
-
 }
 
 void set_server_socket(int sock)

@@ -9,6 +9,7 @@ bool parse_respawn_resources();
 void parse_set_respawn_context(spawn_ctx* ctx);
 void parse_set_start_life_units(int* start_life_units);
 void parse_set_life_unit(int* life_unit);
+void parse_set_log_config(log_config* log);
 
 void parse_free_config();
 

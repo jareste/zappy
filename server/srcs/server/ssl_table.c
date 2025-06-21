@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <error_codes.h>
 #include <ft_malloc.h>
+#include "../log/log.h"
 
 #define INITIAL_BUCKET_COUNT 128
 
@@ -45,7 +46,7 @@ void ssl_table_free(void)
 {
     if (!ssl_table_initialized)
     {
-        fprintf(stderr, "SSL table not initialized\n");
+        log_msg(LOG_LEVEL_ERROR, "SSL table not initialized\n");
         return;
     }
 
@@ -68,7 +69,7 @@ int ssl_table_add(int fd, SSL *ssl)
 {
     if (!ssl_table_initialized)
     {
-        fprintf(stderr, "SSL table not initialized\n");
+        log_msg(LOG_LEVEL_ERROR, "SSL table not initialized\n");
         return ERROR;
     }
     size_t index = hash_fd(fd);
@@ -97,7 +98,7 @@ SSL *ssl_table_get(int fd)
 {
     if (!ssl_table_initialized)
     {
-        fprintf(stderr, "SSL table not initialized\n");
+        log_msg(LOG_LEVEL_ERROR, "SSL table not initialized\n");
         return NULL;
     }
     size_t index = hash_fd(fd);
@@ -115,7 +116,7 @@ void ssl_table_remove(int fd)
 {
     if (!ssl_table_initialized)
     {
-        fprintf(stderr, "SSL table not initialized\n");
+        log_msg(LOG_LEVEL_ERROR, "SSL table not initialized\n");
         return;
     }
     size_t index = hash_fd(fd);
