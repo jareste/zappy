@@ -132,6 +132,35 @@ int server_send_json(int fd, void* resp)
     return SUCCESS;
 }
 
+int server_create_response_msg(int fd, char *cmd, char *arg, char* status)
+{
+    cJSON *response;
+    char *json;
+
+    response = cJSON_CreateObject();
+    if (!response)
+        return ERROR;
+
+    cJSON_AddStringToObject(response, "type", cmd);
+    if (arg)
+        cJSON_AddStringToObject(response, "arg", arg);
+    if (status)
+        cJSON_AddStringToObject(response, "status", status);
+
+    json = cJSON_Print(response);
+    if (!json)
+    {
+        cJSON_Delete(response);
+        return ERROR;
+    }
+
+    send(fd, json, strlen(json), 0);
+
+    cJSON_Delete(response);
+    free(json);
+    return SUCCESS;
+}
+
 int server_create_response_to_command(int fd, char *cmd, char *arg, char* status)
 {
     cJSON *response;

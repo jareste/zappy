@@ -901,6 +901,8 @@ int compute_broadcast_direction(int listener_x, int listener_y, int listener_dir
     return K;
 }
 
+int server_create_response_msg(int fd, char *cmd, char *arg, char* status);
+
 static int m_command_broadcast(void* _p, void* _arg)
 {
     player *emitter = (player*)_p;
@@ -924,7 +926,9 @@ static int m_command_broadcast(void* _p, void* _arg)
 
         snprintf(k_str, sizeof(k_str), "%d", K);
 
-        server_create_response_to_command(receiver->id, "message", k_str, text);
+        // server_create_response_to_command(receiver->id, "message", k_str, text);
+        // int server_create_response_msg(int fd, char *cmd, char *arg, char* status)
+        server_create_response_msg(receiver->id, "message", k_str, text);
     }
 
     return server_create_response_to_command(emitter->id, "broadcast", NULL, "ok");
@@ -1008,7 +1012,8 @@ static int m_command_real_incantation(void* _p, void* _arg)
         if (p2->level == initial_level)
         {
             p2->level++;
-            server_create_response_to_command(p2->id, "incantation", NULL, "Level up!");
+            // server_create_response_to_command(p2->id, "incantation", NULL, "Level up!");
+            server_create_response_msg(p2->id, "event", NULL, "Level up!");
         }
         p2 = p2->next_on_tile;
     }
