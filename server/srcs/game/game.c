@@ -947,7 +947,7 @@ static int m_game_check_can_incantation(player* p, bool check_items)
 
     t = MAP(p->pos.x, p->pos.y);
 
-    reqs = &level_reqs[p->level];
+    reqs = &level_reqs[p->level - 1]; /* if level 1, we need first position */
 
     /**/
     if (check_items == true)
@@ -1035,7 +1035,7 @@ static int m_command_incantation(void* _p, void* _arg)
         return server_create_response_to_command(p->id, "incantation", NULL, "ko");
 
     t = MAP(p->pos.x, p->pos.y);
-    reqs = &level_reqs[p->level];
+    reqs = &level_reqs[p->level - 1]; /* if level 0, we'll go to 0 pos to check */
 
     t->items.nourriture -= reqs->inv.nourriture;
     t->items.linemate -= reqs->inv.linemate;
