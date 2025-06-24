@@ -249,6 +249,12 @@ public class AI {
         commands.add(new Command(CommandType.VOIR));
     }
 
+    public List<Command> goToElevationCall(int dir, int level, int playersNeeded) {
+        List<Command> commands = new ArrayList<>();
+
+        return commands;
+    }
+
     /********** UTILS **********/
 
     // for level=1 this will be:

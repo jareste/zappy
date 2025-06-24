@@ -117,25 +117,7 @@ public class CommandManager {
         String rawMsg = jsonResponse.get("arg").getAsString();
         System.out.println("[CLIENT " + this.id + "] " + "Message received: \"" + rawMsg + "\" from direction: " + dir);
         
-        try {
-            JsonObject msg = JsonParser.parseString(rawMsg).getAsJsonObject();
-            String event = msg.get("event").getAsString();
-            String status = msg.get("status").getAsString();
-
-            if ("elevation".equals(event) && "call".equals(status)) {
-                int level = msg.get("level").getAsInt();
-                int playersNeeded = msg.get("players_needed").getAsInt();
-                System.out.println("[CLIENT " + this.id + "] Received elevation call for level " + level + ", from dir " + dir);
-            } else if ("elevation".equals(event) && "ko".equals(status)) {
-                // System.out.println("[CLIENT " + this.id + "] Received elevation error (ko) for level " + level + ", from dir " + dir);
-            } else {
-                System.out.println("[CLIENT " + this.id + "] Unhandled broadcast message: " + rawMsg);
-            }
-
-        } catch (Exception e) {
-            System.err.println("[CLIENT " + this.id + "] Failed to parse broadcast message: " + rawMsg);
-            e.printStackTrace();
-        }
+        player.handleBroadcastMessage(rawMsg, dir);
     }
 
     private void handleKickMsg(JsonObject jsonResponse) {
