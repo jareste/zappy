@@ -233,15 +233,15 @@ public class Player {
     }
 
     /********** BROADCAST **********/
-
-    public Command broadcast(String event, String status, String level, String playersNeeded) {
+ 
+    public Command broadcastCmd(String event, String status, int level, int playersNeeded) { // level - cur level
         JsonObject broadcastMessage = new JsonObject();
         broadcastMessage.addProperty("event", event);
         broadcastMessage.addProperty("status", status);
-        if (level != null) {
+        if (level > 0) {
             broadcastMessage.addProperty("level", level);
         }
-        if (playersNeeded != null) {
+        if (playersNeeded > 0) {
             broadcastMessage.addProperty("players_needed", playersNeeded);
         }
         return new Command(CommandType.BROADCAST, broadcastMessage.toString());

@@ -1,5 +1,4 @@
 {
     "type": "event",
-    "event": "elevation",
     "status": "Level up!"
 }

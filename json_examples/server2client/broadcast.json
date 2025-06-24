@@ -1,10 +1,5 @@
 {
-    "type": "broadcast",
-    "source_direction": 3,
-    "arg": {
-      "event": "elevation",
-      "status": "call",
-      "level": 4,
-      "players_needed": 3
-    }
+    "type": "message",
+    "status": 3,
+    "arg": "WHATEVER YOU SENT"
   }

@@ -66,7 +66,7 @@ public class AI {
             System.out.println("[Client "+ player.getId() + "] I AM GOING FOR TARGET STONE");
             return searchForTarget();
         } else if (!inventaireChecked) {
-            System.out.println("[Client "+ player.getId() + "] I AM GOING TO ELEVATE, CHECKING INVENTAIRE");
+            System.out.println("[Client "+ player.getId() + "] I AM GOING TO ELEVATE to level " + (player.getLevel() + 1) + ", CHECKING INVENTAIRE");
             return checkInventaire();
         }
         // player.setLevel(player.getLevel() + 1);
@@ -116,6 +116,9 @@ public class AI {
             }
         }
         // if level > 1 -> broadcast to all players
+        // if (level > 1) {
+        commands.add(player.broadcastCmd("elevation", "call", level, rule.getPlayers()));
+        // }
 
         // add CommandType.INCANTATION
         commands.add(new Command(CommandType.INCANTATION));
@@ -125,13 +128,6 @@ public class AI {
     private List<Command> searchForTarget() {
         List<Command> commands = new ArrayList<>();
 
-        // for (Resource target : targets) {
-        //     int tileIdx = findItemInView(curView, target.getName());
-        //     if (tileIdx != -1) {
-        //         addMovesToTile(tileIdx, target, commands);
-        //         return commands;
-        //     }
-        // }
         List<Integer> sortedIndices = getViewIndicesSortedByDistance(player.getLevel());
         for (int tileIdx : sortedIndices) {
             for (Resource target : targets) {

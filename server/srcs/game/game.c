@@ -928,7 +928,7 @@ static int m_command_broadcast(void* _p, void* _arg)
 
         // server_create_response_to_command(receiver->id, "message", k_str, text);
         // int server_create_response_msg(int fd, char *cmd, char *arg, char* status)
-        server_create_response_msg(receiver->id, "message", k_str, text);
+        server_create_response_msg(receiver->id, "message", text, k_str);
     }
 
     return server_create_response_to_command(emitter->id, "broadcast", NULL, "ok");

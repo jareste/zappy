@@ -47,7 +47,7 @@ public class CommandManager {
             case "response":
                 handleResponseMsg(jsonResponse);
                 break;
-            case "broadcast":
+            case "message":
                 handleBroadcastMsg(jsonResponse);
                 break;
             case "kick":
@@ -112,7 +112,8 @@ public class CommandManager {
     }
 
     private void handleBroadcastMsg(JsonObject jsonResponse) {
-        int dir = jsonResponse.get("source_direction").getAsInt();
+        System.out.println("[CLIENT " + this.id + "] " + "Broadcast message received: " + jsonResponse);
+        int dir = jsonResponse.has("status") ? jsonResponse.get("status").getAsInt() : -1; // default to -1 if not present
         String rawMsg = jsonResponse.get("arg").getAsString();
         System.out.println("[CLIENT " + this.id + "] " + "Message received: \"" + rawMsg + "\" from direction: " + dir);
         
@@ -144,9 +145,11 @@ public class CommandManager {
     }
 
     private void handleEventMsg(JsonObject jsonResponse) {
-        String event = jsonResponse.get("event").getAsString();
-        System.out.println("[CLIENT " + this.id + "] " + "Event received: " + event);
-        // handle properly
+        String status = jsonResponse.has("status") ? jsonResponse.get("status").getAsString() : "unknown";
+        if (status.equals("Level up!")) {
+            System.out.println("[CLIENT " + this.id + "] " + "Event: LEVEL UP!");
+            player.incrementLevel();
+        }
     }
 
     private void handleErrorMsg(JsonObject jsonResponse) {
