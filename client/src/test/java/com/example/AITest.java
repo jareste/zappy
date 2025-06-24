@@ -69,8 +69,15 @@ public class AITest {
         assertEquals(Resource.NOURRITURE.getName(), last.getArgument());
     }
 
+    /*
+    9  10 11 12 13 14 15
+       4  5  6  7  8
+          1  2  3
+             0
+    */
+
     @Test
-    public void testGetMovesToTile_RightEdge() {
+    public void testGetMovesToTile_3() {
         // For level 1, tile index 3 is the right‑most tile in the first visible row.
         List<CommandType> moves = ai.getMovesToTile(3);
         assertTrue(moves.size() >= 2);
@@ -80,9 +87,52 @@ public class AITest {
     }
 
     @Test
+    public void testGetMovesToTile_4() {
+        List<CommandType> moves = ai.getMovesToTile(4);
+        assertTrue(moves.size() >= 2);
+        assertEquals(CommandType.AVANCE, moves.get(0));
+        assertEquals(CommandType.AVANCE, moves.get(1));
+        assertEquals(CommandType.GAUCHE, moves.get(2));
+        assertEquals(CommandType.AVANCE, moves.get(3));
+        assertEquals(CommandType.AVANCE, moves.get(4));
+    }
+
+    @Test
+    public void testGetMovesToTile_7() {
+        List<CommandType> moves = ai.getMovesToTile(7);
+        assertTrue(moves.size() >= 2);
+        assertEquals(CommandType.AVANCE, moves.get(0));
+        assertEquals(CommandType.AVANCE, moves.get(1));
+        assertEquals(CommandType.DROITE, moves.get(2));
+        assertEquals(CommandType.AVANCE, moves.get(3));
+    }
+
+    @Test
+    public void testGetMovesToTile_12() {
+        List<CommandType> moves = ai.getMovesToTile(12);
+        assertTrue(moves.size() == 3);
+        assertEquals(CommandType.AVANCE, moves.get(0));
+        assertEquals(CommandType.AVANCE, moves.get(1));
+        assertEquals(CommandType.AVANCE, moves.get(2));
+    }
+
+    @Test
+    public void testGetMovesToTile_15() {
+        List<CommandType> moves = ai.getMovesToTile(15);
+        assertTrue(moves.size() >= 6);
+        assertEquals(CommandType.AVANCE, moves.get(0));
+        assertEquals(CommandType.AVANCE, moves.get(1));
+        assertEquals(CommandType.AVANCE, moves.get(2));
+        assertEquals(CommandType.DROITE, moves.get(3));
+        assertEquals(CommandType.AVANCE, moves.get(4));
+        assertEquals(CommandType.AVANCE, moves.get(5));
+        assertEquals(CommandType.AVANCE, moves.get(6));
+    }
+
+    @Test
     void testDoElevation_Level1() {
         when(mockPlayer.getId()).thenReturn(1);
-        ai.setDebugLevel(1); // you can add a setter if needed
+        // ai.setDebugLevel(1); // you can add a setter if needed
 
         List<Command> cmds = ai.doElevation();
 

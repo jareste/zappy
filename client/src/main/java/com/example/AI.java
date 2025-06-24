@@ -17,7 +17,7 @@ public class AI {
     private World world;
     private Set<Resource> targets = EnumSet.noneOf(Resource.class);
     private List<List<String>> curView = new ArrayList<>();
-    private int debugLevel = 1;
+    // private int debugLevel = 1;
     private boolean inventaireChecked = false;
 
     public AI(Player player) {
@@ -30,7 +30,7 @@ public class AI {
         List<Command> commands = new ArrayList<>();
 
         if (inventaireChecked && readyToElevate()) {
-            //doElevation();
+            return doElevation();
         }
         addRandomMove(commands);
         return commands;
@@ -55,7 +55,7 @@ public class AI {
 
         // return decideNextMovesRandom();
 
-        if (player.getLife() < 1500) {
+        if (player.getLife() < 1500 || player.getNour() < 20) {
             System.out.println("[Client "+ player.getId() + "] I AM GOING FOR FOOD");
             return searchForFood();
         }
@@ -70,8 +70,7 @@ public class AI {
             return checkInventaire();
         }
         // player.setLevel(player.getLevel() + 1);
-        debugLevel++;
-        System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + debugLevel);
+        System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + player.getLevel() + 1);
         return checkInventaire(); // doElevation();
         
 
@@ -102,7 +101,7 @@ public class AI {
 
     public List<Command> doElevation() {
         List<Command> commands = new ArrayList<>();
-        int level = debugLevel; //player.getLevel();
+        int level = player.getLevel();
         ElevationRules.Rule rule = ElevationRules.getRule(level);
         Map<Resource, Integer> resourcesNeeded = rule.getResources();
 
@@ -154,7 +153,7 @@ public class AI {
     }
 
     private void setTargets() {
-        int level = debugLevel; //player.getLevel();
+        int level = player.getLevel();
         ElevationRules.Rule rule = ElevationRules.getRule(level);
         Map<Resource, Integer> resourcesNeeded = rule.getResources();
         // Set<Resource> targets = new EnumSet<>();
@@ -218,7 +217,7 @@ public class AI {
         
         int level = 1;
         int leftIdx = 1;
-        while (2 * level + 1 < tileIdx) {
+        while (leftIdx + 2 * level + 1 <= tileIdx) {
             leftIdx += 2 * level + 1;
             level++;
         }
@@ -242,7 +241,7 @@ public class AI {
 
     private void addMovesToTile(int tileIdx, Resource target, List<Command> commands) {
         List<CommandType> moves = getMovesToTile(tileIdx);
-        System.out.println("MOVES to " + target.getName() + ": " + moves);
+        System.out.println("MOVES to " + target.getName() + "(idx: " + tileIdx + ") : " + moves);
         for (CommandType move : moves) {
             commands.add(new Command(move));
         }
@@ -325,7 +324,7 @@ public class AI {
         this.inventaireChecked = inventaireChecked;
     }
 
-    public void setDebugLevel(int debugLevel) {
-        this.debugLevel = debugLevel;
-    }
+    // public void setDebugLevel(int debugLevel) {
+    //     this.debugLevel = debugLevel;
+    // }
 }

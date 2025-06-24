@@ -72,7 +72,7 @@ public class Player {
                 System.out.println("[CLIENT " + this.id + "] " + "Broadcast response: " + status);
                 break;
             case "incantation":
-                System.out.println("[CLIENT " + this.id + "] " + "Incantation response: " + msg);
+                handleIncantationResponse(msg);
                 break;
             case "fork":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
@@ -166,6 +166,7 @@ public class Player {
 
     private void handleInventaireResponse(JsonObject msg) {
         JsonObject inv = msg.getAsJsonObject("inventaire");
+        System.out.println("[CLIENT " + this.id + "] " + "Inventory response: " + inv);
         for (Map.Entry<String, JsonElement> entry : inv.entrySet()) {
             String item = entry.getKey();
             Resource resource = Resource.fromString(item);
@@ -173,9 +174,11 @@ public class Player {
             updateInventory(resource, count);
             this.ai.setInventaireChecked(true);
         }
-        // for (Map.Entry<String, Integer> entry : this.inventory.entrySet()) {
-        //     System.out.println("[CLIENT " + this.id + "] " + entry.getKey() + ": " + entry.getValue());
-        // }
+        // update nour:
+        if (inv.has(Resource.NOURRITURE.getName())) {
+            int nourCount = inv.get(Resource.NOURRITURE.getName()).getAsInt();
+            this.nour.set(nourCount);
+        }
     }
 
     private void handlePrendResponse(JsonObject msg) {
@@ -202,6 +205,22 @@ public class Player {
             Resource resource = Resource.fromString(item);
             removeResource(resource);
             System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + this.inventory);
+        }
+    }
+
+    private void handleIncantationResponse(JsonObject msg) {
+        System.out.println("[CLIENT " + this.id + "] " + "INCANTATION!!! response: " + msg);
+        String status = msg.has("status") ? msg.get("status").getAsString() : "ko";
+        if (status.equals("in_progress")) {
+            cmdManager.incrementPendingResponses();
+        } else if (status.equals("Level up!")) {
+            cmdManager.incrementPendingResponses();
+            incrementLevel();
+        } else if (status.equals("ok")) {
+            System.out.println("[CLIENT " + this.id + "] " + "Incantation successful! and FINISHED :)");
+            this.ai.setInventaireChecked(false);
+        } else {
+            System.out.println("[CLIENT " + this.id + "] " + "Incantation failed :(");
         }
     }
 
@@ -244,6 +263,10 @@ public class Player {
 
     public int getLife() {
         return this.life.get();
+    }
+
+    public int getNour() {
+        return this.nour.get();
     }
 
     public Position getPosition() {

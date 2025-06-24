@@ -240,6 +240,10 @@ public class CommandManager {
         dead.set(value);
     }
 
+    public void incrementPendingResponses() {
+        pendingResponses.incrementAndGet();
+    }
+
     /********** UTILS **********/
 
     public void closeSession() {
