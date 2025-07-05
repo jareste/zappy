@@ -101,7 +101,8 @@ public class CommandManager {
             this.player.setGameState(x, y, ai);
         }
         // send voir command instead:
-        sendCommand(new Command(CommandType.VOIR));
+        // sendCommand(new Command(CommandType.VOIR));
+        sendCommand(new Command(CommandType.FORK));
         // sendCommand(new Command(CommandType.AVANCE));
     }
 

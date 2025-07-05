@@ -77,7 +77,9 @@ public class Player {
             case "fork":
                 status = msg.has("status") ? msg.get("status").getAsString() : "ko";
                 System.out.println("[CLIENT " + this.id + "] " + "Fork response: " + status);
-                break;
+                cmdManager.addCommand(new Command(CommandType.FORK));
+                return;
+                // break;
             case "connect_nbr":
                 int value = msg.has("arg") ? msg.get("arg").getAsInt() : 0;
                 System.out.println("[CLIENT " + this.id + "] " + "Connect number response: " + value);
