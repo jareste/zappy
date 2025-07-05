@@ -102,6 +102,25 @@ int m_is_event_buffer_full(event_buffer *buffer)
     return (buffer->count == MAX_EVENTS);
 }
 
+int time_api_schedule_single_event(time_api* _api, event* event, int delay, int (*callback)(void *, void *), void *data, void *arg)
+{
+    time_api *api;
+
+    api = _api ? _api : m_time;
+    if (!api)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
+        return -1;
+    }
+
+    event->exec_time = api->current_time_units + delay;
+    event->callback = callback;
+    event->data = data;
+    event->arg = arg;
+
+    return 0;
+}
+
 /* Schedule a client event in the client's fixed-size event buffer.
  * The event's exec_time is set to current game time + delay.
  */
@@ -164,6 +183,32 @@ int time_api_schedule_client_event_front(time_api *_api, event_buffer *buffer, i
     buffer->events[buffer->head] = new_event;
     buffer->count++;
     return 0;
+}
+
+int time_api_process_single_event(time_api *_api, event *ev)
+{
+    time_api *api;
+
+    api = _api ? _api : m_time;
+    if (!api)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
+        return ERROR;
+    }
+
+    if (ev->exec_time <= api->current_time_units)
+    {
+        if (ev->callback)
+            ev->callback(ev->data, ev->arg);
+
+        if (ev->arg)
+        {
+            free(ev->arg);
+            ev->arg = NULL;
+        }
+        return SUCCESS;
+    }
+    return ERROR; /* Event not due yet */
 }
 
 /* Process and execute all client events in the buffer that are due.

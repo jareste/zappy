@@ -110,7 +110,6 @@ int main(int argc, char **argv)
         .height = 10,
         .teams = teams,
         .nb_teams = 2,
-        .nb_clients = 3,
         .time_unit = 1,
         .cert = "certs/cert.pem",
         .key = "certs/key.pem",
@@ -123,11 +122,10 @@ int main(int argc, char **argv)
     // args.height = rand() % 1000 + 4;
     // args.height = 10000;
     args.height = 10;
-    args.nb_clients = 100;
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
-    args.time_unit = 800;
+    args.time_unit = 300;
     
     if (parse_config("config") == ERROR)
             goto error;
@@ -135,7 +133,7 @@ int main(int argc, char **argv)
     log_init(LOG_LEVEL_WARN);
 
     log_msg(LOG_LEVEL_BOOT, "Randomized values:\n\tWidth='%d'\n\tHeight='%d'\n\tNb_clients='%d'\n\tTime_unit='%lu'\n",
-           args.width, args.height, args.nb_clients, args.time_unit);
+           args.width, args.height, args.time_unit);
 
     int port = atoi(argc>1?argv[1]:"2");
     if (port != 2)
@@ -148,9 +146,9 @@ int main(int argc, char **argv)
     }
     /* DEBUG_END */
 
-    if (args.nb_teams > args.nb_clients)
+    if (args.nb_teams > 15)
     {
-        log_msg(LOG_LEVEL_ERROR, "ERROR: there could not be more teams than clients.\n");
+        log_msg(LOG_LEVEL_ERROR, "ERROR: there could not be more than 15 teams.\n");
         return ERROR;
     }
 
@@ -170,7 +168,7 @@ int main(int argc, char **argv)
         goto error;
 
     if (game_init(args.width, args.height, args.teams,\
-     args.nb_clients, args.nb_teams) == ERROR)
+                args.nb_teams) == ERROR)
         goto error;
 
     parse_free_config();

@@ -17,10 +17,22 @@
     ((x->event_buffer.count > 0) && (x->event_buffer.events[x->event_buffer.head].exec_time <= current_time))
 
 #define TEAM_IS_FULL(id) (m_server.teams[id].current_players >= m_server.teams[id].max_players)
+#define TEAM_HAS_P2C(id) (m_server.teams[id].p2c_pending > 0)
+#define TEAM_GET_LATEST_P2C(id) (m_server.teams[id].p2c[m_server.teams[id].p2c_pending - 1])
 
 #define TIME_TO_DIE (LIFE_UNIT*START_LIFE_UNITS) /* Stated in the subject */
 
 #define MAP(x,y) (&(m_server.map[((y) * (m_server.map_x)) + (x)]))
+
+typedef struct s_egg
+{
+    list_item_t l;
+    int id;
+    int team_id;
+    position pos;
+    direction dir;
+    event event;
+} t_egg;
 
 typedef enum
 {
@@ -81,7 +93,10 @@ static server m_server = {0};
 spawn_ctx m_ctx;
 int LIFE_UNIT = 0;
 int START_LIFE_UNITS = 0;
+int EGG_HATCH_DELAY = 600;
 int m_incantation_time = 0;
+t_egg* m_eggs = NULL;
+int m_egg_count = 0;
 
 const command_message command_messages[MAX_COMMANDS] =
 {
@@ -145,6 +160,9 @@ static int m_game_init_team(team *team, char *name, int max_players)
     team->max_players = max_players;
     team->current_players = 0;
     team->players = malloc(sizeof(player*) * max_players);
+    team->p2c = NULL;
+    team->p2c_pending = 0;
+    team->p2c_size = 0;
     memset(team->players, 0, sizeof(player*) * max_players);
     return SUCCESS;
 }
@@ -398,19 +416,59 @@ static int m_team_add_player_to_team(player *p)
     return SUCCESS;
 }
 
-static int m_team_remove_player_from_team(player *p)
+static int m_team_add_p2c_to_team(player *p)
 {
     int team_id;
     team *t;
+    int *new_p2c;
+    int new_size;
 
     team_id = p->team_id;
     t = &m_server.teams[team_id];
 
-    if (t->current_players <= 0)
+    if (t->p2c_pending >= t->p2c_size)
+    {
+        new_size = t->p2c_size + 3;
+        new_p2c = realloc(t->p2c, sizeof(int) * new_size);
+        t->p2c = new_p2c;
+        t->p2c_size = new_size;
+    }
+
+    t->p2c[t->p2c_pending] = p->id;
+    t->p2c_pending++;
+    return SUCCESS;
+}
+
+static int m_team_remove_player_from_team(player *p)
+{
+    int team_id;
+    team *t;
+    int i;
+
+
+    team_id = p->team_id;
+    t = &m_server.teams[team_id];
+
+    if (t->current_players <= 0 && t->p2c_pending <= 0)
         return ERROR;
 
-    t->players[t->current_players] = 0;
-    t->current_players--;
+    if (p->to_be_claimed)
+    {
+        for (i = 0; i < t->p2c_pending; i++)
+        {
+            if (t->p2c[i] == p->id)
+            {
+                t->p2c[i] = t->p2c[t->p2c_pending - 1];
+                t->p2c_pending--;
+                return SUCCESS;
+            }
+        }
+    }
+    else
+    {
+        t->players[t->current_players] = 0;
+        t->current_players--;
+    }
     return SUCCESS;
 }
 
@@ -423,10 +481,18 @@ static int m_add_client_to_server(client *c)
         if (m_server.clients[i] == NULL)
         {
             m_server.clients[i] = c;
-            return SUCCESS;
+            return i;
         }
     }
-    return ERROR;
+
+    m_server.client_count += 10;
+
+    m_server.clients = realloc(m_server.clients, sizeof(client*) * m_server.client_count);
+    memset(&m_server.clients[m_server.client_count - 10], 0, sizeof(client*) * 10);
+    log_msg(LOG_LEVEL_DEBUG, "Resizing clients array to %d\n", m_server.client_count);
+
+    m_server.clients[m_server.client_count - 1] = c;
+    return m_server.client_count - 1;
 }
 
 static int m_remove_client_from_server(client *c)
@@ -1063,13 +1129,70 @@ static int m_command_incantation(void* _p, void* _arg)
     return server_create_response_to_command(p->id, "incantation", NULL, "in_progress");
 }
 
+static int m_egg_create_player(void* _egg, void* _arg)
+{
+    t_egg* egg;
+    player* p;
+    client* c;
+    (void)_arg;
+
+    egg = (t_egg*)_egg;
+
+    p = malloc(sizeof(player));
+    p->team_id = egg->team_id;
+    p->pos.x = egg->pos.x;
+    p->pos.y = egg->pos.y;
+    p->dir = egg->dir;
+    p->level = 1;
+    memset(&p->inv, 0, sizeof(inventory));
+    p->inv.nourriture = 10;
+    p->die_time = time_api_get_local()->current_time_units + TIME_TO_DIE;
+    p->start_time = time_api_get_local()->current_time_units;
+
+    p->to_be_claimed = true;
+
+    m_game_add_player_to_tile(MAP(egg->pos.x, egg->pos.y), p);
+
+    // server_create_response_to_command(p->id, "egg", NULL, "ok");
+    c = malloc(sizeof(client));
+    c->player = p;
+    c->socket_fd = -1; /* will be set once claimed. */
+    memset(&c->event_buffer, 0, sizeof(event_buffer));
+
+    p->id = m_add_client_to_server(c);
+    log_msg(LOG_LEVEL_INFO, "Egg %d created player %d at (%d,%d) for team %d\n",
+        egg->id, p->id, p->pos.x, p->pos.y, p->team_id + 1);
+
+
+    m_team_add_p2c_to_team(p);
+
+    return SUCCESS;
+}
+
 static int m_command_fork(void* _p, void* _arg)
 {
     player* p;
+    t_egg* egg;
 
     (void)_arg;
 
     p = (player*)_p;
+
+    egg = malloc(sizeof(t_egg));
+
+    egg->id = m_egg_count++;
+    egg->team_id = p->team_id;
+    egg->pos.x = p->pos.x;
+    egg->pos.y = p->pos.y;
+    egg->dir = p->dir;
+    
+
+    time_api_schedule_single_event(NULL, &egg->event, EGG_HATCH_DELAY, m_egg_create_player, egg, NULL);
+
+    FT_LIST_ADD_LAST(&m_eggs, egg);
+
+    log_msg(LOG_LEVEL_INFO, "Player %d (team %d) forked egg %d at (%d,%d) to hatch at %d\n",
+                p->id, p->team_id + 1, egg->id, egg->pos.x, egg->pos.y, egg->event.exec_time);
 
     return server_create_response_to_command(p->id, "fork", NULL, "ok");
 }
@@ -1263,12 +1386,29 @@ int game_register_player(int fd, char *team_name)
     player *p;
     int team_id;
     time_api *t_api;
+    int pid; /* player id */
     
     team_id = m_game_get_team_id(team_name);
     if (team_id < 0)
     {
         log_msg(LOG_LEVEL_ERROR, "Failed to get team id for team %s\n", team_name);
         return team_id;
+    }
+
+    if (TEAM_HAS_P2C(team_id))
+    {
+        pid = TEAM_GET_LATEST_P2C(team_id);
+        c = m_server.clients[pid];
+        if (c && c->player && c->player->to_be_claimed)
+        {
+            log_msg(LOG_LEVEL_DEBUG, "Player %d has been claimed!!\n", pid);
+            c->socket_fd = fd; /* Update socket fd */
+            c->player->id = fd; /* Update player id */
+            c->player->to_be_claimed = false; /* No longer waiting to be claimed */
+            
+            m_server.teams[team_id].current_players++;
+            return SUCCESS;
+        }
     }
 
     if (TEAM_IS_FULL(team_id))
@@ -1290,6 +1430,7 @@ int game_register_player(int fd, char *team_name)
     p->id = fd;
     p->team_id = team_id;
     p->level = 1;
+    p->to_be_claimed = false;
     m_game_get_start_pos(&p->pos.x, &p->pos.y, &p->dir);
 
     m_game_add_player_to_tile(MAP(p->pos.x, p->pos.y), p);
@@ -1395,16 +1536,21 @@ int game_player_die(client *c)
     }
 
     m_game_remove_player_from_tile(c->player);
-    free(c->player);
 
     server_create_response_to_command(c->socket_fd, "-", "die", NULL);
     log_msg(LOG_LEVEL_DEBUG, "Player %d has died\n", c->socket_fd);
-    ret = server_remove_client(c->socket_fd);
-    if (ret == ERROR)
+    if (!c->player->to_be_claimed)
     {
-        log_msg(LOG_LEVEL_ERROR, "Failed to remove client from server\n");
-        return ERROR;
+        ret = server_remove_client(c->socket_fd);
+        if (ret == ERROR)
+        {
+            log_msg(LOG_LEVEL_ERROR, "Failed to remove client from server\n");
+            free(c->player);
+            return ERROR;
+        }
     }
+    free(c->player);
+
 
     for (i = 0; i < MAX_EVENTS; i++)
     {
@@ -1422,6 +1568,8 @@ int game_play()
     time_api* t_api;
     client* c;
     bool has_played;
+    t_egg* egg;
+    int ret;
 
     t_api = time_api_get_local();
     i = 0;
@@ -1435,6 +1583,8 @@ int game_play()
         if (c == NULL)
             continue; /* No client */
 
+        printf("processing %d\n", i);
+        printf("Processing client %d\n", c->socket_fd);
         if (!PLAYER_IS_ALIVE(c, t_api->current_time_units))
         {
             game_player_die(c);
@@ -1449,6 +1599,20 @@ int game_play()
     }
 
     time_api_process_client_events(NULL, &m_server.event_buffer);
+
+    egg = m_eggs;
+    while (egg)
+    {
+        ret = time_api_process_single_event(NULL, &egg->event);
+        if (ret == ERROR)
+        {
+            break;
+        }
+        log_msg(LOG_LEVEL_DEBUG, "Egg %d hatched at %d\n", egg->id, egg->event.exec_time);
+        FT_LIST_POP_FIRST(&m_eggs);
+        free(egg);
+        egg = m_eggs;
+    }
 
     /* check if players can play and then make them play */
     if (!has_played)
@@ -1581,6 +1745,7 @@ void game_clean()
     {
         free(m_server.teams[i].players);
         free(m_server.teams[i].name);
+        free(m_server.teams[i].p2c);
     }
     free(m_server.clients);
     m_server.clients = NULL;
@@ -1590,13 +1755,21 @@ void game_clean()
     m_server.map = NULL;
 }
 
-int game_init(int width, int height, char **teams, int nb_clients, int nb_teams)
+int game_init(int width, int height, char **teams, int nb_teams)
 {
     int team_number;
     int i;
     int ret;
+    int nb_clients;
 
     parse_set_commands_delay(command_prototypes);
+    parse_set_nb_clients(&nb_clients);
+
+    if (nb_teams > nb_clients)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Number of teams (%d) is greater than number of clients (%d)\n", nb_teams, nb_clients);
+        return ERROR;
+    }
 
     /* Incantation it's done in two steps for validating it can be done before starting.
     */

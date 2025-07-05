@@ -47,4 +47,7 @@ int time_api_schedule_client_event_front(time_api *_api, event_buffer *buffer, i
  */
 int time_api_process_client_events(time_api *_api, event_buffer *buffer);
 
+int time_api_schedule_single_event(time_api* _api, event* event, int delay, int (*callback)(void *, void *), void *data, void *arg);
+int time_api_process_single_event(time_api *_api, event *ev);
+
 #endif /* TIME_API_H */

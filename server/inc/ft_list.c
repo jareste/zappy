@@ -141,7 +141,7 @@ int ft_list_pop(void** _head, void* _node)
 
 int ft_list_pop_first(void** _head)
 {
-    return (ft_list_pop(_head, ft_list_get_first(_head)));
+    return (ft_list_pop(_head, *_head));
 }
 
 int ft_list_pop_last(void** _head)

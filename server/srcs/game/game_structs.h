@@ -2,6 +2,7 @@
 #define GAME_STRUCTS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define MAX_EVENTS 10
 
@@ -78,6 +79,7 @@ typedef struct player_s
     inventory inv;
     uint64_t die_time; /* life units (1260 time units) */
     uint64_t start_time; /* time when the player was created */
+    bool to_be_claimed; /* if the player is waiting to be claimed by a team */
 
     struct player_s* next_on_tile;
     struct player_s* prev_on_tile;
@@ -96,6 +98,9 @@ typedef struct
     char* name;
     int max_players;
     int current_players;
+    int p2c_pending; /* num of players waiting to be claimed */
+    int* p2c; /* index of the player_to_claim in 'server.clients' */
+    int p2c_size; /* size of player_to_claim array */
     int* players; /* index of the player in 'server.clients' */
 } team;
 

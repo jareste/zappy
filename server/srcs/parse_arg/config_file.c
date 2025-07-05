@@ -15,6 +15,7 @@ typedef struct
 {
     int    INITIAL_LIFE_UNITS;
     int    LIFE_UNIT_TO_TIME;
+    int    NUMBER_OF_CLIENTS;
 
     double DENSITY_NOURRITURE;
     double DENSITY_LINEMATE;
@@ -61,6 +62,7 @@ static void m_init_config_content()
         return;
     m_config_content->INITIAL_LIFE_UNITS = 10;
     m_config_content->LIFE_UNIT_TO_TIME = 126;
+    m_config_content->NUMBER_OF_CLIENTS = 100;
 
     m_config_content->DENSITY_NOURRITURE = 1.0;
     m_config_content->DENSITY_LINEMATE   = 0.02;
@@ -109,6 +111,13 @@ void parse_set_initial_density(spawn_ctx* ctx)
     ctx->d_mendiane    = m_config_content->DENSITY_MENDIANE;
     ctx->d_phiras      = m_config_content->DENSITY_PHIRAS;
     ctx->d_thystame    = m_config_content->DENSITY_THYSTAME;
+}
+
+void parse_set_nb_clients(int* nb_clients)
+{
+    if (!m_config_content)
+        return;
+    *nb_clients = m_config_content->NUMBER_OF_CLIENTS;
 }
 
 void parse_set_commands_delay(command cmd[MAX_COMMANDS])
@@ -229,6 +238,8 @@ int parse_config(const char *filename)
             m_config_content->INITIAL_LIFE_UNITS = atoi(val);
         else if (strcmp(key, "LIFE_UNIT_TO_TIME") == 0)
             m_config_content->LIFE_UNIT_TO_TIME = atoi(val);
+        else if (strcmp(key, "NUMBER_OF_CLIENTS") == 0)
+            m_config_content->NUMBER_OF_CLIENTS = atoi(val);
         else if (strcmp(key, "DENSITY_NOURRITURE") == 0)
             m_config_content->DENSITY_NOURRITURE = strtod(val, NULL);
         else if (strcmp(key, "DENSITY_LINEMATE") == 0)

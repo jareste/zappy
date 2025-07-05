@@ -36,11 +36,6 @@ void check_params(t_args* args)
         fprintf(stderr, "Width and height must be greater than 9\n");
         exit(EXIT_FAILURE);
     }
-    if (args->nb_clients < 3)
-    {
-        fprintf(stderr, "Number of clients must be greater than 2\n");
-        exit(EXIT_FAILURE);
-    }
     if (args->time_unit < 1)
     {
         fprintf(stderr, "Time unit must be greater than 0\n");
@@ -65,7 +60,7 @@ int parse_args(int argc, char *argv[], t_args* args)
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "?hp:x:y:n:c:t:f:", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "?hp:x:y:n:t:f:", long_options, NULL)) != -1)
     {
         switch (opt)
         {
