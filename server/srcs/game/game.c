@@ -282,6 +282,9 @@ char* m_serialize_server(void)
     players = cJSON_AddArrayToObject(root, "players");
     for (i = 0; i < m_server.client_count; i++)
     {
+        if (!m_server.clients[i])
+            continue;
+
         p = m_server.clients[i]->player;
         if (!p)
             continue;
@@ -315,7 +318,9 @@ static int m_send_map_observer(void* _p, void* _arg)
     (void)_arg;
     obs = (observer*)_p;
     json = m_serialize_server();
-    server_send_json(obs->socket_fd, json);
+    log_msg(LOG_LEVEL_DEBUG, "Sending map to observer %d\n", obs->socket_fd);
+    log_msg(LOG_LEVEL_DEBUG, "Map size: %s\n", json);
+    server_send(obs->socket_fd, json);
     free(json);
     return SUCCESS;
 }
@@ -1374,9 +1379,11 @@ int game_register_observer(int fd)
 
     o->socket_fd = fd;
 
-    time_api_schedule_client_event(NULL, &o->event_buffer,\
-     0, m_send_map_observer, o, NULL);
-
+    // time_api_schedule_client_event(NULL, &o->event_buffer,\
+    //  0, m_send_map_observer, o, NULL);
+    
+    m_send_map_observer(o, NULL);
+    log_msg(LOG_LEVEL_DEBUG, "Registered observer %d\n", fd);
     return SUCCESS;
 }
 
@@ -1787,6 +1794,7 @@ int game_init(int width, int height, char **teams, int nb_teams)
     memset(m_server.clients, 0, sizeof(client*) * nb_clients);
     m_server.client_count = nb_clients;
     m_server.team_count = nb_teams;
+    m_server.observers = NULL;
 
     i = 0;
     team_number = 0;

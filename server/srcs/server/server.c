@@ -132,6 +132,17 @@ int server_send_json(int fd, void* resp)
     return SUCCESS;
 }
 
+int server_send(int fd, char *msg)
+{
+    if (send(fd, msg, strlen(msg), 0) == -1)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Failed to send message to client %d\n", fd);
+        return ERROR;
+    }
+
+    return SUCCESS;
+}
+
 int server_create_response_msg(int fd, char *cmd, char *arg, char* status)
 {
     cJSON *response;
@@ -230,7 +241,6 @@ int cb_on_accept_success(int fd)
         m_max_fd = fd;
 
     /**/
-
     ret = m_create_json_response(fd, "bienvenue", "Whoa! Knock knock, whos there?", NULL);
     if (ret == ERROR)
     {
@@ -433,22 +443,25 @@ static int m_handle_client_message(int fd, char *buffer, int bytes)
     {
         cJSON_Delete(root);
         m_create_json_response(fd, "error", "Invalid JSON format", NULL);
+        log_msg(LOG_LEVEL_ERROR, "Invalid JSON format: '%s'\n", buffer);
         return ERROR;
     }
 
     type = m_get_message_type(key_value->valuestring);
     if (type == type_unknown)
     {
-        cJSON_Delete(root);
         m_create_json_response(fd, "error", "Unknown message type", NULL);
+        log_msg(LOG_LEVEL_ERROR, "Unknown message type: '%s'\n", key_value->valuestring);
+        cJSON_Delete(root);
         return ERROR;
     }
 
     ret = m_handlers[type](fd, root);
     if (ret == ERROR)
     {
-        cJSON_Delete(root);
         m_create_json_response(fd, "error", "Failed to handle message", NULL);
+        log_msg(LOG_LEVEL_ERROR, "Failed to handle message type: '%s'\n", key_value->valuestring);
+        cJSON_Delete(root);
         return ERROR;
     }
 
@@ -466,6 +479,11 @@ static int m_handle_client_event(int fd)
     bytes = recv(fd, buffer, sizeof(buffer), 0);
     if (bytes <= 0)
     {
+        if (bytes == -69)
+        {
+            log_msg(LOG_LEVEL_DEBUG, "Client fd=%d sent a ping, ignoring it\n", fd);
+            return SUCCESS; /* Ping handled, no need to remove client */
+        }
         log_msg(LOG_LEVEL_WARN, "Client fd=%d disconnected or error\n", fd);
         REMOVE_CLIENT(fd);
         return SUCCESS;

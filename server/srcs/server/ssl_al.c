@@ -184,12 +184,12 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
     /* Check for ping 
      */
     opcode = header[0] & 0x0F;
-    if (opcode == 0x8)
+    if (opcode == 0x8) /* Close frame */
     {
         ws_send_close(fd, 1000, "Bye!");
         return SUCCESS;
     }
-    else if (opcode == 0x9)
+    else if (opcode == 0x9) /* Ping frame */
     {
         /* Ping received, so lets answer with PONG (0xA) */
         r = 0;
@@ -208,7 +208,7 @@ int ws_read(int fd, void *buf, size_t bufsize, int flags)
         else
             m_ws_send_control_frame(ssl, 0xA, NULL, 0);
 
-        return 1; /* Indicate that we handled the ping */
+        return -69; /* Indicate that we handled the ping */
     }
     else if (opcode != 0x1) /* 2 would mean binary data */
     {
