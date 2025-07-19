@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zappy GUI</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        camera.position.set(5, 15, 15);
+        camera.lookAt(5, 0, 5);
+
+        const world_width = 10;
+        const world_height = 10;
+
+        const resourceColors = {
+            nourriture: 0x8B4513, // brown
+            linemate: 0xff0000, // red
+            deraumere: 0x00ff00, // green
+            sibur: 0x0000ff, // blue
+            mendiane: 0xffff00, // yellow
+            phiras: 0xff00ff, // magenta
+            thystame: 0x00ffff, // cyan
+        };
+
+        const resourceOffsets = {
+            nourriture: { x: -0.3, z: -0.3 },
+            linemate:   { x:  0.3, z: -0.3 },
+            deraumere:  { x: -0.3, z:  0.3 },
+            sibur:      { x:  0.3, z:  0.3 },
+            mendiane:   { x:  0.0, z:  0.0 },
+            phiras:     { x:  0.0, z: -0.3 },
+            thystame:   { x:  0.0, z:  0.3 },
+        };
+
+        const world = {
+            map: {
+                width: world_width,
+                height: world_height,
+                tiles: []
+            }
+        };
+
+        /* debug: fill the world with random resources */
+        for (let y = 0; y < world_height; y++) {
+            for (let x = 0; x < world_width; x++) {
+                world.map.tiles.push({
+                    x, y,
+                    resources: {
+                        nourriture: Math.floor(Math.random() * 3),
+                        linemate: Math.floor(Math.random() * 2),
+                        deraumere: Math.floor(Math.random() * 2),
+                        sibur: Math.floor(Math.random() * 2),
+                        mendiane: Math.floor(Math.random() * 2),
+                        phiras: Math.floor(Math.random() * 2),
+                        thystame: Math.floor(Math.random() * 2),
+                    },
+                    players: []
+                });
+            }
+        }
+
+        const tileSize = 1;
+        world.map.tiles.forEach(tile => {
+            const floorGeo = new THREE.PlaneGeometry(tileSize, tileSize);
+            const floorMat = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(tile.x, 0, tile.y);
+            scene.add(floor);
+
+            /* Add edges to diferenciate tiles */
+            const edgeGeo = new THREE.EdgesGeometry(floorGeo);
+            const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+            const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+            edges.rotation.x = -Math.PI / 2;
+            edges.position.set(tile.x, 0.01, tile.y); // levemente más arriba para que no parpadee
+            scene.add(edges);
+
+            /* Add resources */
+            Object.entries(tile.resources).forEach(([type, count]) => {
+                const color = resourceColors[type] || 0xffffff;
+                const offset = resourceOffsets[type] || { x: 0, z: 0 };
+
+                for (let i = 0; i < count; i++) {
+                    const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                    const cubeMat = new THREE.MeshBasicMaterial({ color });
+                    const cube = new THREE.Mesh(cubeGeo, cubeMat);
+                    const xPos = tile.x + offset.x;
+                    const zPos = tile.y + offset.z;
+                    const yPos = 0.1 + i * 0.22; // apilamiento vertical solo para el mismo tipo
+                    cube.position.set(xPos, yPos, zPos);
+                    scene.add(cube);
+                }
+            });
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+
+        /* ---------------- Movement ---------------- */
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let dragMode = null; /* knowing if it's rotation or panning */
+        const target = new THREE.Vector3(world_width / 2, 0, world_height / 2);
+        let spherical = new THREE.Spherical();
+        let cameraOffset = new THREE.Vector3();
+        cameraOffset.copy(camera.position).sub(target);
+        spherical.setFromVector3(cameraOffset);
+
+        window.addEventListener('wheel', (event) => {
+            spherical.radius += event.deltaY * 0.01;
+            spherical.radius = Math.max(5, Math.min(100, spherical.radius));
+            updateCamera();
+        });
+
+        window.addEventListener('mousedown', (event) => {
+            isDragging = true;
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+            dragMode = event.button === 2 ? 'rotate' : 'pan';
+        });
+
+        window.addEventListener('mousemove', (event) => {
+            if (!isDragging) return;
+
+            const deltaX = event.clientX - previousMousePosition.x;
+            const deltaY = event.clientY - previousMousePosition.y;
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+
+            if (dragMode === 'rotate') {
+                spherical.theta -= deltaX * 0.005;
+                spherical.phi -= deltaY * 0.005;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI / 2, spherical.phi)); /* No sense looking down */
+            } else if (dragMode === 'pan') {
+                const panSpeed = 0.002 * spherical.radius;
+
+                /* Calcular dirección de la cámara y el vector derecho para el movimiento lateral
+                */
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                direction.y = 0;
+                direction.normalize();
+
+                const right = new THREE.Vector3();
+                right.crossVectors(direction, camera.up).normalize();
+
+                /* camera moves in the direction of the right vector and the direction vector */
+                const moveX = -deltaX * panSpeed;
+                const moveZ = deltaY * panSpeed;
+
+                const panOffset = new THREE.Vector3()
+                    .addScaledVector(right, moveX)
+                    .addScaledVector(direction, moveZ);
+
+                target.add(panOffset);
+            }
+
+            updateCamera();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        /* That's rightclick menu, we use it for rotation, so not allow to open it. */
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        /* update camera position based on spherical coordinates */
+        function updateCamera() {
+            camera.position.copy(target).add(new THREE.Vector3().setFromSpherical(spherical));
+            camera.lookAt(target);
+        }
+    </script>
+</body>
+</html>
