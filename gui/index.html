@@ -12,6 +12,36 @@
 <body>
     <script type="module">
         import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
+        const socket = new WebSocket("wss://localhost:8674");
+
+        socket.addEventListener("open", () => {
+            console.log("Connected to WSS server");
+
+            const msg = {
+                type: "login",
+                key: "SOME_KEY",
+                role: "observer"
+            };
+            socket.send(JSON.stringify(msg));
+            console.log("Sent:", msg);
+        });
+
+        socket.addEventListener("message", (event) => {
+            try {
+                const state = JSON.parse(event.data);
+                console.log("Received:", state);
+            } catch (err) {
+                console.error("Invalid JSON:", err);
+            }
+        });
+
+        socket.addEventListener("error", (err) => {
+            console.error("WebSocket error:", err);
+        });
+
+        socket.addEventListener("close", () => {
+            console.log("Connection closed");
+        });
 
         class Player {
             constructor(id, x, y) {
@@ -83,22 +113,25 @@
             }
         }
 
+        /* Scene setup */
         const scene = new THREE.Scene();
-        /* Light to the scene */
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(5, 10, 5);
         scene.add(directionalLight);
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
-
+        
+        /* Camera setup */
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
         camera.position.set(5, 15, 15);
         camera.lookAt(5, 0, 5);
 
+        /* Renderer setup */
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        /* debug: world dimensions */
         const world_width = 10;
         const world_height = 10;
 
@@ -129,70 +162,79 @@
                 tiles: []
             }
         };
+        const tileSize = 1;
 
         /* debug: fill the world with random resources */
-        for (let y = 0; y < world_height; y++) {
-            for (let x = 0; x < world_width; x++) {
-                world.map.tiles.push({
-                    x, y,
-                    resources: {
-                        nourriture: Math.floor(Math.random() * 3),
-                        linemate: Math.floor(Math.random() * 2),
-                        deraumere: Math.floor(Math.random() * 2),
-                        sibur: Math.floor(Math.random() * 2),
-                        mendiane: Math.floor(Math.random() * 2),
-                        phiras: Math.floor(Math.random() * 2),
-                        thystame: Math.floor(Math.random() * 2),
-                    },
-                    players: []
-                });
+        function d_fill_world() {
+            for (let y = 0; y < world_height; y++) {
+                for (let x = 0; x < world_width; x++) {
+                    world.map.tiles.push({
+                        x, y,
+                        resources: {
+                            nourriture: Math.floor(Math.random() * 3),
+                            linemate: Math.floor(Math.random() * 2),
+                            deraumere: Math.floor(Math.random() * 2),
+                            sibur: Math.floor(Math.random() * 2),
+                            mendiane: Math.floor(Math.random() * 2),
+                            phiras: Math.floor(Math.random() * 2),
+                            thystame: Math.floor(Math.random() * 2),
+                        },
+                        players: []
+                    });
+                }
             }
         }
+        /* debug_end */
 
-        const player = new Player(0, 2, 2); // Create a player at the origin
-        const tileSize = 1;
-        world.map.tiles.forEach(tile => {
-            const floorGeo = new THREE.PlaneGeometry(tileSize, tileSize);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.set(tile.x, 0, tile.y);
-            scene.add(floor);
+        function draw_map() {
+            world.map.tiles.forEach(tile => {
+                const floorGeo = new THREE.PlaneGeometry(tileSize, tileSize);
+                const floorMat = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
+                const floor = new THREE.Mesh(floorGeo, floorMat);
+                floor.rotation.x = -Math.PI / 2;
+                floor.position.set(tile.x, 0, tile.y);
+                scene.add(floor);
 
-            /* Add edges to diferenciate tiles */
-            const edgeGeo = new THREE.EdgesGeometry(floorGeo);
-            const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff });
-            const edges = new THREE.LineSegments(edgeGeo, edgeMat);
-            edges.rotation.x = -Math.PI / 2;
-            edges.position.set(tile.x, 0.01, tile.y); // levemente más arriba para que no parpadee
-            scene.add(edges);
+                /* Add edges to diferenciate tiles */
+                const edgeGeo = new THREE.EdgesGeometry(floorGeo);
+                const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+                const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+                edges.rotation.x = -Math.PI / 2;
+                edges.position.set(tile.x, 0.01, tile.y); // levemente más arriba para que no parpadee
+                scene.add(edges);
 
-            /* Add resources */
-            Object.entries(tile.resources).forEach(([type, count]) => {
-                const color = resourceColors[type] || 0xffffff;
-                const offset = resourceOffsets[type] || { x: 0, z: 0 };
+                /* Add resources */
+                Object.entries(tile.resources).forEach(([type, count]) => {
+                    const color = resourceColors[type] || 0xffffff;
+                    const offset = resourceOffsets[type] || { x: 0, z: 0 };
 
-                for (let i = 0; i < count; i++) {
-                    const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-                    const cubeMat = new THREE.MeshBasicMaterial({ color });
-                    const cube = new THREE.Mesh(cubeGeo, cubeMat);
-                    const xPos = tile.x + offset.x;
-                    const zPos = tile.y + offset.z;
-                    const yPos = 0.1 + i * 0.22; // apilamiento vertical solo para el mismo tipo
-                    cube.position.set(xPos, yPos, zPos);
-                    scene.add(cube);
-                }
+                    for (let i = 0; i < count; i++) {
+                        const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                        const cubeMat = new THREE.MeshBasicMaterial({ color });
+                        const cube = new THREE.Mesh(cubeGeo, cubeMat);
+                        const xPos = tile.x + offset.x;
+                        const zPos = tile.y + offset.z;
+                        const yPos = 0.1 + i * 0.22; // apilamiento vertical solo para el mismo tipo
+                        cube.position.set(xPos, yPos, zPos);
+                        scene.add(cube);
+                    }
+                });
             });
-        });
+        }
 
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
+
+        const player = new Player(0, 2, 2);
+
+        d_fill_world();
+        draw_map();
         animate();
 
 
-        /* ---------------- Movement ---------------- */
+        /* ---------------- Movement event handlers. ---------------- */
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -290,4 +332,5 @@
         }
     </script>
 </body>
+
 </html>
