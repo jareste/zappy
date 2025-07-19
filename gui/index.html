@@ -13,7 +13,84 @@
     <script type="module">
         import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
 
+        class Player {
+            constructor(id, x, y) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.group = new THREE.Group();
+
+                /* body */
+                const bodyGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.4, 8);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.2;
+
+                /* head */
+                const headGeo = new THREE.SphereGeometry(0.1, 8, 8);
+                const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const head = new THREE.Mesh(headGeo, headMat);
+                head.position.y = 0.5;
+
+                /* arms */
+                const armGeo = new THREE.BoxGeometry(0.05, 0.3, 0.05);
+                const armMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const leftArm = new THREE.Mesh(armGeo, armMat);
+                leftArm.position.set(-0.15, 0.3, 0);
+                const rightArm = new THREE.Mesh(armGeo, armMat);
+                rightArm.position.set(0.15, 0.3, 0);
+
+                /* legs */
+                const legGeo = new THREE.BoxGeometry(0.05, 0.3, 0.05);
+                const legMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const leftLeg = new THREE.Mesh(legGeo, legMat);
+                leftLeg.position.set(-0.05, 0.0, 0);
+                const rightLeg = new THREE.Mesh(legGeo, legMat);
+                rightLeg.position.set(0.05, 0.0, 0);
+
+                this.group.add(body, head, leftArm, rightArm, leftLeg, rightLeg);
+                this.group.position.set(x, 0.3, y);
+                scene.add(this.group);
+            }
+
+            getX() {
+                return this.group.position.x;
+            }
+
+            getY() {
+                return this.group.position.z;
+            }
+
+            moveTo(x, y) {
+                const duration = 500; /* ms for the movement */
+                const start = performance.now();
+                const startX = this.group.position.x;
+                const startZ = this.group.position.z;
+                const deltaX = x - startX;
+                const deltaZ = y - startZ;
+
+                const animateMove = (now) => {
+                    const elapsed = now - start;
+                    const t = Math.min(elapsed / duration, 1);
+
+                    this.group.position.x = startX + deltaX * t;
+                    this.group.position.z = startZ + deltaZ * t;
+
+                    if (t < 1) requestAnimationFrame(animateMove);
+                };
+
+                requestAnimationFrame(animateMove);
+            }
+        }
+
         const scene = new THREE.Scene();
+        /* Light to the scene */
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 5);
+        scene.add(directionalLight);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -72,6 +149,7 @@
             }
         }
 
+        const player = new Player(0, 2, 2); // Create a player at the origin
         const tileSize = 1;
         world.map.tiles.forEach(tile => {
             const floorGeo = new THREE.PlaneGeometry(tileSize, tileSize);
@@ -182,6 +260,24 @@
 
         window.addEventListener('mouseup', () => {
             isDragging = false;
+    
+            const currentX = Math.round(player.getX());
+            const currentY = Math.round(player.getY());
+
+            const moveDirection = Math.random() < 0.5 ? 'x' : 'y';
+
+            let newX = currentX;
+            let newY = currentY;
+
+            if (moveDirection === 'x') {
+                newX += Math.random() < 0.5 ? -1 : 1;
+                newX = Math.max(0, Math.min(world_width - 1, newX));
+            } else {
+                newY += Math.random() < 0.5 ? -1 : 1;
+                newY = Math.max(0, Math.min(world_height - 1, newY));
+            }
+
+            player.moveTo(newX, newY);
         });
 
         /* That's rightclick menu, we use it for rotation, so not allow to open it. */
