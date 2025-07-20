@@ -13,76 +13,326 @@
     <script type="module">
         import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
 
+        const socket = new WebSocket("wss://localhost:8674");
+
+        socket.addEventListener("open", () => {
+            console.log("Connected to WSS server");
+
+            const msg = {
+                type: "login",
+                key: "SOME_KEY",
+                role: "observer"
+            };
+            socket.send(JSON.stringify(msg));
+            console.log("Sent:", msg);
+        });
+
+        socket.addEventListener("message", (event) => {
+            try {
+                const state = JSON.parse(event.data);
+                console.log("Received:", state);
+            } catch (err) {
+                console.error("Invalid JSON:", err);
+            }
+        });
+
+        socket.addEventListener("error", (err) => {
+            console.error("WebSocket error:", err);
+        });
+
+        socket.addEventListener("close", () => {
+            console.log("Connection closed");
+        });
+
+        class Player {
+            constructor(id, x, y) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.group = new THREE.Group();
+
+                /* body */
+                const bodyGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.4, 8);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.2;
+
+                /* head */
+                const headGeo = new THREE.SphereGeometry(0.1, 8, 8);
+                const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const head = new THREE.Mesh(headGeo, headMat);
+                head.position.y = 0.5;
+
+                /* arms */
+                const armGeo = new THREE.BoxGeometry(0.05, 0.3, 0.05);
+                const armMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const leftArm = new THREE.Mesh(armGeo, armMat);
+                leftArm.position.set(-0.15, 0.3, 0);
+                const rightArm = new THREE.Mesh(armGeo, armMat);
+                rightArm.position.set(0.15, 0.3, 0);
+
+                /* legs */
+                const legGeo = new THREE.BoxGeometry(0.05, 0.3, 0.05);
+                const legMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const leftLeg = new THREE.Mesh(legGeo, legMat);
+                leftLeg.position.set(-0.05, 0.0, 0);
+                const rightLeg = new THREE.Mesh(legGeo, legMat);
+                rightLeg.position.set(0.05, 0.0, 0);
+
+                this.group.add(body, head, leftArm, rightArm, leftLeg, rightLeg);
+                this.group.position.set(x, 0.3, y);
+                scene.add(this.group);
+            }
+
+            getX() {
+                return this.group.position.x;
+            }
+
+            getY() {
+                return this.group.position.z;
+            }
+
+            moveTo(x, y) {
+                const duration = 500; /* ms for the movement */
+                const start = performance.now();
+                const startX = this.group.position.x;
+                const startZ = this.group.position.z;
+                const deltaX = x - startX;
+                const deltaZ = y - startZ;
+
+                const animateMove = (now) => {
+                    const elapsed = now - start;
+                    const t = Math.min(elapsed / duration, 1);
+
+                    this.group.position.x = startX + deltaX * t;
+                    this.group.position.z = startZ + deltaZ * t;
+
+                    if (t < 1) requestAnimationFrame(animateMove);
+                };
+
+                requestAnimationFrame(animateMove);
+            }
+        }
+
+        /* Scene setup */
         const scene = new THREE.Scene();
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 5);
+        scene.add(directionalLight);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        
+        /* Camera setup */
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
+        camera.position.set(5, 15, 15);
+        camera.lookAt(5, 0, 5);
+
+        /* Renderer setup */
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+        /* debug: world dimensions */
+        const world_width = 10;
+        const world_height = 10;
 
-        camera.position.z = 5;
+        const resourceColors = {
+            nourriture: 0x8B4513, // brown
+            linemate: 0xff0000, // red
+            deraumere: 0x00ff00, // green
+            sibur: 0x0000ff, // blue
+            mendiane: 0xffff00, // yellow
+            phiras: 0xff00ff, // magenta
+            thystame: 0x00ffff, // cyan
+        };
+
+        const resourceOffsets = {
+            nourriture: { x: -0.3, z: -0.3 },
+            linemate:   { x:  0.3, z: -0.3 },
+            deraumere:  { x: -0.3, z:  0.3 },
+            sibur:      { x:  0.3, z:  0.3 },
+            mendiane:   { x:  0.0, z:  0.0 },
+            phiras:     { x:  0.0, z: -0.3 },
+            thystame:   { x:  0.0, z:  0.3 },
+        };
+
+        const world = {
+            map: {
+                width: world_width,
+                height: world_height,
+                tiles: []
+            }
+        };
+        const tileSize = 1;
+
+        /* debug: fill the world with random resources */
+        function d_fill_world() {
+            for (let y = 0; y < world_height; y++) {
+                for (let x = 0; x < world_width; x++) {
+                    world.map.tiles.push({
+                        x, y,
+                        resources: {
+                            nourriture: Math.floor(Math.random() * 3),
+                            linemate: Math.floor(Math.random() * 2),
+                            deraumere: Math.floor(Math.random() * 2),
+                            sibur: Math.floor(Math.random() * 2),
+                            mendiane: Math.floor(Math.random() * 2),
+                            phiras: Math.floor(Math.random() * 2),
+                            thystame: Math.floor(Math.random() * 2),
+                        },
+                        players: []
+                    });
+                }
+            }
+        }
+        /* debug_end */
+
+        function draw_map() {
+            world.map.tiles.forEach(tile => {
+                const floorGeo = new THREE.PlaneGeometry(tileSize, tileSize);
+                const floorMat = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
+                const floor = new THREE.Mesh(floorGeo, floorMat);
+                floor.rotation.x = -Math.PI / 2;
+                floor.position.set(tile.x, 0, tile.y);
+                scene.add(floor);
+
+                /* Add edges to diferenciate tiles */
+                const edgeGeo = new THREE.EdgesGeometry(floorGeo);
+                const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+                const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+                edges.rotation.x = -Math.PI / 2;
+                edges.position.set(tile.x, 0.01, tile.y); // levemente más arriba para que no parpadee
+                scene.add(edges);
+
+                /* Add resources */
+                Object.entries(tile.resources).forEach(([type, count]) => {
+                    const color = resourceColors[type] || 0xffffff;
+                    const offset = resourceOffsets[type] || { x: 0, z: 0 };
+
+                    for (let i = 0; i < count; i++) {
+                        const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                        const cubeMat = new THREE.MeshBasicMaterial({ color });
+                        const cube = new THREE.Mesh(cubeGeo, cubeMat);
+                        const xPos = tile.x + offset.x;
+                        const zPos = tile.y + offset.z;
+                        const yPos = 0.1 + i * 0.22; // apilamiento vertical solo para el mismo tipo
+                        cube.position.set(xPos, yPos, zPos);
+                        scene.add(cube);
+                    }
+                });
+            });
+        }
 
         function animate() {
             requestAnimationFrame(animate);
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
             renderer.render(scene, camera);
         }
+
+        const player = new Player(0, 2, 2);
+
+        d_fill_world();
+        draw_map();
         animate();
 
+
+        /* ---------------- Movement event handlers. ---------------- */
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let dragMode = null; /* knowing if it's rotation or panning */
+        const target = new THREE.Vector3(world_width / 2, 0, world_height / 2);
+        let spherical = new THREE.Spherical();
+        let cameraOffset = new THREE.Vector3();
+        cameraOffset.copy(camera.position).sub(target);
+        spherical.setFromVector3(cameraOffset);
+
         window.addEventListener('wheel', (event) => {
-            event.preventDefault();
-            const zoomSpeed = 0.1;
-            camera.position.z += event.deltaY * zoomSpeed * 0.01;
-            
-            /* Clamp the camera's z position to prevent it from going too far */
-            camera.position.z = Math.max(1, Math.min(20, camera.position.z));
+            spherical.radius += event.deltaY * 0.01;
+            spherical.radius = Math.max(5, Math.min(100, spherical.radius));
+            updateCamera();
         });
 
-                let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
-
         window.addEventListener('mousedown', (event) => {
-            if (event.button === 0 || event.button === 2) { /* Left or right mouse button */
-                isDragging = true;
-                previousMousePosition.x = event.clientX;
-                previousMousePosition.y = event.clientY;
-            }
+            isDragging = true;
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+            dragMode = event.button === 2 ? 'rotate' : 'pan';
         });
 
         window.addEventListener('mousemove', (event) => {
-            if (isDragging) {
-                const deltaX = event.clientX - previousMousePosition.x;
-                const deltaY = event.clientY - previousMousePosition.y;
-                const moveSpeed = 0.01;
+            if (!isDragging) return;
 
-                cube.position.x += deltaX * moveSpeed;
-                cube.position.y -= deltaY * moveSpeed;
-                
-                previousMousePosition.x = event.clientX;
-                previousMousePosition.y = event.clientY;
+            const deltaX = event.clientX - previousMousePosition.x;
+            const deltaY = event.clientY - previousMousePosition.y;
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+
+            if (dragMode === 'rotate') {
+                spherical.theta -= deltaX * 0.005;
+                spherical.phi -= deltaY * 0.005;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI / 2, spherical.phi)); /* No sense looking down */
+            } else if (dragMode === 'pan') {
+                const panSpeed = 0.002 * spherical.radius;
+
+                /* Calcular dirección de la cámara y el vector derecho para el movimiento lateral
+                */
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                direction.y = 0;
+                direction.normalize();
+
+                const right = new THREE.Vector3();
+                right.crossVectors(direction, camera.up).normalize();
+
+                /* camera moves in the direction of the right vector and the direction vector */
+                const moveX = -deltaX * panSpeed;
+                const moveZ = deltaY * panSpeed;
+
+                const panOffset = new THREE.Vector3()
+                    .addScaledVector(right, moveX)
+                    .addScaledVector(direction, moveZ);
+
+                target.add(panOffset);
             }
+
+            updateCamera();
         });
 
-        window.addEventListener('mouseup', (event) => {
-            if (event.button === 0 || event.button === 2) {
-                isDragging = false;
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+    
+            const currentX = Math.round(player.getX());
+            const currentY = Math.round(player.getY());
+
+            const moveDirection = Math.random() < 0.5 ? 'x' : 'y';
+
+            let newX = currentX;
+            let newY = currentY;
+
+            if (moveDirection === 'x') {
+                newX += Math.random() < 0.5 ? -1 : 1;
+                newX = Math.max(0, Math.min(world_width - 1, newX));
+            } else {
+                newY += Math.random() < 0.5 ? -1 : 1;
+                newY = Math.max(0, Math.min(world_height - 1, newY));
             }
+
+            player.moveTo(newX, newY);
         });
 
-        window.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-        });
+        /* That's rightclick menu, we use it for rotation, so not allow to open it. */
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        /* update camera position based on spherical coordinates */
+        function updateCamera() {
+            camera.position.copy(target).add(new THREE.Vector3().setFromSpherical(spherical));
+            camera.lookAt(target);
+        }
     </script>
 </body>
+
 </html>
