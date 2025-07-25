@@ -159,6 +159,7 @@ int main(int argc, char **argv)
     if (parse_args(argc, argv, &args) == ERROR)
         goto error;
 
+    parse_get_certificates(&args.cert, &args.key);
     /* On failure will simply exit soooo :)
     */
     if (init_server(args.port, args.cert, args.key) == ERROR)

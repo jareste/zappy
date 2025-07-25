@@ -52,6 +52,9 @@ typedef struct
     char* LOG_FILE_PATH;
     bool LOG_ERASE;
 
+    char* CERT_CERT;
+    char* CERT_KEY;
+
 } config_t;
 
 config_t* m_config_content = NULL;
@@ -98,6 +101,9 @@ static void m_init_config_content()
     m_config_content->LOG_LEVEL = LOG_LEVEL_WARN;
     m_config_content->LOG_FILE_PATH = strdup("log.txt");
     m_config_content->LOG_ERASE = true;
+
+    m_config_content->CERT_CERT = NULL;
+    m_config_content->CERT_KEY = NULL;
 }
 
 void parse_set_initial_density(spawn_ctx* ctx)
@@ -183,8 +189,23 @@ void parse_set_start_life_units(int* start_life_units)
     *start_life_units = m_config_content->INITIAL_LIFE_UNITS;
 }
 
+void parse_get_certificates(char** cert, char** key)
+{
+    if (!m_config_content)
+        return;
+
+    if (cert)
+        *cert = m_config_content->CERT_CERT;
+    if (key)
+        *key = m_config_content->CERT_KEY;
+}
+
 void parse_free_config()
 {
+    free(m_config_content->CERT_CERT);
+    m_config_content->CERT_CERT = NULL;
+    free(m_config_content->CERT_KEY);
+    m_config_content->CERT_KEY = NULL;
     free(m_config_content);
     m_config_content = NULL;
 }
@@ -311,7 +332,21 @@ int parse_config(const char *filename)
             c = val[0];
             m_config_content->LOG_ERASE = (c=='y'||c=='Y'||c=='1');
         }
-        
+        else if (strcmp(key, "CERT_CERT") == 0)
+        {
+            free(m_config_content->CERT_CERT);
+            m_config_content->CERT_CERT = strdup(val);
+        }
+        else if (strcmp(key, "CERT_KEY") == 0)
+        {
+            free(m_config_content->CERT_KEY);
+            m_config_content->CERT_KEY = strdup(val);
+        }
+        else
+        {
+            log_msg(LOG_LEVEL_WARN, "Unknown config key: %s\n", key);
+            continue;
+        }
     }
 
     fclose(fp);

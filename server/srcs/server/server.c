@@ -16,7 +16,7 @@
 #define REMOVE_CLIENT(fd) \
     do { \
         FD_CLR(fd, &m_read_fds); \
-        log_msg(LOG_LEVEL_INFO, "Removing client %d\n", fd); \
+        log_msg(LOG_LEVEL_INFO, "Removing client %d, line %d\n", fd, __LINE__); \
         game_kill_player(fd); \
         close(fd); \
     } while (0)
@@ -261,6 +261,10 @@ static int m_handle_new_client(int fd)
         perror("accept");
         return ERROR;
     }
+
+#ifndef USE_SSL
+    cb_on_accept_success(new_client);
+#endif
 
     return SUCCESS;
 }

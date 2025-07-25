@@ -12,6 +12,8 @@ void parse_set_start_life_units(int* start_life_units);
 void parse_set_life_unit(int* life_unit);
 void parse_set_log_config(log_config* log);
 
+void parse_get_certificates(char** cert, char** key);
+
 void parse_free_config();
 
 #endif /* CONFIG_FILE_H */

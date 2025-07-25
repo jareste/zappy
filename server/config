@@ -37,3 +37,6 @@ SPAWN_MORE_RESOURCES_THYSTAME=0.005
 LOG_LEVEL=0
 LOG_FILE_PATH=log.txt
 LOG_ERASE=y
+
+CERT_CERT=certs/localhost+2.pem
+CERT_KEY=certs/localhost+2-key.pem

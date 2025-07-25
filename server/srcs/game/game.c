@@ -1379,8 +1379,9 @@ int game_register_observer(int fd)
 
     o->socket_fd = fd;
 
-    // time_api_schedule_client_event(NULL, &o->event_buffer,\
-    //  0, m_send_map_observer, o, NULL);
+    /* time_api_schedule_client_event(NULL, &o->event_buffer,\
+      0, m_send_map_observer, o, NULL);
+    */
     
     m_send_map_observer(o, NULL);
     log_msg(LOG_LEVEL_DEBUG, "Registered observer %d\n", fd);
