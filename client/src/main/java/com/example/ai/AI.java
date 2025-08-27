@@ -1,4 +1,7 @@
-package com.example;
+package com.example.ai;
+
+import com.example.model.*;
+import com.example.command.*;
 
 import java.util.ArrayList;
 import java.util.List;

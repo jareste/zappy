@@ -1,5 +1,9 @@
 package com.example;
 
+import com.example.network.*;
+import com.example.command.*;
+import com.example.model.*;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;

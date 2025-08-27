@@ -1,4 +1,6 @@
-package com.example;
+package com.example.command;
+
+import com.example.model.*;
 
 import java.util.Random;
 

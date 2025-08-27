@@ -1,4 +1,7 @@
-package com.example;
+package com.example.network;
+
+import com.example.command.*;
+import com.example.model.*;
 
 import javax.websocket.*;
 import java.net.URI;

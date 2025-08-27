@@ -1,4 +1,8 @@
-package com.example;
+package com.example.command;
+
+import com.example.model.*;
+import com.example.network.*;
+import com.example.ai.*;
 
 import java.util.function.Consumer;
 import java.util.LinkedList;
