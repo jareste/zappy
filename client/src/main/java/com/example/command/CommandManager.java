@@ -21,6 +21,7 @@ public class CommandManager {
     private final Consumer<String> sendToServerFunction;
     private Session session;
     private int id;
+    private final CommandQueue queue;
     private final Queue<Command> commandQueue = new ConcurrentLinkedQueue<>();
     private final Player player;
     private final AtomicInteger pendingResponses = new AtomicInteger(0);
@@ -33,9 +34,9 @@ public class CommandManager {
         this.id = id;
     }
 
-    public void sendMsg(String msg) {
-        sendToServerFunction.accept(msg);
-    }
+    // public void sendMsg(String msg) {
+    //     sendToServerFunction.accept(msg);
+    // }
 
     // public void handleResponse(String response) {
     //     JsonObject jsonResponse = parseJson(response);
