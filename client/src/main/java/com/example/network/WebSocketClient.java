@@ -17,12 +17,15 @@ public class WebSocketClient {
     private String teamName;
     private int port;
     private String hostname;
-    private int id;
-    // private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Session session;
+
+    private int id;
     private CommandManager cmdManager;
+    private MessageHandler msgHandler;
+
     private CountDownLatch latch;
     private boolean useSecure;
+    // private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public WebSocketClient(String teamName, int port, String hostname, CountDownLatch latch, int clientId, boolean useSecure) {
         this.teamName = teamName;
@@ -43,6 +46,9 @@ public class WebSocketClient {
         player.setCommandManager(cmdManager);
         this.cmdManager = cmdManager;
 
+        MessageSender msgSender = new MessageSender(this);
+        this.msgHandler = new MessageHandler(player, msgSender);
+
         // // FOR DEBUG
         // String msg1 = createJsonMessage1();
         // String msg2 = createJsonMessage2();
@@ -60,39 +66,40 @@ public class WebSocketClient {
         // }, 0, 5, TimeUnit.SECONDS);
     }
 
-    private String createJsonMessage() {
-        JsonObject jsonMessage = new JsonObject();
-        jsonMessage.addProperty("team", this.teamName);
-        jsonMessage.addProperty("message", "Hello from Java client!");
+    // private String createJsonMessage() {
+    //     JsonObject jsonMessage = new JsonObject();
+    //     jsonMessage.addProperty("team", this.teamName);
+    //     jsonMessage.addProperty("message", "Hello from Java client!");
 
-        return jsonMessage.toString();
-    }
+    //     return jsonMessage.toString();
+    // }
 
-    private String createJsonMessage1() {
-        JsonObject jsonMessage = new JsonObject();
-        jsonMessage.addProperty("type", "bienvenue");
-        jsonMessage.addProperty("msg", "Whoa! Knock knock, whos there?");
+    // private String createJsonMessage1() {
+    //     JsonObject jsonMessage = new JsonObject();
+    //     jsonMessage.addProperty("type", "bienvenue");
+    //     jsonMessage.addProperty("msg", "Whoa! Knock knock, whos there?");
 
-        return jsonMessage.toString();
-    }
+    //     return jsonMessage.toString();
+    // }
 
-    private String createJsonMessage2() {
-        JsonObject jsonMessage = new JsonObject();
-        jsonMessage.addProperty("type", "welcome");
-        jsonMessage.addProperty("remaining_clients", 3);
-        JsonObject mapSize = new JsonObject();
-        mapSize.addProperty("x", 10);
-        mapSize.addProperty("y", 10);
-        jsonMessage.add("map_size", mapSize);
+    // private String createJsonMessage2() {
+    //     JsonObject jsonMessage = new JsonObject();
+    //     jsonMessage.addProperty("type", "welcome");
+    //     jsonMessage.addProperty("remaining_clients", 3);
+    //     JsonObject mapSize = new JsonObject();
+    //     mapSize.addProperty("x", 10);
+    //     mapSize.addProperty("y", 10);
+    //     jsonMessage.add("map_size", mapSize);
 
-        return jsonMessage.toString();
-    }
+    //     return jsonMessage.toString();
+    // }
 
     @OnMessage
     public void onMessage(String message) {
         // System.out.println("[CLIENT " + this.id + "] " + "RECEIVED message: " + message);
         try {
-            this.cmdManager.handleResponse(message);
+            // this.cmdManager.handleResponse(message);
+            msgHandler.handleMessage(message);
         } catch (Exception e) {
             e.printStackTrace();  // You’ll see if it’s crashing quietly
         }
@@ -125,7 +132,7 @@ public class WebSocketClient {
         }
     }
 
-    private void send(String msg) {
+    public void send(String msg) {
         // System.out.println("[CLIENT " + this.id + "] " + " CLIENT IS DEAD? " + this.cmdManager.isDead());
         if (session == null || !session.isOpen() || this.cmdManager.isDead()) {
             System.out.println("[CLIENT " + this.id + "] " + "Tried to send after closed. Skipping.");
