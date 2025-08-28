@@ -16,18 +16,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class CommandManagerTest {
-    private CommandManager manager;
-    private Consumer<String> mockSendFunction;
-    private Player mockPlayer;
-    private Session mockSession;
+    // private CommandManager manager;
+    // private Consumer<String> mockSendFunction;
+    // private Player mockPlayer;
+    // private Session mockSession;
 
-    @BeforeEach
-    public void setUp() {
-        mockSendFunction = mock(Consumer.class);
-        mockPlayer = mock(Player.class);
-        mockSession = mock(Session.class);
-        manager = new CommandManager(mockSendFunction, mockPlayer, mockSession, 1);
-    }
+    // @BeforeEach
+    // public void setUp() {
+    //     mockSendFunction = mock(Consumer.class);
+    //     mockPlayer = mock(Player.class);
+    //     mockSession = mock(Session.class);
+    //     manager = new CommandManager(mockSendFunction, mockPlayer, mockSession, 1);
+    // }
 
     // @Test
     // public void testConstructor() {
@@ -37,14 +37,6 @@ public class CommandManagerTest {
     //     assertEquals(1, manager.getId());
     //     assertEquals(0, manager.getCommandQueue().size());
     //     assertFalse(manager.isDead());
-    // }
-
-    // @Test
-    // public void testAddCommand() {
-    //     Command cmd = new Command(CommandType.AVANCE);
-    //     manager.addCommand(cmd);
-    //     assertEquals(1, manager.getCommandQueue().size());
-    //     assertEquals(cmd, manager.getCommandQueue().peek());
     // }
 
     // @Test

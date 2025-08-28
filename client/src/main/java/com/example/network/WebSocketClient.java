@@ -42,12 +42,13 @@ public class WebSocketClient {
         System.out.println("[CLIENT " + this.id + "] " + "Connected to server");
 
         Player player = new Player(this.teamName, this.id);
-        CommandManager cmdManager = new CommandManager(this::send, player, session, this.id);
+        MessageSender msgSender = new MessageSender(this);
+        CommandManager cmdManager = new CommandManager(player, msgSender, session);
         player.setCommandManager(cmdManager);
         this.cmdManager = cmdManager;
 
-        MessageSender msgSender = new MessageSender(this);
-        this.msgHandler = new MessageHandler(player, msgSender);
+        
+        this.msgHandler = new MessageHandler(player, msgSender, cmdManager);
 
         // // FOR DEBUG
         // String msg1 = createJsonMessage1();
@@ -107,15 +108,15 @@ public class WebSocketClient {
 
     @OnClose
     public void onClose(Session session, CloseReason reason) {
-        this.cmdManager.setDead(true);
-        System.out.println("[CLIENT " + this.id + "] " + "Connection closed: " + reason.getReasonPhrase() + " (" + reason.getCloseCode() + ")" + " client is dead? " + this.cmdManager.isDead());
+        // player.setDead(true);
+        // System.out.println("[CLIENT " + this.id + "] " + "Connection closed: " + reason.getReasonPhrase() + " (" + reason.getCloseCode() + ")" + " client is dead? " + this.cmdManager.isDead());
         // scheduler.shutdown();  // Clean up the scheduler when the connection is closed
         latch.countDown(); // Unblock main thread
     }
 
     @OnError
     public void onError(Session session, Throwable throwable) {
-        this.cmdManager.setDead(true);
+        // player.setDead(true);
         System.err.println("WebSocket error: " + throwable.getMessage());
         throwable.printStackTrace();
     }
@@ -134,7 +135,7 @@ public class WebSocketClient {
 
     public void send(String msg) {
         // System.out.println("[CLIENT " + this.id + "] " + " CLIENT IS DEAD? " + this.cmdManager.isDead());
-        if (session == null || !session.isOpen() || this.cmdManager.isDead()) {
+        if (session == null || !session.isOpen()) {
             System.out.println("[CLIENT " + this.id + "] " + "Tried to send after closed. Skipping.");
             return;
         }

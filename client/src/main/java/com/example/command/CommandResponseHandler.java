@@ -80,19 +80,6 @@ public class CommandResponseHandler {
         }
 
         player.addLife(-CommandType.fromName(cmd).getTimeUnits());
-
-        // TODO: call ai manager to check state
-        
-        // System.out.println("[CLIENT " + this.id + "] " + "IN PLAYER Pending responses: " + cmdManager.getPendingResponses());
-        // if (!cmd.equals("voir") && cmdManager.getPendingResponses() == 0) {
-        //     System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves ...");
-        //     List<Command> nextMoves = ai.decideNextMoves();
-        //     for (Command c : nextMoves) {
-        //         cmdManager.addCommand(c);
-        //     }
-        // } else {
-        //     System.out.println("[CLIENT " + this.id + "] " + "Not deciding next moves, waiting responses ...");
-        // }
     }
 
     /********** RESPONSE HANDLERS **********/
@@ -144,12 +131,6 @@ public class CommandResponseHandler {
         }
 
         // TODO: update view
-
-        // world.updateVisibleTiles(position.getX(), position.getY(), position.getDirection(), getLevel(), data);
-        // List<Command> nextMoves = ai.decideNextMovesViewBased(data);
-        // for (Command c : nextMoves) {
-        //     cmdManager.addCommand(c);
-        // }
     }
 
     private void handleInventaireResponse(JsonObject msg) {
@@ -219,6 +200,7 @@ public class CommandResponseHandler {
         if (arg.equals("die")) {
             System.out.println("[CLIENT " + this.id + "] " + "I AM DEAD :(");
             // cmdManager.closeSession();
+            player.setDead(true);
         }
     }
 }
