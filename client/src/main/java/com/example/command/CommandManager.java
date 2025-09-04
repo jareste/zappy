@@ -42,8 +42,9 @@ public class CommandManager {
         msgSender.sendLoginMessage(player);
     }
 
-    public void onWelcome() {
+    public void onWelcome(int x, int y) {
         // TODO: create ai manager (and view?)
+        player.setGameState(x, y);
         this.aiManager = new AIManager(player);
         Command firstCommand = new Command(CommandType.VOIR);
         addToQueue(firstCommand);

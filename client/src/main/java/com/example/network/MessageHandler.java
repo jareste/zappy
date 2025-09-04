@@ -76,9 +76,12 @@ public class MessageHandler {
             int x = mapSize.get("x").getAsInt();
             int y = mapSize.get("y").getAsInt();
             // System.out.println("Map size: " + x + "x" + y);
+            cmdManager.onWelcome(x, y); // TODO: add x and y as params maybe
+        } else {
+            System.out.println("Not provided the size of the map..");
         }
         
-        cmdManager.onWelcome(); // TODO: add x and y as params maybe
+        
     }
 
     private void handleResponseMsg(JsonObject jsonMessage) {

@@ -175,10 +175,8 @@ public class Player {
         dead.set(value);
     }
 
-    public void setGameState(int w, int h, AI ai) {
+    public void setGameState(int w, int h) {
         this.world = new World(w, h);
         this.position = new Position(w, h);
-        this.ai = ai;
-        this.ai.setWorld(this.world);
     }
 }
