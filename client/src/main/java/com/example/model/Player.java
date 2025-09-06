@@ -25,7 +25,6 @@ public class Player {
     private final AtomicInteger level;
     private final AtomicInteger life;
     private final AtomicInteger nour;
-    private World world;
     private Position position;
     private final Map<Resource, Integer> inventory;
     private final View view;
@@ -186,7 +185,6 @@ public class Player {
     }
 
     public void setGameState(int w, int h) {
-        this.world = new World(w, h);
         this.position = new Position(w, h);
     }
 }

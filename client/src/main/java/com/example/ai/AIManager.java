@@ -19,26 +19,10 @@ public class AIManager {
         this.state = new CheckStatus(); // initial state
     }
 
-    // public void tick(Player player, World world, CommandQueue queue) {
-    //     String action = state.getAction(player, world);
-    //     if (action != null) {
-    //         queue.add(action);
-    //     }
-    //     state = state.next(player, world);
-    // }
-
     public List<Command> decideNextMoves() {
         state = state.next(player, view);
         List<Command> commands = state.getActions(player, view);
 
         return commands;
     }
-
-    // private List<Command> getCommandsFromActions(List<CommandType> actions) {
-    //     List<Command> commands = new ArrayList<>();
-    //     for (CommandType action : actions) {
-    //         Command cmd = new Command(action);
-    //         commands.add(cmd);
-    //     }
-    // }
 }

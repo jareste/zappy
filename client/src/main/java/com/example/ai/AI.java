@@ -17,7 +17,6 @@ import com.google.gson.JsonElement;
 public class AI {
     // private String teamName;
     private final Player player;
-    private World world;
     private Set<Resource> targets = EnumSet.noneOf(Resource.class);
     private List<List<String>> curView = new ArrayList<>();
     // private int debugLevel = 1;
@@ -320,10 +319,6 @@ public class AI {
     }
 
     /********** SETTERS **********/
-
-    public void setWorld(World world) {
-        this.world = world;
-    }
 
     public void setInventaireChecked(boolean inventaireChecked) {
         this.inventaireChecked = inventaireChecked;
