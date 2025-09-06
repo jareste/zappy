@@ -15,11 +15,7 @@ public class SearchFood implements AIState {
         
         int tileIdx = MovementService.findItemInView(Resource.NOURRITURE, view, player.getLevel());
         if (tileIdx != -1) {
-            List<CommandType> moves = MovementService.getMovesToTile(tileIdx);
-            for (CommandType move : moves) {
-                commands.add(new Command(move));
-            }
-            commands.add(new Command(CommandType.PREND, Resource.NOURRITURE.getName()));
+            MovementService.addMovesToTileAndPrend(tileIdx, Resource.NOURRITURE, commands);
         } else {
             commands.add(new Command(MovementService.getRandomMove()));
         }
@@ -31,7 +27,7 @@ public class SearchFood implements AIState {
     @Override
     public AIState next(Player player, View view) {
         if (player.getNourriture() > 20) {
-            return new CollectResources(); // safe now
+            return new CollectResources();
         }
         return this; // keep searching
     }

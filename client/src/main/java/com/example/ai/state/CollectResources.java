@@ -21,6 +21,7 @@ public class CollectResources implements AIState {
         for (int tileIdx : sortedIndices) {
             for (Resource target : targets) {
                 if (view.getTile(tileIdx).contains(target)) {
+                    System.out.println("[Client "+ player.getId() + "] I AM GOING FOR TARGET STONE");
                     MovementService.addMovesToTileAndPrend(tileIdx, target, commands);
                     break;
                 }
