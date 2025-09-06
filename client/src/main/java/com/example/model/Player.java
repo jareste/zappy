@@ -28,6 +28,7 @@ public class Player {
     private World world;
     private Position position;
     private final Map<Resource, Integer> inventory;
+    private final View view;
     private final AtomicBoolean dead = new AtomicBoolean(false);
 
     public Player(String teamName, int id) {
@@ -36,6 +37,7 @@ public class Player {
         this.level = new AtomicInteger(1);
         this.id = id;
         this.inventory = new ConcurrentHashMap<>();
+        this.view = new View();
         this.life = new AtomicInteger(1260); // time units
         this.nour = new AtomicInteger(0);
     }
@@ -66,6 +68,10 @@ public class Player {
 
     public void updateInventory(Resource item, int count) {
         this.inventory.put(item, count);
+    }
+
+    public void updateView(List<List<Resource>> data) {
+        view.update(data);
     }
 
     public void addResource(Resource item) {
@@ -147,6 +153,10 @@ public class Player {
 
     public Map<Resource, Integer> getInventory() {
         return new ConcurrentHashMap<>(this.inventory); // returns a copy (to be safe)
+    }
+
+    public View getView() {
+        return this.view;
     }
 
     public int getInventoryCount(Resource item) {

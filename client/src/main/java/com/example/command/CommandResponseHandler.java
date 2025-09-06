@@ -115,14 +115,20 @@ public class CommandResponseHandler {
     }
 
     private void handleVoirResponse(JsonObject msg) {
-        List<List<String>> data = new ArrayList<>();
+        List<List<Resource>> data = new ArrayList<>();
         JsonArray arr = msg.getAsJsonArray("vision");
 
         for (JsonElement tile : arr) {
             JsonArray tileArr = tile.getAsJsonArray();
-            List<String> contents = new ArrayList<>();
+            List<Resource> contents = new ArrayList<>();
             for (JsonElement item : tileArr) {
-                contents.add(item.getAsString());
+                String itemStr = item.getAsString();
+                Resource resource = Resource.fromString(itemStr);
+                if (resource != null) {
+                    contents.add(resource);
+                } else {
+                    System.out.println("[CLIENT " + this.id + "] Unknown resource: " + itemStr);
+                }
             }
             data.add(contents);
         }
@@ -130,7 +136,7 @@ public class CommandResponseHandler {
             System.out.println("[CLIENT " + this.id + "] " + "Tile " + i + ": " + data.get(i));
         }
 
-        // TODO: update view
+        player.updateView(data);
     }
 
     private void handleInventaireResponse(JsonObject msg) {

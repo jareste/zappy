@@ -25,7 +25,7 @@ public class CommandManager {
     private Session session;
     private int id;
     private final CommandQueue queue;
-    private final Queue<Command> commandQueue = new ConcurrentLinkedQueue<>();
+    // private final Queue<Command> commandQueue = new ConcurrentLinkedQueue<>();
     private final Player player;
     private final AtomicInteger pendingResponses = new AtomicInteger(0);
 
@@ -43,7 +43,6 @@ public class CommandManager {
     }
 
     public void onWelcome(int x, int y) {
-        // TODO: create ai manager (and view?)
         player.setGameState(x, y);
         this.aiManager = new AIManager(player);
         Command firstCommand = new Command(CommandType.VOIR);
@@ -117,9 +116,9 @@ public class CommandManager {
         return pendingResponses.get();
     }
 
-    public Queue<Command> getCommandQueue() {
-        return commandQueue;
-    }
+    // public Queue<Command> getCommandQueue() {
+    //     return commandQueue;
+    // }
 
     /********** SETTERS **********/
 
