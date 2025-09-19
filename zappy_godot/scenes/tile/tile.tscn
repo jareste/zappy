@@ -1,0 +1,29 @@
+[gd_scene load_steps=6 format=3 uid="uid://boaka3wpkrjim"]
+
+[ext_resource type="Script" uid="uid://chsumim6hl5dm" path="res://scenes/tile/TileManager.gd" id="1_bibkx"]
+[ext_resource type="Material" uid="uid://jpgjvia5t5ga" path="res://materials/TileMaterial.tres" id="2_2jaqc"]
+[ext_resource type="PackedScene" uid="uid://b6ep8vty1o72l" path="res://scenes/tile/resource.tscn" id="3_bibkx"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_3dk36"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1abcd"]
+
+[node name="Tile" type="StaticBody3D"]
+script = ExtResource("1_bibkx")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.472469, 0)
+material_override = ExtResource("2_2jaqc")
+mesh = SubResource("BoxMesh_3dk36")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.468949, 0)
+shape = SubResource("BoxShape3D_1abcd")
+
+[node name="Marker3D" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, -0.5, 0.2, -0.5)
+
+[node name="placeholder_resource" parent="." instance=ExtResource("3_bibkx")]
+transform = Transform3D(0.345, 0, 0, 0, 0.345, 0, 0, 0, 0.345, 0, 0.43276364, 0)
+visible = false

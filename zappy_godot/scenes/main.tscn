@@ -1,0 +1,53 @@
+[gd_scene load_steps=9 format=3 uid="uid://bohcw6ef7e55a"]
+
+[ext_resource type="Script" uid="uid://b2yc51sdfhp5r" path="res://scenes/Main.gd" id="1_tipki"]
+[ext_resource type="Script" uid="uid://b6v2xwkcmn1yx" path="res://scenes/NetworkManager.gd" id="2_85g3d"]
+[ext_resource type="Script" uid="uid://beysdlclkayq6" path="res://scenes/DataManager.gd" id="3_choun"]
+[ext_resource type="Script" uid="uid://dfd525mqeflrb" path="res://scenes/GameWorldManager.gd" id="4_ya4ey"]
+[ext_resource type="Script" uid="uid://cqlc6khfoxqod" path="res://scenes/player/PlayerManager.gd" id="5_eb6dy"]
+[ext_resource type="PackedScene" uid="uid://d01wcqvgamr8t" path="res://scenes/UI/UI.tscn" id="6_trceg"]
+[ext_resource type="Script" uid="uid://2yx4asihvwhu" path="res://scenes/CameraController.gd" id="7_a8y0u"]
+[ext_resource type="PackedScene" uid="uid://b6ypoxlvlb3mx" path="res://scenes/level/level_test.tscn" id="8_jkv2x"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_tipki")
+
+[node name="MapRoot" type="Node3D" parent="."]
+
+[node name="PlayerRoot" type="Node3D" parent="."]
+
+[node name="NetworkManager" type="Node" parent="."]
+script = ExtResource("2_85g3d")
+
+[node name="DataManager" type="Node" parent="."]
+script = ExtResource("3_choun")
+
+[node name="WorldManager" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_ya4ey")
+
+[node name="PlayerManager" type="Node3D" parent="."]
+script = ExtResource("5_eb6dy")
+
+[node name="UI" parent="." instance=ExtResource("6_trceg")]
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CameraPosition" type="Node3D" parent="."]
+transform = Transform3D(-0.652826, 0.535639, -0.535639, 0, 0.707107, 0.707107, 0.757508, 0.461618, -0.461618, -0.515, 2.49332, -1)
+script = ExtResource("7_a8y0u")
+move_speed = 0.3
+lerp_speed = 0.1
+
+[node name="CameraRotationX" type="Node3D" parent="CameraPosition"]
+unique_name_in_owner = true
+
+[node name="CameraZoomPivot" type="Node3D" parent="CameraPosition/CameraRotationX"]
+unique_name_in_owner = true
+
+[node name="Camera" type="Camera3D" parent="CameraPosition/CameraRotationX/CameraZoomPivot"]
+unique_name_in_owner = true
+current = true
+
+[node name="level_test2" parent="." instance=ExtResource("8_jkv2x")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7853827, -3.1184669, 2.8314204)

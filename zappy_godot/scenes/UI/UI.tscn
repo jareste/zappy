@@ -1,0 +1,206 @@
+[gd_scene load_steps=2 format=3 uid="uid://d01wcqvgamr8t"]
+
+[ext_resource type="Script" uid="uid://mv07co8dv5w6" path="res://scenes/UI/UI.gd" id="1_1xm2m"]
+
+
+[node name="UI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("1_1xm2m")
+
+[node name="ControlsHelp" type="Panel" parent="."]
+layout_mode = 0
+anchor_right = 0.3
+anchor_bottom = 0.2
+color = Color(0.1, 0.1, 0.1, 0.8)
+
+[node name="VBox" type="VBoxContainer" parent="ControlsHelp"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="TitleLabel" type="Label" parent="ControlsHelp/VBox"]
+layout_mode = 2
+text = "Controls"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="QELabel" type="Label" parent="ControlsHelp/VBox"]
+layout_mode = 2
+text = "Q/E: Rotate Camera"
+theme_override_font_sizes/font_size = 12
+
+[node name="ScrollLabel" type="Label" parent="ControlsHelp/VBox"]
+layout_mode = 2
+text = "Mouse Wheel: Zoom"
+theme_override_font_sizes/font_size = 12
+
+[node name="NumbersLabel" type="Label" parent="ControlsHelp/VBox"]
+layout_mode = 2
+text = "1-9: Select Player"
+theme_override_font_sizes/font_size = 12
+
+[node name="BottomBanner" type="Panel" parent="."]
+layout_mode = 0
+anchor_top = 0.8
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.05, 0.05, 0.95)
+
+[node name="HBox" type="HBoxContainer" parent="BottomBanner"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_top = 10.0
+offset_right = -15.0
+offset_bottom = -10.0
+
+[node name="GameInfoPanel" type="Panel" parent="BottomBanner/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.15, 0.15, 0.25, 0.9)
+
+[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/GameInfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
+layout_mode = 2
+text = "Game Info"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="TickLabel" type="Label" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
+layout_mode = 2
+text = "Tick: 0"
+theme_override_font_sizes/font_size = 12
+
+[node name="TimeUnitLabel" type="Label" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
+layout_mode = 2
+text = "Time Unit: 0"
+theme_override_font_sizes/font_size = 12
+
+[node name="PlayerInfoPanel" type="Panel" parent="BottomBanner/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.15, 0.25, 0.15, 0.9)
+
+[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/PlayerInfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+text = "Player Info"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="PlayerIDLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+text = "Player ID: -"
+theme_override_font_sizes/font_size = 11
+
+[node name="PositionLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+text = "Position: -"
+theme_override_font_sizes/font_size = 11
+
+[node name="LevelLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+text = "Level: -"
+theme_override_font_sizes/font_size = 11
+
+[node name="TeamLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+text = "Team: -"
+theme_override_font_sizes/font_size = 11
+
+[node name="StatusLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+text = "Status: -"
+theme_override_font_sizes/font_size = 11
+
+[node name="InventoryContainer" type="HBoxContainer" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="TeamStatsPanel" type="Panel" parent="BottomBanner/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.25, 0.15, 0.15, 0.9)
+
+[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/TeamStatsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/TeamStatsPanel/VBox"]
+layout_mode = 2
+text = "Team Stats"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/TeamStatsPanel/VBox"]
+layout_mode = 2
+
+[node name="TeamsContainer" type="VBoxContainer" parent="BottomBanner/HBox/TeamStatsPanel/VBox"]
+layout_mode = 2
+
+[node name="ResourceStatsPanel" type="Panel" parent="BottomBanner/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.2, 0.2, 0.2, 0.9)
+
+[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/ResourceStatsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/ResourceStatsPanel/VBox"]
+layout_mode = 2
+text = "Resource Stats"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/ResourceStatsPanel/VBox"]
+layout_mode = 2
+
+[node name="ResourcesContainer" type="VBoxContainer" parent="BottomBanner/HBox/ResourceStatsPanel/VBox"]
+layout_mode = 2

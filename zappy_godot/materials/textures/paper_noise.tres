@@ -1,0 +1,15 @@
+# Simple script to generate a noise texture for paper effect
+# This would normally be an image file, but for now we'll create a programmatic one
+
+[gd_resource type="NoiseTexture2D" format=3]
+
+[sub_resource type="FastNoiseLite" id="noise"]
+frequency = 0.5
+fractal_octaves = 3
+fractal_lacunarity = 2.0
+fractal_gain = 0.5
+
+[resource]
+width = 512
+height = 512
+noise = SubResource("noise")
