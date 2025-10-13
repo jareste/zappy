@@ -191,9 +191,9 @@ public class CommandResponseHandler {
         System.out.println("[CLIENT " + this.id + "] " + "INCANTATION!!! response: " + msg);
         String status = msg.has("status") ? msg.get("status").getAsString() : "ko";
         if (status.equals("in_progress")) {
-            // cmdManager.incrementPendingResponses();
+            cmdManager.incrementPendingResponses();
         } else if (status.equals("Level up!")) {
-            // cmdManager.incrementPendingResponses();
+            cmdManager.incrementPendingResponses();
             player.incrementLevel();
         } else if (status.equals("ok")) {
             System.out.println("[CLIENT " + this.id + "] " + "Incantation successful! and FINISHED :)");

@@ -52,6 +52,7 @@ public class CommandManager {
     public void onCommandResponse(JsonObject jsonMessage) {
         decrementPendingResponses();
         cmdResponseHandler.handleResponse(jsonMessage);
+        System.out.println("[CLIENT " + this.id + "] " + "PENDING RESPONSES: " + pendingResponses.get());
 
         if (getPendingResponses() == 0) {
             System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves ...");
