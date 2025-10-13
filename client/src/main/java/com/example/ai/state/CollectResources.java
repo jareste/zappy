@@ -44,7 +44,7 @@ public class CollectResources implements AIState {
             return new SearchFood();
         } else if (readyToElevate(targets)) {
             System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + (player.getLevel() + 1));
-            return new CheckResources();
+            return new PoseResources();
         }
         return this; // keep searching
     }

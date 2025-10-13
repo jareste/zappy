@@ -11,8 +11,15 @@ public class View {
     public View() {}
 
     public void update(List<List<Resource>> newView) {
-        // Build a completely new structure from the response
-        this.data = newView;
+        if (newView == null) {
+            this.data = new ArrayList<>();
+        } else {
+            List<List<Resource>> copy = new ArrayList<>(newView.size());
+            for (List<Resource> tile : newView) {
+                copy.add(new ArrayList<>(tile));
+            }
+            this.data = copy;
+        }
     }
 
     public List<List<Resource>> getData() {
@@ -20,6 +27,9 @@ public class View {
     }
 
     public List<Resource> getTile(int idx) {
+        if (data == null || idx < 0 || idx >= data.size()) {
+            return java.util.Collections.emptyList();
+        }
         return data.get(idx);
     }
 }

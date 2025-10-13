@@ -15,10 +15,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CommandResponseHandler {
+    private final CommandManager cmdManager;
     private final Player player;
     private int id;
 
-    public CommandResponseHandler(Player player) {
+    public CommandResponseHandler(Player player, CommandManager cmdManager) {
+        this.cmdManager = cmdManager;
         this.player = player;
         this.id = player.getId();
     }

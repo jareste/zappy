@@ -33,7 +33,7 @@ public class CommandManager {
         this.player = player;
         this.session = session;
         this.id = player.getId();
-        this.cmdResponseHandler = new CommandResponseHandler(player);
+        this.cmdResponseHandler = new CommandResponseHandler(player, this);
         this.msgSender = msgSender;
         this.queue = new CommandQueue();
     }
