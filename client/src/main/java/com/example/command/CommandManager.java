@@ -64,7 +64,12 @@ public class CommandManager {
     }
 
     public void onBroadcastMessage(String rawMsg, int dir) {
-        // player.handleBroadcastMessage(rawMsg, dir);
+        aiManager.handleBroadcastMessage(rawMsg, dir);
+        if (getPendingResponses() == 0) {
+            System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves after broadcast ...");
+            List<Command> nextMoves = aiManager.decideNextMoves();
+            addToQueue(nextMoves);
+        }
     }
 
     public void onLevelUp() {
