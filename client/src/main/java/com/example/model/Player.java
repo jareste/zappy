@@ -1,33 +1,33 @@
 package com.example.model;
 
-import com.example.ai.*;
-import com.example.command.*;
+// import com.example.ai.*;
+// import com.example.command.*;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Queue;
-import java.util.LinkedList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+// import com.google.gson.JsonObject;
+// import com.google.gson.JsonParser;
+// import com.google.gson.JsonArray;
+// import com.google.gson.JsonElement;
+// import java.util.List;
+// import java.util.ArrayList;
+// import java.util.Queue;
+// import java.util.LinkedList;
+// import java.util.HashMap;
+// import java.util.Map;
+// import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Player {
     private String team;
     private int id;
-    private CommandManager cmdManager;
-    private AI ai;
+    // private CommandManager cmdManager;
+    // private AI ai;
     private final AtomicInteger level;
     private final AtomicInteger life;
     private final AtomicInteger nour;
     private Position position;
-    private final Map<Resource, Integer> inventory;
-    private final View view;
+    // private final Map<Resource, Integer> inventory;
+    // private final View view;
     private final AtomicBoolean dead = new AtomicBoolean(false);
 
     public Player(String teamName, int id) {
@@ -35,8 +35,8 @@ public class Player {
         // this.ai = new AI(teamName);
         this.level = new AtomicInteger(1);
         this.id = id;
-        this.inventory = new ConcurrentHashMap<>();
-        this.view = new View();
+        // this.inventory = new ConcurrentHashMap<>();
+        // this.view = new View();
         this.life = new AtomicInteger(1260); // time units
         this.nour = new AtomicInteger(0);
     }
@@ -65,21 +65,21 @@ public class Player {
         position.turnLeft();
     }
 
-    public void updateInventory(Resource item, int count) {
-        this.inventory.put(item, count);
-    }
+    // public void updateInventory(Resource item, int count) {
+    //     this.inventory.put(item, count);
+    // }
 
-    public void updateView(List<List<Resource>> data) {
-        view.update(data);
-    }
+    // public void updateView(List<List<Resource>> data) {
+    //     view.update(data);
+    // }
 
-    public void addResource(Resource item) {
-        this.inventory.compute(item, (k, v) -> (v == null) ? 1 : v + 1);
-    }
+    // public void addResource(Resource item) {
+    //     this.inventory.compute(item, (k, v) -> (v == null) ? 1 : v + 1);
+    // }
 
-    public void removeResource(Resource item) {
-        this.inventory.computeIfPresent(item, (k, v) -> (v > 1) ? v - 1 : null);
-    }
+    // public void removeResource(Resource item) {
+    //     this.inventory.computeIfPresent(item, (k, v) -> (v > 1) ? v - 1 : null);
+    // }
 
     /********** BROADCAST **********/
  
@@ -150,27 +150,27 @@ public class Player {
         return this.position;
     }
 
-    public Map<Resource, Integer> getInventory() {
-        return new ConcurrentHashMap<>(this.inventory); // returns a copy (to be safe)
-    }
+    // public Map<Resource, Integer> getInventory() {
+    //     return new ConcurrentHashMap<>(this.inventory); // returns a copy (to be safe)
+    // }
 
-    public View getView() {
-        return this.view;
-    }
+    // public View getView() {
+    //     return this.view;
+    // }
 
-    public int getInventoryCount(Resource item) {
-        return this.inventory.getOrDefault(item, 0);
-    }
+    // public int getInventoryCount(Resource item) {
+    //     return this.inventory.getOrDefault(item, 0);
+    // }
 
-    public int getNourriture() {
-        return getInventoryCount(Resource.NOURRITURE);
-    }
+    // public int getNourriture() {
+    //     return getInventoryCount(Resource.NOURRITURE);
+    // }
 
     /********** SETTERS **********/
 
-    public void setCommandManager(CommandManager commandManager) {
-        this.cmdManager = commandManager;
-    }
+    // public void setCommandManager(CommandManager commandManager) {
+    //     this.cmdManager = commandManager;
+    // }
 
     public void setLevel(int level) {
         this.level.set(level);
@@ -184,7 +184,7 @@ public class Player {
         dead.set(value);
     }
 
-    public void setGameState(int w, int h) {
+    public void setPosition(int w, int h) {
         this.position = new Position(w, h);
     }
 }

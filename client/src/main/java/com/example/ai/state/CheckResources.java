@@ -13,7 +13,7 @@ import java.util.Map;
 public class CheckResources implements AIState {
 
     @Override
-    public List<Command> getActions(Player player, View view) {
+    public List<Command> getActions(GameState gameState) {
         List<Command> commands = new ArrayList<>();
 
         commands.add(new Command(CommandType.INVENTAIRE));
@@ -22,8 +22,8 @@ public class CheckResources implements AIState {
     }
 
     @Override
-    public AIState next(Player player, View view) {
-        if (player.getNourriture() < 12) {
+    public AIState next(GameState gameState) {
+        if (gameState.getNourriture() < 12) {
             return new SearchFood();
         }
         return this; // TODO: change to elevate (or poseELementss..)

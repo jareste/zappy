@@ -28,145 +28,145 @@ public class AI {
 
     /********** DECISION MAKING **********/
 
-    public List<Command> decideNextMoves() {
-        List<Command> commands = new ArrayList<>();
+    // public List<Command> decideNextMoves() {
+    //     List<Command> commands = new ArrayList<>();
 
-        if (inventaireChecked && readyToElevate()) {
-            return doElevation();
-        }
-        addRandomMove(commands);
-        return commands;
-    }
+    //     if (inventaireChecked && readyToElevate()) {
+    //         return doElevation();
+    //     }
+    //     addRandomMove(commands);
+    //     return commands;
+    // }
 
-    public List<Command> decideNextMovesViewBased(List<List<String>> viewData) {
-        this.curView = viewData;
-        // List<Command> commands = new ArrayList<>();
-        setTargets();
+    // public List<Command> decideNextMovesViewBased(List<List<String>> viewData) {
+    //     this.curView = viewData;
+    //     // List<Command> commands = new ArrayList<>();
+    //     setTargets();
 
-        // int tileIdx = findItemInView(Resource.NOURRITURE);
-        // if (tileIdx != -1) {
-        //     List<CommandType> moves = getMovesToTile(tileIdx);
-        //     System.out.println("MOVES to nourriture: " + moves);
-        //     for (CommandType move : moves) {
-        //         commands.add(new Command(move));
-        //     }
-        //     commands.add(new Command(CommandType.PREND, Resource.NOURRITURE.getName()));
-        // } else {
-        //     commands.add(new Command(CommandType.AVANCE));
-        // }
+    //     // int tileIdx = findItemInView(Resource.NOURRITURE);
+    //     // if (tileIdx != -1) {
+    //     //     List<CommandType> moves = getMovesToTile(tileIdx);
+    //     //     System.out.println("MOVES to nourriture: " + moves);
+    //     //     for (CommandType move : moves) {
+    //     //         commands.add(new Command(move));
+    //     //     }
+    //     //     commands.add(new Command(CommandType.PREND, Resource.NOURRITURE.getName()));
+    //     // } else {
+    //     //     commands.add(new Command(CommandType.AVANCE));
+    //     // }
 
-        // return decideNextMovesRandom();
+    //     // return decideNextMovesRandom();
 
-        if (player.getLife() < 1500 || player.getNour() < 20) {
-            System.out.println("[Client "+ player.getId() + "] I AM GOING FOR FOOD");
-            return searchForFood();
-        }
-        if (inventaireChecked && !readyToElevate()) {
-            setInventaireChecked(false);
-        }
-        if (!readyToElevate()) {
-            System.out.println("[Client "+ player.getId() + "] I AM GOING FOR TARGET STONE");
-            return searchForTarget();
-        } else if (!inventaireChecked) {
-            System.out.println("[Client "+ player.getId() + "] I AM GOING TO ELEVATE to level " + (player.getLevel() + 1) + ", CHECKING INVENTAIRE");
-            return checkInventaire();
-        }
-        // player.setLevel(player.getLevel() + 1);
-        System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + player.getLevel() + 1);
-        return checkInventaire(); // doElevation();
+    //     if (player.getLife() < 1500 || player.getNour() < 20) {
+    //         System.out.println("[Client "+ player.getId() + "] I AM GOING FOR FOOD");
+    //         return searchForFood();
+    //     }
+    //     if (inventaireChecked && !readyToElevate()) {
+    //         setInventaireChecked(false);
+    //     }
+    //     if (!readyToElevate()) {
+    //         System.out.println("[Client "+ player.getId() + "] I AM GOING FOR TARGET STONE");
+    //         return searchForTarget();
+    //     } else if (!inventaireChecked) {
+    //         System.out.println("[Client "+ player.getId() + "] I AM GOING TO ELEVATE to level " + (player.getLevel() + 1) + ", CHECKING INVENTAIRE");
+    //         return checkInventaire();
+    //     }
+    //     // player.setLevel(player.getLevel() + 1);
+    //     System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + player.getLevel() + 1);
+    //     return checkInventaire(); // doElevation();
         
 
-        // return commands();
-    }
+    //     // return commands();
+    // }
 
-    public List<Command> decideNextMovesRandom() {
-        List<Command> commands = new ArrayList<>();
-        Random random = new Random();
+    // public List<Command> decideNextMovesRandom() {
+    //     List<Command> commands = new ArrayList<>();
+    //     Random random = new Random();
     
-        CommandType[] possibleCommands = {CommandType.AVANCE, CommandType.GAUCHE, CommandType.DROITE, CommandType.VOIR, CommandType.INVENTAIRE, CommandType.PREND, CommandType.POSE};
-        // CommandType[] possibleCommands = CommandType.values();
+    //     CommandType[] possibleCommands = {CommandType.AVANCE, CommandType.GAUCHE, CommandType.DROITE, CommandType.VOIR, CommandType.INVENTAIRE, CommandType.PREND, CommandType.POSE};
+    //     // CommandType[] possibleCommands = CommandType.values();
     
-        CommandType randomCommand = possibleCommands[random.nextInt(possibleCommands.length)];
-        commands.add(new Command(randomCommand));
+    //     CommandType randomCommand = possibleCommands[random.nextInt(possibleCommands.length)];
+    //     commands.add(new Command(randomCommand));
     
-        return commands;
-    }
+    //     return commands;
+    // }
 
-    /********** ELEVATION **********/
+    // /********** ELEVATION **********/
 
-    private boolean readyToElevate() {
-        if (targets.isEmpty()) {
-            return true;
-        }
-        return false;
-    }
+    // private boolean readyToElevate() {
+    //     if (targets.isEmpty()) {
+    //         return true;
+    //     }
+    //     return false;
+    // }
 
-    public List<Command> doElevation() {
-        List<Command> commands = new ArrayList<>();
-        int level = player.getLevel();
-        ElevationRules.Rule rule = ElevationRules.getRule(level);
-        Map<Resource, Integer> resourcesNeeded = rule.getResources();
+    // public List<Command> doElevation() {
+    //     List<Command> commands = new ArrayList<>();
+    //     int level = player.getLevel();
+    //     ElevationRules.Rule rule = ElevationRules.getRule(level);
+    //     Map<Resource, Integer> resourcesNeeded = rule.getResources();
 
-        // do pose of each target
-        for (Map.Entry<Resource, Integer> entry : resourcesNeeded.entrySet()) {
-            Resource resource = entry.getKey();
-            int requiredAmount = entry.getValue();
-            for (int i = 0; i < requiredAmount; i++) {
-                // add pose command for this resource
-                commands.add(new Command(CommandType.POSE, resource.getName()));
-                System.out.println("[Client " + player.getId() + "] Posing " + resource.getName());
-            }
-        }
-        // if level > 1 -> broadcast to all players
-        // if (level > 1) {
-        commands.add(player.broadcastCmd("elevation", "call", level, rule.getPlayers()));
-        // }
+    //     // do pose of each target
+    //     for (Map.Entry<Resource, Integer> entry : resourcesNeeded.entrySet()) {
+    //         Resource resource = entry.getKey();
+    //         int requiredAmount = entry.getValue();
+    //         for (int i = 0; i < requiredAmount; i++) {
+    //             // add pose command for this resource
+    //             commands.add(new Command(CommandType.POSE, resource.getName()));
+    //             System.out.println("[Client " + player.getId() + "] Posing " + resource.getName());
+    //         }
+    //     }
+    //     // if level > 1 -> broadcast to all players
+    //     // if (level > 1) {
+    //     // commands.add(player.broadcastCmd("elevation", "call", level, rule.getPlayers()));
+    //     // }
 
-        // add CommandType.INCANTATION
-        commands.add(new Command(CommandType.INCANTATION));
-        return commands;
-    }
+    //     // add CommandType.INCANTATION
+    //     commands.add(new Command(CommandType.INCANTATION));
+    //     return commands;
+    // }
 
-    private List<Command> searchForTarget() {
-        List<Command> commands = new ArrayList<>();
+    // private List<Command> searchForTarget() {
+    //     List<Command> commands = new ArrayList<>();
 
-        List<Integer> sortedIndices = getViewIndicesSortedByDistance(player.getLevel());
-        for (int tileIdx : sortedIndices) {
-            for (Resource target : targets) {
-                if (curView.get(tileIdx).contains(target.getName())) {
-                    addMovesToTile(tileIdx, target, commands);
-                    return commands;
-                }
-            }
-        }
+    //     List<Integer> sortedIndices = getViewIndicesSortedByDistance(player.getLevel());
+    //     for (int tileIdx : sortedIndices) {
+    //         for (Resource target : targets) {
+    //             if (curView.get(tileIdx).contains(target.getName())) {
+    //                 addMovesToTile(tileIdx, target, commands);
+    //                 return commands;
+    //             }
+    //         }
+    //     }
 
-        addRandomMove(commands);
-        return commands;
-    }
+    //     addRandomMove(commands);
+    //     return commands;
+    // }
 
-    private List<Command> checkInventaire() {
-        List<Command> commands = new ArrayList<>();
-        commands.add(new Command(CommandType.INVENTAIRE));
-        return commands;
-    }
+    // private List<Command> checkInventaire() {
+    //     List<Command> commands = new ArrayList<>();
+    //     commands.add(new Command(CommandType.INVENTAIRE));
+    //     return commands;
+    // }
 
-    private void setTargets() {
-        int level = player.getLevel();
-        ElevationRules.Rule rule = ElevationRules.getRule(level);
-        Map<Resource, Integer> resourcesNeeded = rule.getResources();
-        // Set<Resource> targets = new EnumSet<>();
-        targets.clear();
+    // private void setTargets() {
+    //     int level = player.getLevel();
+    //     ElevationRules.Rule rule = ElevationRules.getRule(level);
+    //     Map<Resource, Integer> resourcesNeeded = rule.getResources();
+    //     // Set<Resource> targets = new EnumSet<>();
+    //     targets.clear();
 
-        for (Map.Entry<Resource, Integer> entry : resourcesNeeded.entrySet()) {
-            Resource resource = entry.getKey();
-            int requiredAmount = entry.getValue();
-            int currentAmount = player.getInventoryCount(resource);
-            if (currentAmount < requiredAmount) {
-                targets.add(resource); // add to targets
-            }
-        }
-        // return targets;
-    }
+    //     for (Map.Entry<Resource, Integer> entry : resourcesNeeded.entrySet()) {
+    //         Resource resource = entry.getKey();
+    //         int requiredAmount = entry.getValue();
+    //         int currentAmount = player.getInventoryCount(resource);
+    //         if (currentAmount < requiredAmount) {
+    //             targets.add(resource); // add to targets
+    //         }
+    //     }
+    //     // return targets;
+    // }
 
     /********** FIND **********/
 

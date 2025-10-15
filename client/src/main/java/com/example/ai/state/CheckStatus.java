@@ -9,23 +9,23 @@ import java.util.List;
 public class CheckStatus implements AIState {
 
     @Override
-    public List<Command> getActions(Player player, View view) {
+    public List<Command> getActions(GameState gameState) {
         // No direct action: just deciding next step
         return null;
     }
 
     @Override
-    public AIState next(Player player, View view) {
+    public AIState next(GameState gameState) {
 
         return new SearchFood();
 
-        // if (player.getLife() < 20) {
+        // if (gameState.getPlayer().getLife() < 20) {
         //     return new SearchFood();
         // }
-        // if (!player.hasStonesForNextLevel()) {
+        // if (!gameState.getPlayer().hasStonesForNextLevel()) {
         //     return new CollectResources();
         // }
-        // if (player.readyToElevate()) {
+        // if (gameState.getPlayer().readyToElevate()) {
         //     return new Broadcast();
         // }
         // return new Idle(); // default fallback

@@ -9,14 +9,14 @@ import java.util.List;
 public class StartElevation implements AIState {
 
     @Override
-    public List<Command> getActions(Player player, View view) {
+    public List<Command> getActions(GameState gameState) {
         List<Command> commands = new ArrayList<>();
         commands.add(new Command(CommandType.INCANTATION));
         return commands;
     }
 
     @Override
-    public AIState next(Player player, View view) {
+    public AIState next(GameState gameState) {
         return new SearchFood(); // or checkStatus() 
     }
 }

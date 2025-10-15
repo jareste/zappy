@@ -13,15 +13,15 @@ import java.util.Map;
 public class CollectResources implements AIState {
 
     @Override
-    public List<Command> getActions(Player player, View view) {
+    public List<Command> getActions(GameState gameState) {
         List<Command> commands = new ArrayList<>();
-        Set<Resource> targets = setTargets(player);
+        Set<Resource> targets = setTargets(gameState);
 
-        List<Integer> sortedIndices = MovementService.getViewIndicesSortedByDistance(player.getLevel());
+        List<Integer> sortedIndices = MovementService.getViewIndicesSortedByDistance(gameState.getPlayer().getLevel());
         for (int tileIdx : sortedIndices) {
             for (Resource target : targets) {
-                if (view.getTile(tileIdx).contains(target)) {
-                    System.out.println("[Client "+ player.getId() + "] I AM GOING FOR TARGET STONE");
+                if (gameState.getView().getTile(tileIdx).contains(target)) {
+                    System.out.println("[Client "+ gameState.getPlayer().getId() + "] I AM GOING FOR TARGET STONE");
                     MovementService.addMovesToTileAndPrend(tileIdx, target, commands);
                     break;
                 }
@@ -37,20 +37,20 @@ public class CollectResources implements AIState {
     }
 
     @Override
-    public AIState next(Player player, View view) {
-        Set<Resource> targets = setTargets(player);
+    public AIState next(GameState gameState) {
+        Set<Resource> targets = setTargets(gameState);
 
-        if (player.getNourriture() < 12) {
+        if (gameState.getNourriture() < 12) {
             return new SearchFood();
         } else if (readyToElevate(targets)) {
-            System.out.println("[Client "+ player.getId() + "] I AM READY TO ELEVATE! increasing level to " + (player.getLevel() + 1));
+            System.out.println("[Client "+ gameState.getPlayer().getId() + "] I AM READY TO ELEVATE! increasing level to " + (gameState.getPlayer().getLevel() + 1));
             return new PoseResources();
         }
         return this; // keep searching
     }
 
-    private Set<Resource> setTargets(Player player) {
-        int level = player.getLevel();
+    private Set<Resource> setTargets(GameState gameState) {
+        int level = gameState.getPlayer().getLevel();
         ElevationRules.Rule rule = ElevationRules.getRule(level);
         Map<Resource, Integer> resourcesNeeded = rule.getResources();
         Set<Resource> targets = EnumSet.noneOf(Resource.class);
@@ -59,7 +59,7 @@ public class CollectResources implements AIState {
         for (Map.Entry<Resource, Integer> entry : resourcesNeeded.entrySet()) {
             Resource resource = entry.getKey();
             int requiredAmount = entry.getValue();
-            int currentAmount = player.getInventoryCount(resource);
+            int currentAmount = gameState.getInventoryCount(resource);
             if (currentAmount < requiredAmount) {
                 targets.add(resource);
             }

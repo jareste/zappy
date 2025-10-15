@@ -16,12 +16,14 @@ import java.util.Map;
 
 public class CommandResponseHandler {
     private final CommandManager cmdManager;
+    private final GameState gameState;
     private final Player player;
     private int id;
 
-    public CommandResponseHandler(Player player, CommandManager cmdManager) {
+    public CommandResponseHandler(GameState gameState, CommandManager cmdManager) {
         this.cmdManager = cmdManager;
-        this.player = player;
+        this.gameState = gameState;
+        this.player = gameState.getPlayer();
         this.id = player.getId();
     }
 
@@ -138,7 +140,7 @@ public class CommandResponseHandler {
             System.out.println("[CLIENT " + this.id + "] " + "Tile " + i + ": " + data.get(i));
         }
 
-        player.updateView(data);
+        gameState.updateView(data);
     }
 
     private void handleInventaireResponse(JsonObject msg) {
@@ -148,7 +150,7 @@ public class CommandResponseHandler {
             String item = entry.getKey();
             Resource resource = Resource.fromString(item);
             int count = entry.getValue().getAsInt();
-            player.updateInventory(resource, count);
+            gameState.updateInventory(resource, count);
             // this.ai.setInventaireChecked(true);
         }
 
@@ -166,13 +168,13 @@ public class CommandResponseHandler {
         System.out.println("[CLIENT " + this.id + "] " + "Take an object (" + item + ") response: " + status);
         if (status.equals("ok")) {
             Resource resource = Resource.fromString(item);
-            player.addResource(resource);
+            gameState.addResource(resource);
             if (resource == Resource.NOURRITURE) {
                 player.addLife(126);
                 // this.nour.addAndGet(1);
                 // System.out.println("[CLIENT " + this.id + "] " + "Nourritures taken: " + this.nour.get());
             }
-            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + player.getInventory() + " (life: " + player.getLife() + ")");
+            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + gameState.getInventory() + " (life: " + player.getLife() + ")");
         }
     }
 
@@ -182,8 +184,8 @@ public class CommandResponseHandler {
         System.out.println("[CLIENT " + this.id + "] " + "Drop an object (" + item + ") response: " + status);
         if (status.equals("ok")) {
             Resource resource = Resource.fromString(item);
-            player.removeResource(resource);
-            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + player.getInventory());
+            gameState.removeResource(resource);
+            System.out.println("[CLIENT " + this.id + "] " + "New inventory: " + gameState.getInventory());
         }
     }
 

@@ -13,9 +13,9 @@ import java.util.Map;
 public class WaitForOthers implements AIState {
 
     @Override
-    public List<Command> getActions(Player player, View view) {
+    public List<Command> getActions(GameState gameState) {
         List<Command> commands = new ArrayList<>();
-        int level = player.getLevel();
+        int level = gameState.getPlayer().getLevel();
         ElevationRules.Rule rule = ElevationRules.getRule(level);
 
         Command broadcastCmd = BroadcastService.createBroadcastCmd("elevation", "call", level, rule.getPlayers());
@@ -24,11 +24,11 @@ public class WaitForOthers implements AIState {
     }
 
     @Override
-    public AIState next(Player player, View view) {
-        int level = player.getLevel();
+    public AIState next(GameState gameState) {
+        int level = gameState.getPlayer().getLevel();
         ElevationRules.Rule rule = ElevationRules.getRule(level);
         int requiredPlayers = rule.getPlayers();
-        int currentPlayers = view.getCurrentPlayers();
+        int currentPlayers = gameState.getView().getCurrentPlayers();
 
         if (currentPlayers >= requiredPlayers) {
             return new StartElevation();

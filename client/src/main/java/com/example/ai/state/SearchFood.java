@@ -10,9 +10,11 @@ import java.util.List;
 public class SearchFood implements AIState {
 
     @Override
-    public List<Command> getActions(Player player, View view) {
+    public List<Command> getActions(GameState gameState) {
         List<Command> commands = new ArrayList<>();
-        
+        Player player = gameState.getPlayer();
+        View view = gameState.getView();
+
         int tileIdx = MovementService.findItemInView(Resource.NOURRITURE, view, player.getLevel());
         if (tileIdx != -1) {
             MovementService.addMovesToTileAndPrend(tileIdx, Resource.NOURRITURE, commands);
@@ -25,8 +27,8 @@ public class SearchFood implements AIState {
     }
 
     @Override
-    public AIState next(Player player, View view) {
-        if (player.getNourriture() > 20) {
+    public AIState next(GameState gameState) {
+        if (gameState.getNourriture() > 20) {
             return new CollectResources();
         }
         return this; // keep searching

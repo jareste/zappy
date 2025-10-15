@@ -21,30 +21,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CommandManager {
     private final CommandResponseHandler cmdResponseHandler;
     private final MessageSender msgSender;
+    private final GameState gameState;
     private AIManager aiManager;
     private Session session;
     private int id;
     private final CommandQueue queue;
     // private final Queue<Command> commandQueue = new ConcurrentLinkedQueue<>();
-    private final Player player;
+    // private final Player player;
     private final AtomicInteger pendingResponses = new AtomicInteger(0);
 
-    public CommandManager(Player player, MessageSender msgSender, Session session) {
-        this.player = player;
+    public CommandManager(GameState gameState, MessageSender msgSender, Session session) {
+        this.gameState = gameState;
         this.session = session;
-        this.id = player.getId();
-        this.cmdResponseHandler = new CommandResponseHandler(player, this);
+        this.id = gameState.getPlayer().getId();
+        this.cmdResponseHandler = new CommandResponseHandler(gameState, this);
         this.msgSender = msgSender;
         this.queue = new CommandQueue();
     }
 
     public void onBienvenue() {
-        msgSender.sendLoginMessage(player);
+        msgSender.sendLoginMessage(gameState.getPlayer());
     }
 
     public void onWelcome(int x, int y) {
-        player.setGameState(x, y);
-        this.aiManager = new AIManager(player);
+        gameState.getPlayer().setPosition(x, y);
+        this.aiManager = new AIManager(gameState);
         Command firstCommand = new Command(CommandType.VOIR);
         addToQueue(firstCommand);
     }
@@ -67,7 +68,7 @@ public class CommandManager {
     }
 
     public void onLevelUp() {
-        player.incrementLevel();
+        gameState.getPlayer().incrementLevel();
     }
 
     /********** COMMAND FUNCTIONS **********/
@@ -83,7 +84,7 @@ public class CommandManager {
     }
 
     private void sendCommand(Command command) {
-        if (player.isDead()) {
+        if (gameState.getPlayer().isDead()) {
             System.out.println("[CLIENT " + this.id + "] " + "Client is dead, cannot send command: " + command);
             return;
         }
@@ -106,7 +107,7 @@ public class CommandManager {
     }
 
     public Player getPlayer() {
-        return player;
+        return gameState.getPlayer();
     }
 
     public Session getSession() {

@@ -46,14 +46,14 @@ public class WebSocketClient {
         this.session = session;
         System.out.println("[CLIENT " + this.id + "] " + "Connected to server");
 
-        Player player = new Player(this.teamName, this.id);
+        // Player player = new Player(this.teamName, this.id);
+        GameState gameState = new GameState(this.teamName, this.id);
+        // gameState.setPlayer(player);
         MessageSender msgSender = new MessageSender(this);
-        CommandManager cmdManager = new CommandManager(player, msgSender, session);
-        player.setCommandManager(cmdManager);
+        CommandManager cmdManager = new CommandManager(gameState, msgSender, session);
         this.cmdManager = cmdManager;
 
-        
-        this.msgHandler = new MessageHandler(player, msgSender, cmdManager);
+        this.msgHandler = new MessageHandler(gameState.getPlayer(), msgSender, cmdManager);
 
         // // FOR DEBUG
         // String msg1 = createJsonMessage1();
