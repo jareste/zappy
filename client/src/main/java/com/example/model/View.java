@@ -32,4 +32,20 @@ public class View {
         }
         return data.get(idx);
     }
+
+    public int getCurrentPlayers() {
+        if (data == null || data.isEmpty()) {
+            return 0;
+        }
+        List<Resource> firstTile = data.get(0);
+        int count = 0;
+
+        for (Resource res : firstTile) {
+            if (res == Resource.PLAYER) {
+                count++;
+            }
+        }
+         
+        return count;
+    }
 }

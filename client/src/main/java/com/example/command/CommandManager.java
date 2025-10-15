@@ -63,7 +63,7 @@ public class CommandManager {
     }
 
     public void onBroadcastMessage(String rawMsg, int dir) {
-        player.handleBroadcastMessage(rawMsg, dir);
+        // player.handleBroadcastMessage(rawMsg, dir);
     }
 
     public void onLevelUp() {

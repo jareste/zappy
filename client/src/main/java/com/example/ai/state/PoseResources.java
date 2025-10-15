@@ -37,7 +37,7 @@ public class PoseResources implements AIState {
         if (player.getLevel() == 1) {
             return new StartElevation();
         } else {
-            return new SearchFood(); // TODO: change to WaitForOthers after testing
+            return new WaitForOthers(); // TODO: change to WaitForOthers after testing
         }
     }
 }
