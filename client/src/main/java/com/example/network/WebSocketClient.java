@@ -22,6 +22,11 @@ public class WebSocketClient {
     private int id;
     private CommandManager cmdManager;
     private MessageHandler msgHandler;
+    private final ExecutorService msgExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "ws-msg-processor");
+        t.setDaemon(true);
+        return t;
+    });
 
     private CountDownLatch latch;
     private boolean useSecure;
@@ -98,12 +103,15 @@ public class WebSocketClient {
     @OnMessage
     public void onMessage(String message) {
         // System.out.println("[CLIENT " + this.id + "] " + "RECEIVED message: " + message);
-        try {
-            // this.cmdManager.handleResponse(message);
-            msgHandler.handleMessage(message);
-        } catch (Exception e) {
-            e.printStackTrace();  // You’ll see if it’s crashing quietly
-        }
+        // Serialize handling so messages are processed one-by-one in arrival order
+        msgExecutor.submit(() -> {
+            try {
+                // this.cmdManager.handleResponse(message);
+                msgHandler.handleMessage(message);
+            } catch (Exception e) {
+                e.printStackTrace();  // Log but prevent worker thread from dying
+            }
+        });
     }
 
     @OnClose
@@ -112,6 +120,16 @@ public class WebSocketClient {
         // System.out.println("[CLIENT " + this.id + "] " + "Connection closed: " + reason.getReasonPhrase() + " (" + reason.getCloseCode() + ")" + " client is dead? " + this.cmdManager.isDead());
         // scheduler.shutdown();  // Clean up the scheduler when the connection is closed
         latch.countDown(); // Unblock main thread
+        // Shutdown executor used for serialized message processing
+        msgExecutor.shutdown();
+        try {
+            if (!msgExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
+                msgExecutor.shutdownNow();
+            }
+        } catch (InterruptedException ie) {
+            msgExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     @OnError
@@ -119,6 +137,8 @@ public class WebSocketClient {
         // player.setDead(true);
         System.err.println("WebSocket error: " + throwable.getMessage());
         throwable.printStackTrace();
+        // Ensure executor is shutdown when errors occur that likely end the connection
+        msgExecutor.shutdownNow();
     }
 
 
