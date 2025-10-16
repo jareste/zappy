@@ -15,6 +15,58 @@ public class GoOnCall implements AIState {
     }
 
     @Override
+    public List<Command> getActions(GameState gameState) {
+        List<Command> commands = new ArrayList<>();
+        if (!hasMovedToCallLocation) {
+            switch (direction) {
+                case 1:
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                case 2:
+                    commands.add(new Command(CommandType.AVANCE));
+                    commands.add(new Command(CommandType.GAUCHE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                case 3:
+                    commands.add(new Command(CommandType.GAUCHE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                case 4:
+                    commands.add(new Command(CommandType.GAUCHE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    commands.add(new Command(CommandType.GAUCHE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                case 5:
+                    commands.add(new Command(CommandType.GAUCHE));
+                    commands.add(new Command(CommandType.GAUCHE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                case 6:
+                    commands.add(new Command(CommandType.DROITE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    commands.add(new Command(CommandType.DROITE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                case 7:
+                    commands.add(new Command(CommandType.DROITE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                case 8:
+                    commands.add(new Command(CommandType.AVANCE));
+                    commands.add(new Command(CommandType.DROITE));
+                    commands.add(new Command(CommandType.AVANCE));
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Arrived at elevation call location, waiting for others ...");
+        }
+        return commands;
+    }
+
+    @Override
     public AIState next(GameState gameState) {
         if (!hasMovedToCallLocation) {
             // Still need to move to call location
@@ -22,20 +74,5 @@ public class GoOnCall implements AIState {
         }
         // Once at location, transition to waiting for others
         return new SearchFood();
-    }
-
-    @Override
-    public List<Command> getActions(GameState gameState) {
-        List<Command> commands = new ArrayList<>();
-        if (!hasMovedToCallLocation) {
-            // Logic to move towards the call location
-            // For simplicity, we assume the player is already at the location
-            hasMovedToCallLocation = true;
-            System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Moving to elevation call location");
-            // In a real implementation, you would add movement commands here
-        } else {
-            System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Arrived at elevation call location, waiting for others ...");
-        }
-        return commands;
     }
 }

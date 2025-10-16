@@ -18,6 +18,7 @@ public class WaitForOthers implements AIState {
         int level = gameState.getPlayer().getLevel();
         ElevationRules.Rule rule = ElevationRules.getRule(level);
 
+        System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] WAITING ON POSITION " + gameState.getPlayer().getPosition());
         Command broadcastCmd = BroadcastService.createBroadcastCmd("elevation", "call", level, rule.getPlayers());
         commands.add(broadcastCmd);
         return commands; 

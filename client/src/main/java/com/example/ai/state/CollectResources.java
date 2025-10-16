@@ -40,7 +40,7 @@ public class CollectResources implements AIState {
     public AIState next(GameState gameState) {
         Set<Resource> targets = setTargets(gameState);
 
-        if (gameState.getNourriture() < 12) {
+        if (gameState.getNourriture() < 35) {
             return new SearchFood();
         } else if (readyToElevate(targets)) {
             System.out.println("[Client "+ gameState.getPlayer().getId() + "] I AM READY TO ELEVATE! increasing level to " + (gameState.getPlayer().getLevel() + 1));
