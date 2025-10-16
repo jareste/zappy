@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3 uid="uid://bv37nhoys8vg5"]
+
+[ext_resource type="PackedScene" uid="uid://ks4l8jqolvd4" path="res://scenes/player/bally.glb" id="1_x8qxg"]
+
+[node name="bally" instance=ExtResource("1_x8qxg")]
+transform = Transform3D(-4.371139e-09, 0, -0.1, 0, 0.1, 0, 0.1, 0, -4.371139e-09, 0, 0, 0)
+
+[node name="body" parent="." index="0"]
+transform = Transform3D(0.9924039, -0.08682408, -0.08715574, 0.08715574, 0.9961947, 2.3283064e-10, 0.08682408, -0.0075961226, 0.9961947, 0.4141747, 2.542834, -0.09545612)
+
+[node name="Skeleton3D" parent="body/left_arm" index="0"]
+bones/0/position = Vector3(-0.11190651, -0.5656111, -0.013613012)
+bones/0/rotation = Quaternion(0.17538899, 0.017814264, 0.03635274, 0.98366654)
+bones/1/rotation = Quaternion(0.12164685, -1.7596268e-09, 0.019266974, 0.99238646)
+bones/2/rotation = Quaternion(0.121646896, 7.2731234e-09, 0.019266978, 0.99238646)
+bones/3/rotation = Quaternion(0.12164695, 2.7567486e-08, 0.01926697, 0.99238646)
+bones/4/rotation = Quaternion(0.12164695, 3.437138e-08, 0.01926695, 0.99238646)
+
+[node name="Skeleton3D" parent="body/right_arm" index="0"]
+bones/0/position = Vector3(-0.04432742, 0.0051523447, -0.083261855)
+bones/0/rotation = Quaternion(0.3291453, -4.9389253e-09, 0.05213152, 0.94283915)
+bones/1/rotation = Quaternion(0.12164684, 4.9269553e-09, 0.019266974, 0.99238646)
+bones/2/rotation = Quaternion(0.12164677, -1.4428941e-08, 0.019266987, 0.99238646)
+bones/3/rotation = Quaternion(0.12164684, -1.8886661e-08, 0.019267002, 0.99238646)
+bones/4/rotation = Quaternion(0.12164674, -1.4077013e-08, 0.019266997, 0.99238646)
+
+[node name="Skeleton3D" parent="right_leg" index="0"]
+bones/0/position = Vector3(4.27272e-08, -0.061352678, -5.4451687e-07)
+bones/0/rotation = Quaternion(-4.0584597e-15, 2.6220143e-08, -0.17364815, 0.9848078)
+bones/2/rotation = Quaternion(-1.2663704e-13, -6.1437553e-15, 0.17364815, 0.9848078)
+
+[node name="Skeleton3D" parent="left_leg" index="0"]
+bones/0/position = Vector3(1.40249e-07, -0.061352674, -5.277888e-07)
+bones/0/rotation = Quaternion(-4.0584597e-15, 2.6220143e-08, -0.17364815, 0.9848078)
+bones/2/rotation = Quaternion(-1.2663704e-13, -6.1437553e-15, 0.17364815, 0.9848078)
+
+[node name="AnimationPlayer" parent="." index="3"]
+autoplay = "idle"

@@ -4,6 +4,7 @@ extends Node3D
 @onready var network_manager = $NetworkManager
 @onready var map_root = $MapRoot
 @onready var player_root = $PlayerRoot
+@onready var egg_root = $EggRoot
 @onready var ui = $UI
 @onready var camera = $Camera
 @onready var camera_controller = $CameraPosition
@@ -19,16 +20,15 @@ func _ready():
 	# Connect to network signals
 	network_manager.connect("line_received", _on_server_line)
 	
-	# Test with sample data (remove this when connecting to real server)
+	# Test data -> Needs to be connected to server sent data
 	_load_test_data()
 
 func _setup_managers():
 	"""Initialize all manager components"""
-	# Initialize world manager
-	world_manager.initialize(map_root)
+	await world_manager.initialize(map_root, ui)
 	
 	# Initialize player manager
-	player_manager.initialize(player_root, world_manager)
+	player_manager.initialize(player_root, world_manager, egg_root)
 
 	GameData.connect("game_state_updated", _on_game_state_loaded)
 	
@@ -44,7 +44,7 @@ func _load_test_data():
 	await get_tree().create_timer(1.0).timeout
 	
 	# Load the sample JSON data
-	var file = FileAccess.open("res://json_examples/server2observer/game_10x10.json", FileAccess.READ)
+	var file = FileAccess.open("res://data/json_examples/server2observer/game_5x5.json", FileAccess.READ)
 	if file:
 		var json_string = file.get_as_text()
 		file.close()
@@ -75,7 +75,7 @@ func _on_server_line(line: String):
 	_handle_server_command(tokens)
 
 func _handle_server_command(tokens: Array):
-	"""Handle individual server commands"""
+	"""Handle individual server commands. Placeholder until server connection is coded."""
 	if tokens.is_empty():
 		return
 		
@@ -96,7 +96,6 @@ func _handle_server_command(tokens: Array):
 		_:
 			print("Unknown command: ", tokens[0])
 
-# Public interface for UI and other systems
 func connect_to_server():
 	"""Connect to the Zappy server"""
 	network_manager.connect_to_server()

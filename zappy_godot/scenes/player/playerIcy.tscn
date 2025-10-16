@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://dbd0h5cc3hjbv"]
+
+[ext_resource type="PackedScene" uid="uid://c5drwbvka2ea3" path="res://scenes/player/icy.tscn" id="1_1idnp"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_1idnp"]
+points = PackedVector3Array(-1.080778, -0.11690104, -0.6937998, -0.944934, -0.12889242, 0.86801445, -0.42155784, 1.0986558, 0.04505658, 0.2041558, 0.5574814, -1.2867154, 0.0672729, -1.0042603, -1.2867154, -0.6425966, -1.4283888, 0.04505658, 0.4241556, 0.5381912, 1.2402874, 0.28753245, -1.0235507, 1.2402874, 1.1342849, 0.9623195, -0.091732025, 1.4363624, -0.3371768, -0.9146899, 0.91324615, -1.5644644, -0.091732025, 1.5727259, -0.34916818, 0.6471244)
+
+[node name="Player" type="Node3D"]
+
+[node name="icy" parent="." instance=ExtResource("1_1idnp")]
+
+[node name="body" parent="icy" index="0"]
+transform = Transform3D(0.9924039, -0.08682408, -0.08715574, 0.08715574, 0.9961947, 2.3283064e-10, 0.08682408, -0.0075961226, 0.9961947, 0.4141747, 2.542834, -0.09545612)
+
+[node name="Skeleton3D" parent="icy/body/left_arm" index="0"]
+bones/0/position = Vector3(-0.11190651, -0.5656111, -0.013613012)
+bones/0/rotation = Quaternion(0.17538899, 0.017814264, 0.03635274, 0.98366654)
+bones/1/rotation = Quaternion(0.12164685, -1.7596268e-09, 0.019266974, 0.99238646)
+bones/2/rotation = Quaternion(0.121646896, 7.2731234e-09, 0.019266978, 0.99238646)
+bones/3/rotation = Quaternion(0.12164695, 2.7567486e-08, 0.01926697, 0.99238646)
+bones/4/rotation = Quaternion(0.12164695, 3.437138e-08, 0.01926695, 0.99238646)
+
+[node name="Skeleton3D" parent="icy/body/right_arm" index="0"]
+bones/0/position = Vector3(-0.04432742, 0.0051523447, -0.083261855)
+bones/0/rotation = Quaternion(0.3291453, -4.9389253e-09, 0.05213152, 0.94283915)
+bones/1/rotation = Quaternion(0.12164684, 4.9269553e-09, 0.019266974, 0.99238646)
+bones/2/rotation = Quaternion(0.12164677, -1.4428941e-08, 0.019266987, 0.99238646)
+bones/3/rotation = Quaternion(0.12164684, -1.8886661e-08, 0.019267002, 0.99238646)
+bones/4/rotation = Quaternion(0.12164674, -1.4077013e-08, 0.019266997, 0.99238646)
+
+[node name="Area3D" type="Area3D" parent="icy/body" index="2"]
+transform = Transform3D(-0.86824137, 0.8715575, 9.92404, 0.07596127, 9.961947, -0.8682409, -9.961947, 0, -0.8715579, -0.62436336, -2.4979224, 0.1311906)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="icy/body/Area3D"]
+transform = Transform3D(-0.008682413, 0.00075961265, -0.09961947, 0.008715574, 0.09961947, 2.3283065e-11, 0.09924039, -0.008682408, -0.008715578, 0.00954561, 0.2542834, 0.041417472)
+shape = SubResource("ConvexPolygonShape3D_1idnp")
+
+[node name="Skeleton3D" parent="icy/right_leg" index="0"]
+bones/0/position = Vector3(4.27272e-08, -0.061352678, -5.4451687e-07)
+bones/0/rotation = Quaternion(-4.0584597e-15, 2.6220143e-08, -0.17364815, 0.9848078)
+bones/2/rotation = Quaternion(-1.2663704e-13, -6.1437553e-15, 0.17364815, 0.9848078)
+
+[node name="Skeleton3D" parent="icy/left_leg" index="0"]
+bones/0/position = Vector3(1.40249e-07, -0.061352674, -5.277888e-07)
+bones/0/rotation = Quaternion(-4.0584597e-15, 2.6220143e-08, -0.17364815, 0.9848078)
+bones/2/rotation = Quaternion(-1.2663704e-13, -6.1437553e-15, 0.17364815, 0.9848078)
+
+[node name="AnimationPlayer" parent="icy" index="3"]
+autoplay = "idle"
+
+[editable path="icy"]

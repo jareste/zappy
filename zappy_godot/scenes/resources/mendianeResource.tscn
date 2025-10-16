@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://x418t8f5871m"]
+
+[ext_resource type="PackedScene" uid="uid://c8piag7b0dy2j" path="res://scenes/resources/mendiane.tscn" id="1_na7ww"]
+[ext_resource type="Script" uid="uid://boctx7eiyq0gl" path="res://scenes/resources/resourceManager.gd" id="2_0rgjj"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0rgjj"]
+
+[node name="mendiane_resource" type="Node3D"]
+
+[node name="mendiane" parent="." instance=ExtResource("1_na7ww")]
+script = ExtResource("2_0rgjj")
+
+[node name="Area3D" type="Area3D" parent="mendiane"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="mendiane/Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5080261, 0)
+shape = SubResource("BoxShape3D_0rgjj")
+
+[editable path="mendiane"]

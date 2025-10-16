@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://d0qdgsrec4ey2"]
+
+[ext_resource type="PackedScene" uid="uid://crp4mhekaa5p6" path="res://scenes/tile/tile_arch_03.glb" id="1_ddkyt"]
+
+[node name="tile_arch_03" instance=ExtResource("1_ddkyt")]

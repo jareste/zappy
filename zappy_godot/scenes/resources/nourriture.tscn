@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://dyos1tydpq428"]
+
+[ext_resource type="PackedScene" uid="uid://dsfgueq6j44v6" path="res://scenes/resources/nourriture.glb" id="1_y1vrk"]
+
+[node name="nourriture" instance=ExtResource("1_y1vrk")]
+
+[node name="AnimationPlayer" parent="." index="2"]
+autoplay = "nouriture"

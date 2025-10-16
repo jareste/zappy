@@ -2,75 +2,25 @@
 
 [ext_resource type="Script" uid="uid://mv07co8dv5w6" path="res://scenes/UI/UI.gd" id="1_1xm2m"]
 
-
 [node name="UI" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_1xm2m")
 
-[node name="ControlsHelp" type="Panel" parent="."]
+[node name="TileInfoPanel" type="Panel" parent="."]
 layout_mode = 0
-anchor_right = 0.3
-anchor_bottom = 0.2
-color = Color(0.1, 0.1, 0.1, 0.8)
-
-[node name="VBox" type="VBoxContainer" parent="ControlsHelp"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = -8.0
-offset_bottom = -8.0
-
-[node name="TitleLabel" type="Label" parent="ControlsHelp/VBox"]
-layout_mode = 2
-text = "Controls"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 14
-
-[node name="QELabel" type="Label" parent="ControlsHelp/VBox"]
-layout_mode = 2
-text = "Q/E: Rotate Camera"
-theme_override_font_sizes/font_size = 12
-
-[node name="ScrollLabel" type="Label" parent="ControlsHelp/VBox"]
-layout_mode = 2
-text = "Mouse Wheel: Zoom"
-theme_override_font_sizes/font_size = 12
-
-[node name="NumbersLabel" type="Label" parent="ControlsHelp/VBox"]
-layout_mode = 2
-text = "1-9: Select Player"
-theme_override_font_sizes/font_size = 12
-
-[node name="BottomBanner" type="Panel" parent="."]
-layout_mode = 0
-anchor_top = 0.8
-anchor_right = 1.0
-anchor_bottom = 1.0
-color = Color(0.05, 0.05, 0.05, 0.95)
-
-[node name="HBox" type="HBoxContainer" parent="BottomBanner"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 15.0
-offset_top = 10.0
-offset_right = -15.0
-offset_bottom = -10.0
-
-[node name="GameInfoPanel" type="Panel" parent="BottomBanner/HBox"]
-layout_mode = 2
+offset_left = -335.0
+offset_top = 4.0
+offset_right = -186.0
+offset_bottom = 267.0
 size_flags_horizontal = 3
-color = Color(0.15, 0.15, 0.25, 0.9)
 
-[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/GameInfoPanel"]
+[node name="VBox" type="VBoxContainer" parent="TileInfoPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -79,84 +29,182 @@ offset_left = 8.0
 offset_top = 8.0
 offset_right = -8.0
 offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
+[node name="TitleLabel" type="Label" parent="TileInfoPanel/VBox"]
 layout_mode = 2
-text = "Game Info"
-horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
-
-[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
-layout_mode = 2
-
-[node name="TickLabel" type="Label" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
-layout_mode = 2
-text = "Tick: 0"
-theme_override_font_sizes/font_size = 12
-
-[node name="TimeUnitLabel" type="Label" parent="BottomBanner/HBox/GameInfoPanel/VBox"]
-layout_mode = 2
-text = "Time Unit: 0"
-theme_override_font_sizes/font_size = 12
-
-[node name="PlayerInfoPanel" type="Panel" parent="BottomBanner/HBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-color = Color(0.15, 0.25, 0.15, 0.9)
-
-[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/PlayerInfoPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = -8.0
-offset_bottom = -8.0
-
-[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
-layout_mode = 2
-text = "Player Info"
+text = "Tile Info"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 14
 
-[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+[node name="HSeparator" type="HSeparator" parent="TileInfoPanel/VBox"]
 layout_mode = 2
 
-[node name="PlayerIDLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+[node name="TileIDLabel" type="Label" parent="TileInfoPanel/VBox"]
 layout_mode = 2
-text = "Player ID: -"
 theme_override_font_sizes/font_size = 11
+text = "ID: -"
 
-[node name="PositionLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+[node name="TilePositionLabel" type="Label" parent="TileInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = "Position: -"
-theme_override_font_sizes/font_size = 11
 
-[node name="LevelLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+[node name="TilePlayersLabel" type="Label" parent="TileInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Players: -"
+
+[node name="TileEggsLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Eggs: -"
+
+[node name="HSeparator2" type="HSeparator" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="TileNourritureLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Nourriture: -"
+
+[node name="TileLinemateLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "linemate: -"
+
+[node name="TileDeraumereLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "deraumere: -"
+
+[node name="TileSiburLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "sibur: -"
+
+[node name="TileMendianeLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "mendiane: -"
+
+[node name="TilePhirasLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "phiras: -"
+
+[node name="TileThystameLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "thystame: -"
+
+[node name="PlayerInfoPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -166.0
+offset_top = 4.0
+offset_right = -17.0
+offset_bottom = 316.965
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="PlayerInfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlayerTitleLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Player info"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="PlayerIDLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "ID: -"
+
+[node name="PlayerPositionLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Position:-"
+
+[node name="PlayerLevelLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = "Level: -"
-theme_override_font_sizes/font_size = 11
 
-[node name="TeamLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+[node name="PlayerOrientationLabel" type="Label" parent="PlayerInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Orientation: -"
+
+[node name="PlayerTeamLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = "Team: -"
-theme_override_font_sizes/font_size = 11
 
-[node name="StatusLabel" type="Label" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+[node name="PlayerStatusLabel" type="Label" parent="PlayerInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = "Status: -"
+
+[node name="HSeparator2" type="HSeparator" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="PlayerNourritureLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 11
+text = "Nourriture: -"
 
-[node name="InventoryContainer" type="HBoxContainer" parent="BottomBanner/HBox/PlayerInfoPanel/VBox"]
+[node name="PlayerLinemateLabel" type="Label" parent="PlayerInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "linemate: -"
 
-[node name="TeamStatsPanel" type="Panel" parent="BottomBanner/HBox"]
+[node name="PlayerDeraumereLabel" type="Label" parent="PlayerInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "deraumere: -"
+
+[node name="PlayerSiburLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "sibur: -"
+
+[node name="PlayerMendianeLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "mendiane: -"
+
+[node name="PlayerPhirasLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "phiras: -"
+
+[node name="PlayerThystameLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "thystame: -"
+
+[node name="EggInfoPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -337.0
+offset_top = 281.0
+offset_right = -188.0
+offset_bottom = 401.0
 size_flags_horizontal = 3
-color = Color(0.25, 0.15, 0.15, 0.9)
 
-[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/TeamStatsPanel"]
+[node name="VBox" type="VBoxContainer" parent="EggInfoPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -165,25 +213,47 @@ offset_left = 8.0
 offset_top = 8.0
 offset_right = -8.0
 offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/TeamStatsPanel/VBox"]
+[node name="EggTitleLabel" type="Label" parent="EggInfoPanel/VBox"]
 layout_mode = 2
-text = "Team Stats"
-horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
+text = "EGG"
+horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/TeamStatsPanel/VBox"]
+[node name="HSeparator" type="HSeparator" parent="EggInfoPanel/VBox"]
 layout_mode = 2
 
-[node name="TeamsContainer" type="VBoxContainer" parent="BottomBanner/HBox/TeamStatsPanel/VBox"]
+[node name="EggIDLabel" type="Label" parent="EggInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "ID: -"
 
-[node name="ResourceStatsPanel" type="Panel" parent="BottomBanner/HBox"]
+[node name="EggPositionLabel" type="Label" parent="EggInfoPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Position:-"
+
+[node name="EggTeamLabel" type="Label" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Team: -"
+
+[node name="EggStatusLabel" type="Label" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Status: -"
+
+[node name="ResourceTypePanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -168.0
+offset_top = 328.0
+offset_right = -19.0
+offset_bottom = 368.0
 size_flags_horizontal = 3
-color = Color(0.2, 0.2, 0.2, 0.9)
 
-[node name="VBox" type="VBoxContainer" parent="BottomBanner/HBox/ResourceStatsPanel"]
+[node name="VBox" type="VBoxContainer" parent="ResourceTypePanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -192,15 +262,12 @@ offset_left = 8.0
 offset_top = 8.0
 offset_right = -8.0
 offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.0062773, 1.0054314)
 
-[node name="TitleLabel" type="Label" parent="BottomBanner/HBox/ResourceStatsPanel/VBox"]
+[node name="ResourceLabel" type="Label" parent="ResourceTypePanel/VBox"]
 layout_mode = 2
-text = "Resource Stats"
-horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
-
-[node name="HSeparator" type="HSeparator" parent="BottomBanner/HBox/ResourceStatsPanel/VBox"]
-layout_mode = 2
-
-[node name="ResourcesContainer" type="VBoxContainer" parent="BottomBanner/HBox/ResourceStatsPanel/VBox"]
-layout_mode = 2
+text = "Resource type"
+horizontal_alignment = 1

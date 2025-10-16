@@ -1,148 +1,215 @@
 # UI.gd - Main UI Controller
 extends Control
 
-@onready var game_info_panel = $BottomBanner/HBox/GameInfoPanel
-@onready var player_info_panel = $BottomBanner/HBox/PlayerInfoPanel
-@onready var team_stats_panel = $BottomBanner/HBox/TeamStatsPanel
-@onready var resource_stats_panel = $BottomBanner/HBox/ResourceStatsPanel
+# Tile Info Panel labels
+@onready var tile_info_panel: Panel = $TileInfoPanel
+@onready var title_label: Label = $TileInfoPanel/VBox/TitleLabel
+@onready var tile_id_label: Label = $TileInfoPanel/VBox/TileIDLabel
+@onready var tile_position_label: Label = $TileInfoPanel/VBox/TilePositionLabel
+@onready var tile_players_label: Label = $TileInfoPanel/VBox/TilePlayersLabel
+@onready var tile_eggs_label: Label = $TileInfoPanel/VBox/TileEggsLabel
+@onready var tile_nourriture_label: Label = $TileInfoPanel/VBox/TileNourritureLabel
+@onready var tile_linemate_label: Label = $TileInfoPanel/VBox/TileLinemateLabel
+@onready var tile_deraumere_label: Label = $TileInfoPanel/VBox/TileDeraumereLabel
+@onready var tile_sibur_label: Label = $TileInfoPanel/VBox/TileSiburLabel
+@onready var tile_mendiane_label: Label = $TileInfoPanel/VBox/TileMendianeLabel
+@onready var tile_phiras_label: Label = $TileInfoPanel/VBox/TilePhirasLabel
+@onready var tile_thystame_label: Label = $TileInfoPanel/VBox/TileThystameLabel
 
-# UI Labels - Game Info
-@onready var tick_label = $BottomBanner/HBox/GameInfoPanel/VBox/TickLabel
-@onready var time_unit_label = $BottomBanner/HBox/GameInfoPanel/VBox/TimeUnitLabel
+# Player Info Panel labels
+@onready var player_info_panel: Panel = $PlayerInfoPanel
+@onready var player_title_label: Label = $PlayerInfoPanel/VBox/PlayerTitleLabel
+@onready var player_id_label: Label = $PlayerInfoPanel/VBox/PlayerIDLabel
+@onready var player_position_label: Label = $PlayerInfoPanel/VBox/PlayerPositionLabel
+@onready var player_level_label: Label = $PlayerInfoPanel/VBox/PlayerLevelLabel
+@onready var player_orientation_label: Label = $PlayerInfoPanel/VBox/PlayerOrientationLabel
+@onready var player_team_label: Label = $PlayerInfoPanel/VBox/PlayerTeamLabel
+@onready var player_status_label: Label = $PlayerInfoPanel/VBox/PlayerStatusLabel
+@onready var player_nourriture_label: Label = $PlayerInfoPanel/VBox/PlayerNourritureLabel
+@onready var player_linemate_label: Label = $PlayerInfoPanel/VBox/PlayerLinemateLabel
+@onready var player_deraumere_label: Label = $PlayerInfoPanel/VBox/PlayerDeraumereLabel
+@onready var player_sibur_label: Label = $PlayerInfoPanel/VBox/PlayerSiburLabel
+@onready var player_mendiane_label: Label = $PlayerInfoPanel/VBox/PlayerMendianeLabel
+@onready var player_phiras_label: Label = $PlayerInfoPanel/VBox/PlayerPhirasLabel
+@onready var player_thystame_label: Label = $PlayerInfoPanel/VBox/PlayerThystameLabel
 
-# UI Labels - Player Info (selected player)
-@onready var player_id_label = $BottomBanner/HBox/PlayerInfoPanel/VBox/PlayerIDLabel
-@onready var player_pos_label = $BottomBanner/HBox/PlayerInfoPanel/VBox/PositionLabel
-@onready var player_level_label = $BottomBanner/HBox/PlayerInfoPanel/VBox/LevelLabel
-@onready var player_team_label = $BottomBanner/HBox/PlayerInfoPanel/VBox/TeamLabel
-@onready var player_status_label = $BottomBanner/HBox/PlayerInfoPanel/VBox/StatusLabel
-@onready var player_inventory_container = $BottomBanner/HBox/PlayerInfoPanel/VBox/InventoryContainer
+# Resource label
+@onready var resource_type_panel: Panel = $ResourceTypePanel
+@onready var resource_label: Label = $ResourceTypePanel/VBox/ResourceLabel
 
-# UI Container - Team Stats
-@onready var teams_container = $BottomBanner/HBox/TeamStatsPanel/VBox/TeamsContainer
+# Egg label
+@onready var egg_info_panel: Panel = $EggInfoPanel
+@onready var egg_id_label: Label = $EggInfoPanel/VBox/EggIDLabel
+@onready var egg_position_label: Label = $EggInfoPanel/VBox/EggPositionLabel
+@onready var egg_team_label: Label = $EggInfoPanel/VBox/EggTeamLabel
+@onready var egg_status_label: Label = $EggInfoPanel/VBox/EggStatusLabel
 
-# UI Container - Resource Stats
-@onready var resources_container = $BottomBanner/HBox/ResourceStatsPanel/VBox/ResourcesContainer
-
-var selected_player_id = -1
+# Panel - cursor tracking variables
+var is_hovering_tile:= false
+var is_hovering_player:= false
+var is_hovering_egg:= false
+var is_hovering_resource:= false
+var is_following_cursor:= false
+var follow_cursor_timer:= 0.0
 
 func _ready():
-	# Connect to GameData signals
-	GameData.connect("game_state_updated", _on_game_state_updated)
-	GameData.connect("player_updated", _on_player_updated)
-	GameData.connect("team_updated", _on_team_updated)
-	
 	_setup_ui()
+	
+	# Connect to GameData updates
+	if GameData.has_signal("game_state_updated"):
+		GameData.connect("game_state_updated", _on_game_state_updated)
+
+func _process(delta: float) -> void:
+	if is_following_cursor and tile_info_panel.visible and is_hovering_tile:
+		_position_panel_near_cursor(tile_info_panel)
+	elif is_following_cursor and player_info_panel.visible and is_hovering_player:
+		_position_panel_near_cursor(player_info_panel)
+	elif is_following_cursor and resource_type_panel.visible and is_hovering_resource:
+		_position_panel_near_cursor(resource_type_panel)
+	elif is_following_cursor and egg_info_panel.visible and is_hovering_egg:
+		_position_panel_near_cursor(egg_info_panel)
 
 func _setup_ui():
 	"""Initialize UI elements"""
-	# Set up resource display
-	_setup_resource_display()
-	
-	# Set initial values
-	_update_game_info()
-	_update_team_stats()
-	_update_resource_stats()
-
-func _setup_resource_display():
-	"""Create UI elements for resource inventory display"""
-	# Clear existing children
-	for child in player_inventory_container.get_children():
-		child.queue_free()
-	
-	for child in resources_container.get_children():
-		child.queue_free()
-	
-	# Create labels for each resource type (compact horizontal layout for inventory)
-	for resource in GameData.RESOURCES:
-		# Player inventory (compact)
-		var inv_label = Label.new()
-		inv_label.name = resource + "_inv_label"
-		inv_label.text = resource.capitalize().substr(0, 4) + ": 0"
-		inv_label.add_theme_font_size_override("font_size", 10)
-		player_inventory_container.add_child(inv_label)
-		
-		# Global resource stats (vertical)
-		var res_label = Label.new()
-		res_label.name = resource + "_res_label"
-		res_label.text = resource.capitalize() + ": 0"
-		res_label.add_theme_font_size_override("font_size", 11)
-		resources_container.add_child(res_label)
+	pass
 
 func _on_game_state_updated():
 	"""Called when the entire game state is updated"""
-	_update_game_info()
-	_update_team_stats()
-	_update_resource_stats()
-	if selected_player_id != -1:
-		_update_player_display(selected_player_id)
+	pass
 
-func _on_player_updated(player_id):
-	"""Called when a specific player is updated"""
-	if selected_player_id == player_id:
-		_update_player_display(player_id)
-
-func _on_team_updated(team_name):
-	"""Called when a team is updated"""
-	_update_team_stats()
-
-func _update_game_info():
-	"""Update game information display"""
-	if GameData.game_info.has("tick"):
-		tick_label.text = "Tick: " + str(GameData.game_info.tick)
-	if GameData.game_info.has("time_unit"):
-		time_unit_label.text = "Time Unit: " + str(GameData.game_info.time_unit)
-
-func _update_player_display(player_id: int):
-	"""Update the player information panel for the selected player"""
-	var player_data = GameData.get_player_data(player_id)
-	if not player_data:
+func update_ui_tile_stats(tile_data, tile_x: int, tile_y: int):
+	if not tile_nourriture_label or not tile_info_panel or not tile_data:
+		tile_info_panel.visible = false
 		return
 	
-	player_id_label.text = "Player ID: " + str(player_id)
-	player_pos_label.text = "Position: (" + str(player_data.position.x) + ", " + str(player_data.position.y) + ")"
+	is_hovering_tile = true
+	tile_info_panel.visible = true
+	is_following_cursor = true
+
+	tile_id_label.text = "ID:" + str(tile_data.id)
+	tile_position_label.text = "Position: (" + str(tile_x) + ", " + str(tile_y) + ")"
+
+	tile_players_label.text = "Players: " + str(tile_data.get("players", []).size())
+	tile_eggs_label.text = "Eggs: " + str(tile_data.get("eggs", []).size())
+
+	var resources = tile_data.get("resources", {})
+	tile_nourriture_label.text = "Nourriture: " + str(resources.get("nourriture", 0))
+	tile_linemate_label.text = "Linemate: " + str(resources.get("linemate", 0))
+	tile_deraumere_label.text = "Deraumere: " + str(resources.get("deraumere", 0))
+	tile_sibur_label.text = "Sibur: " + str(resources.get("sibur", 0))
+	tile_mendiane_label.text = "Mendiane: " + str(resources.get("mendiane", 0))
+	tile_phiras_label.text = "Phiras: " + str(resources.get("phiras", 0))
+	tile_thystame_label.text = "Thystame: " + str(resources.get("thystame", 0))
+
+	#Info panel reposition
+	_position_panel_near_cursor(tile_info_panel)
+
+func update_ui_player_stats(player_id: int):
+	var player_data = GameData.players[player_id]
+
+	if not player_info_panel or not player_data:
+		player_info_panel.visible = false
+		return
+	
+	is_hovering_player = true
+	player_info_panel.visible = true
+	is_following_cursor = true
+
+	player_id_label.text = "ID: " + str(player_data.id)
+	player_position_label.text = "Position: " + str(player_data.position)
 	player_level_label.text = "Level: " + str(player_data.level)
+	player_orientation_label.text = "Orientation: " + str(player_data.orientation)
 	player_team_label.text = "Team: " + str(player_data.team)
 	player_status_label.text = "Status: " + str(player_data.status)
+
+	var inventory = player_data.get("inventory", {})
+	player_nourriture_label.text = "Nourriture: " + str(inventory.get("nourriture", 0))
+	player_linemate_label.text = "Linemate: " + str(inventory.get("linemate", 0))
+	player_deraumere_label.text = "Deraumere: " + str(inventory.get("deraumere", 0))
+	player_sibur_label.text = "Sibur: " + str(inventory.get("sibur", 0))
+	player_mendiane_label.text = "Mendiane: " + str(inventory.get("mendiane", 0))
+	player_phiras_label.text = "Phiras: " + str(inventory.get("phiras", 0))
+	player_thystame_label.text = "Thystame: " + str(inventory.get("thystame", 0))
+	_position_panel_near_cursor(player_info_panel)
+
+
+func _position_panel_near_cursor(panel: Panel):
+	"""Position the info panel near the cursor with window boundary checks"""
+	var mouse_pos = get_global_mouse_position()
+	var panel_size = panel.size
+	var screen_size = get_viewport().get_visible_rect().size
+
+	var offset = Vector2(20, -10)
+	var new_pos = mouse_pos + offset
+
+	# Boundary check
+	if new_pos.x + panel_size.x > screen_size.x:
+		new_pos.x = mouse_pos.x - panel_size.x - 20
 	
-	# Update inventory (compact display)
-	for resource in GameData.RESOURCES:
-		var label = player_inventory_container.get_node(resource + "_inv_label")
-		if label and player_data.inventory.has(resource):
-			label.text = resource.capitalize().substr(0, 4) + ": " + str(player_data.inventory[resource])
-
-func _update_team_stats():
-	"""Update team statistics display"""
-	# Clear existing team labels
-	for child in teams_container.get_children():
-		child.queue_free()
+	if new_pos.y + panel_size.y > screen_size.y:
+		new_pos.y = mouse_pos.y - panel_size.y +10
 	
-	# Create new team labels (compact)
-	for team_name in GameData.teams:
-		var team_data = GameData.teams[team_name]
-		var team_label = Label.new()
-		team_label.text = team_name + ": " + str(team_data.player_count) + "p (" + str(team_data.remaining_connections) + "s)"
-		team_label.add_theme_font_size_override("font_size", 11)
-		teams_container.add_child(team_label)
+	if new_pos.y < 0:
+		new_pos.y = mouse_pos.y + 20
 
-func _update_resource_stats():
-	"""Update global resource statistics"""
-	for resource in GameData.RESOURCES:
-		var label = resources_container.get_node(resource + "_res_label")
-		if label:
-			var total = GameData.get_resource_total(resource)
-			label.text = resource.capitalize() + ": " + str(total)
+	new_pos.x = max(5, min(new_pos.x, screen_size.x - panel_size.x - 5))
+	new_pos.y = max(5, min(new_pos.y, screen_size.y - panel_size.y - 5))
 
-func select_player(player_id: int):
-	"""Select a player to display their information"""
-	selected_player_id = player_id
-	_update_player_display(player_id)
+	panel.global_position = new_pos
 
-func _unhandled_input(event):
-	"""Handle input for player selection (example with number keys)"""
-	if event is InputEventKey and event.pressed:
-		# Select players 1-9 with number keys
-		if event.keycode >= KEY_1 and event.keycode <= KEY_9:
-			var player_id = event.keycode - KEY_1 + 1
-			if GameData.players.has(player_id):
-				select_player(player_id)
+func hide_tile_info():
+	"""Hide the tile info panel and stop following the cursor"""
+	is_hovering_tile = false
+	tile_info_panel.visible = false
+	is_following_cursor = false
+
+func hide_player_info():
+	"""Hide the player info panel and stop following the cursor"""
+	is_hovering_player = false
+	player_info_panel.visible = false
+	is_following_cursor = false
+
+func update_resource_label_display(type: String, position: Vector2i):
+	if not type:
+		resource_type_panel.visible = false
+		return
+
+	is_hovering_resource = true
+	resource_type_panel.visible = true
+	is_following_cursor = true
+	
+	# Use bracket notation to access dictionary with variable key
+	var quantity = GameData.tiles[position].resources[type.to_lower()]
+
+	resource_label.text = type + " (" + str(quantity) + ")"
+	
+	_position_panel_near_cursor(resource_type_panel)
+
+func hide_resource_label_display():
+	is_hovering_resource = false
+	resource_type_panel.visible = false
+	is_following_cursor = false
+	resource_label.text = "unknown"
+	
+func update_egg_panel(egg_id: int):
+	var egg_data = GameData.get_egg_data(egg_id)
+
+	if not egg_info_panel or not egg_data:
+		egg_info_panel.visible = false
+
+	is_hovering_egg = true
+	egg_info_panel.visible = true
+	is_following_cursor = true
+
+	egg_id_label.text = "ID: " + str(int(egg_data.id))
+	egg_position_label.text = "Position: " + str(egg_data.position)
+	egg_team_label.text = "Team: " + str(egg_data.team)
+	egg_status_label.text = "Status: " + str(egg_data.status)
+
+	_position_panel_near_cursor(egg_info_panel)
+
+	
+func hide_egg_panel():
+	is_hovering_egg = false
+	egg_info_panel.visible = false
+	is_following_cursor = false

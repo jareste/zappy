@@ -1,0 +1,44 @@
+[gd_scene load_steps=3 format=3 uid="uid://56et8b8h8xv"]
+
+[ext_resource type="PackedScene" uid="uid://b4obbn8eve484" path="res://scenes/player/piry.tscn" id="1_wy7gy"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_wy7gy"]
+points = PackedVector3Array(-1.1778307, -0.9988562, -1.1869165, -1.1778307, -0.9988562, 1.1869165, 0.009318471, 1.519153, -0.0002323389, 1.1957705, -0.9988562, -1.1869165, 1.1957705, -0.9988562, 1.1869165)
+
+[node name="Player" type="Node3D"]
+
+[node name="playerPiry" parent="." instance=ExtResource("1_wy7gy")]
+
+[node name="body" parent="playerPiry" index="0"]
+transform = Transform3D(0.9960355, -0.08714183, -0.017875377, 0.08715575, 0.9961947, 0, 0.017807357, -0.0015579419, 0.9998402, 0.4141747, 2.4310112, -0.09545612)
+
+[node name="Skeleton3D" parent="playerPiry/body/left_arm" index="0"]
+bones/1/rotation = Quaternion(0.053921804, -1.0143117e-08, 0.008540383, 0.99850875)
+bones/2/rotation = Quaternion(0.053921774, -7.3155997e-09, 0.008540382, 0.99850875)
+bones/3/rotation = Quaternion(0.05392178, 7.884398e-09, 0.008540379, 0.99850875)
+bones/4/rotation = Quaternion(0.053921744, 1.0645397e-08, 0.008540372, 0.99850875)
+
+[node name="Skeleton3D" parent="playerPiry/body/right_arm" index="0"]
+bones/1/rotation = Quaternion(0.07623441, -2.3353677e-09, 0.01207436, 0.99701685)
+bones/2/rotation = Quaternion(0.076234356, -6.9765584e-09, 0.012074358, 0.99701685)
+bones/3/rotation = Quaternion(0.076234385, -1.0187554e-08, 0.012074363, 0.99701685)
+bones/4/rotation = Quaternion(0.07623434, -1.0858767e-08, 0.01207436, 0.99701685)
+
+[node name="Area3D" type="Area3D" parent="playerPiry/body" index="2"]
+transform = Transform3D(-0.86824137, 0.8715575, 9.92404, 0.07596127, 9.961947, -0.8682409, -9.961947, 0, -0.8715579, -0.62436336, -2.4979224, 0.1311906)
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="playerPiry/body/Area3D"]
+transform = Transform3D(-0.008682412, 0.0007596126, -0.099619456, 0.008715574, 0.09961947, -5.5683493e-11, 0.09924038, -0.008682407, -0.0087155765, 0.00954561, 0.2542834, 0.04141747)
+shape = SubResource("ConvexPolygonShape3D_wy7gy")
+
+[node name="Skeleton3D" parent="playerPiry/right_leg" index="0"]
+bones/0/position = Vector3(0.11705081, -0.061352678, -5.4451687e-07)
+bones/0/rotation = Quaternion(-7.32582e-15, 1.3172062e-08, -0.12087265, 0.99266803)
+bones/2/rotation = Quaternion(-1.1833313e-13, 3.4428323e-15, 0.12087348, 0.992668)
+
+[node name="Skeleton3D" parent="playerPiry/left_leg" index="0"]
+bones/0/position = Vector3(0.18027864, -0.061352674, -5.277888e-07)
+bones/0/rotation = Quaternion(-7.32582e-15, 1.3172062e-08, -0.12087265, 0.99266803)
+bones/2/rotation = Quaternion(-1.1833313e-13, 3.4428323e-15, 0.12087348, 0.992668)
+
+[editable path="playerPiry"]

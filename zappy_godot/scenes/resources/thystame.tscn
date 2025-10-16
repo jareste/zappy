@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://dv0suqwsup7x5"]
+
+[ext_resource type="PackedScene" uid="uid://esf2kcihbp0n" path="res://scenes/resources/thystame.glb" id="1_546u2"]
+
+[node name="thystame" instance=ExtResource("1_546u2")]

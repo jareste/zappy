@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8qvkart0eeqt"]
+
+[ext_resource type="PackedScene" uid="uid://dy016my6y1v6y" path="res://scenes/resources/egg.glb" id="1_dkkvj"]
+
+[node name="egg" instance=ExtResource("1_dkkvj")]
+
+[node name="drop_top_down" parent="." index="4"]
+transform = Transform3D(-4.3257952e-08, -1.9262652e-08, 0.07313894, 0.07286063, -0.006374457, 4.1414495e-08, -0.0063744574, -0.07286062, -2.2959517e-08, -0.00025735793, 1.4636092, -0.06339463)
+
+[node name="drop_horizontal" parent="." index="5"]
+transform = Transform3D(1, 3.090858e-08, 4.4062506e-07, -3.3342462e-07, 0.7071068, 0.7071067, -2.8971334e-07, -0.7071067, 0.7071068, -0.72674954, 0.7398814, -7.6629316e-05)
+
+[node name="drop_down_top" parent="." index="6"]
+transform = Transform3D(-1.6033897e-07, -0.3995098, -1.7463128e-08, 0, -1.7463128e-08, 0.3995098, -0.3995098, 1.6033897e-07, 7.0086386e-15, -0.000257127, 0.7398814, 0.7264158)
+
+[node name="Solid" parent="." index="8"]
+transform = Transform3D(-0.27546424, 5.364418e-07, 0.96131134, 0.67974997, 0.7071067, 0.19478229, -0.67974955, 0.7071069, -0.19478296, 0.6981282, 0.88138926, -0.14158489)
+
+[node name="AnimationPlayer" parent="." index="9"]
+autoplay = "egg"

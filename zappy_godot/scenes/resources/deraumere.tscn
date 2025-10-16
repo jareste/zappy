@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://cd5msoqe1w2bg"]
+
+[ext_resource type="PackedScene" uid="uid://b4dtt381fextq" path="res://scenes/resources/deraumere.glb" id="1_te8g8"]
+
+[node name="deraumere" instance=ExtResource("1_te8g8")]
+
+[node name="AnimationPlayer" parent="." index="3"]
+autoplay = "deraumere"
