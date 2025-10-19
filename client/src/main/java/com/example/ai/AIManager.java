@@ -19,8 +19,9 @@ public class AIManager {
     }
 
     public List<Command> decideNextMoves() {
+        // System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] on state before: " + state);
         state = state.next(gameState);
-        System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] on state: " + state);
+        System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] on state after: " + state);
         List<Command> commands = state.getActions(gameState);
 
         return commands;

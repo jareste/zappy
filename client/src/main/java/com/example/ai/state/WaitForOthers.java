@@ -30,7 +30,7 @@ public class WaitForOthers implements AIState {
         int level = gameState.getPlayer().getLevel();
         ElevationRules.Rule rule = ElevationRules.getRule(level);
         int requiredPlayers = rule.getPlayers();
-        int currentPlayers = gameState.getView().getCurrentPlayers();
+        int currentPlayers = gameState.getView().getCurrentPlayers() + 1;
 
         if (currentPlayers >= requiredPlayers) {
             return new StartElevation();

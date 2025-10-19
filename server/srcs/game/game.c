@@ -459,16 +459,16 @@ static cJSON* build_tile_vision(tile *T, player *p)
 
     tile_arr = cJSON_CreateArray();
 
-    // for (p = T->players; p; p = p->next_on_tile)
-    // {
-    //     obj = cJSON_CreateObject();
-    //     cJSON_AddStringToObject(obj, "type",  "player");
-    //     cJSON_AddStringToObject(obj, "team",  m_server.teams[p->team_id].name);
-    //     cJSON_AddItemToArray(tile_arr, obj);
-    // }
+    for (p = T->players; p; p = p->next_on_tile)
+    {
+        if (T->players->id == p->id)
+            continue;
 
-    if (T->players && T->players->id != p->id && p->next_on_tile != NULL)
         cJSON_AddItemToArray(tile_arr, cJSON_CreateString("player"));
+    }
+
+    // if (T->players && T->players->id != p->id && p->next_on_tile != NULL)
+    //     cJSON_AddItemToArray(tile_arr, cJSON_CreateString("player"));
 
     // for (i = 0; i < T->items.nourriture; i++)
     if (T->items.nourriture > 0)
@@ -926,6 +926,8 @@ static int m_command_broadcast(void* _p, void* _arg)
 
         snprintf(k_str, sizeof(k_str), "%d", K);
 
+        log_msg(LOG_LEVEL_ERROR, "k[%d], p1[%d,%d], p2[%d,%d] m[%d,%d]\n", K, receiver->pos.x, receiver->pos.y\
+        ,emitter->pos.x,   emitter->pos.y,  m_server.map_x,   m_server.map_y);
         // server_create_response_to_command(receiver->id, "message", k_str, text);
         // int server_create_response_msg(int fd, char *cmd, char *arg, char* status)
         server_create_response_msg(receiver->id, "message", text, k_str);
