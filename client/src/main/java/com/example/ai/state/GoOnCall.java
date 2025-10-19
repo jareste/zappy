@@ -9,6 +9,7 @@ import java.util.List;
 public class GoOnCall implements AIState {
     private int direction;
     private boolean hasMovedToCallLocation = false;
+    private boolean didActions = false;
 
     public GoOnCall(int direction) {
         this.direction = direction;
@@ -17,6 +18,9 @@ public class GoOnCall implements AIState {
     @Override
     public List<Command> getActions(GameState gameState) {
         List<Command> commands = new ArrayList<>();
+        if (direction > 0) {
+            didActions = true;
+        }
         if (!hasMovedToCallLocation) {
             switch (direction) {
                 case 1:
@@ -70,9 +74,17 @@ public class GoOnCall implements AIState {
     public AIState next(GameState gameState) {
         if (!hasMovedToCallLocation) {
             // Still need to move to call location
+            if (didActions) {
+                setDirection(-1); // need to wait for new message
+            }
+            
             return this;
         }
         // Once at location, transition to waiting for others
         return new SearchFood();
+    }
+
+    private void setDirection(int dir) {
+        this.direction = dir;
     }
 }

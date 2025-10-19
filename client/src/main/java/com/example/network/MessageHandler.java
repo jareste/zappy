@@ -92,7 +92,7 @@ public class MessageHandler {
         System.out.println("[CLIENT " + this.id + "] " + "Broadcast message received: " + jsonMessage);
         int dir = jsonMessage.has("status") ? jsonMessage.get("status").getAsInt() : -1; // default to -1 if not present
         String rawMsg = jsonMessage.get("arg").getAsString();
-        System.out.println("[CLIENT " + this.id + "] " + "Message received: \"" + rawMsg + "\" from direction: " + dir);
+        // System.out.println("[CLIENT " + this.id + "] " + "Message received: \"" + rawMsg + "\" from direction: " + dir);
         
         cmdManager.onBroadcastMessage(rawMsg, dir);
     }

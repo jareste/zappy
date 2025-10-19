@@ -53,10 +53,10 @@ public class CommandManager {
     public void onCommandResponse(JsonObject jsonMessage) {
         decrementPendingResponses();
         cmdResponseHandler.handleResponse(jsonMessage);
-        System.out.println("[CLIENT " + this.id + "] " + "PENDING RESPONSES: " + pendingResponses.get());
+        // System.out.println("[CLIENT " + this.id + "] " + "PENDING RESPONSES: " + pendingResponses.get());
 
         if (getPendingResponses() == 0) {
-            System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves ...");
+            // System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves ...");
             List<Command> nextMoves = aiManager.decideNextMoves();
             addToQueue(nextMoves);
         }
@@ -64,9 +64,9 @@ public class CommandManager {
     }
 
     public void onBroadcastMessage(String rawMsg, int dir) {
-        aiManager.handleBroadcastMessage(rawMsg, dir);
+        aiManager.handleBroadcastMessage(rawMsg, dir, getPendingResponses());
         if (getPendingResponses() == 0) {
-            System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves after broadcast ...");
+            // System.out.println("[CLIENT " + this.id + "] " + "Deciding next moves after broadcast ...");
             List<Command> nextMoves = aiManager.decideNextMoves();
             addToQueue(nextMoves);
         }

@@ -20,12 +20,13 @@ public class AIManager {
 
     public List<Command> decideNextMoves() {
         state = state.next(gameState);
+        System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] on state: " + state);
         List<Command> commands = state.getActions(gameState);
 
         return commands;
     }
 
-    public void handleBroadcastMessage(String rawMsg, int dir) {
+    public void handleBroadcastMessage(String rawMsg, int dir, int pendingResponses) {
         Map<String, String> msgData = BroadcastService.parseBroadcastMessage(rawMsg);
         String event = msgData.getOrDefault("event", "unknown");
         String status = msgData.getOrDefault("status", "unknown");
@@ -41,15 +42,19 @@ public class AIManager {
                 System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Already waiting for others, ignoring new call ...");
                 return;
             } else if (dir == 0 && state instanceof GoOnCall) {
-                System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Direction is 0, I'm at place ...");
+                System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Direction is 0, I'm at place ... ( I am at " + gameState.getPlayer().getPosition() + ")");
                 return;
             } else if (playersNeeded <= 0) {
                 System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Players needed is " + playersNeeded + ", no need to go to elevation call.");
                 this.state = new CheckStatus();
                 return;
             }
-            System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Elevation call matches my level, preparing incantation ...");
-            this.state = new GoOnCall(dir);
+            System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Elevation call matches my level, preparing incantation ... ( I am at " + gameState.getPlayer().getPosition() + ")");
+            if (pendingResponses > 0) {
+                this.state = new GoOnCall(-1); // will wait for new message
+            } else {
+                this.state = new GoOnCall(dir);
+            }
         } else {
             System.out.println("[CLIENT " + gameState.getPlayer().getId() + "] Received unknown broadcast message: " + rawMsg);
         }

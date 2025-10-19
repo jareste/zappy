@@ -119,6 +119,7 @@ public class CommandResponseHandler {
     }
 
     private void handleVoirResponse(JsonObject msg) {
+        System.out.println("[CLIENT " + this.id + "] " + "VOIR msg: " + msg);
         List<List<Resource>> data = new ArrayList<>();
         JsonArray arr = msg.getAsJsonArray("vision");
 
