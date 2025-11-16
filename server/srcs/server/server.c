@@ -143,6 +143,34 @@ int server_send(int fd, char *msg)
     return SUCCESS;
 }
 
+void m_server_notify_observers(int fd, cJSON* notification)
+{
+    int i;
+    char* msg;
+    observer** observers;
+    observer* o;
+
+    observers = game_get_observers();
+    if (!observers)
+        return ;
+
+    cJSON_AddNumberToObject(notification, "player_id", fd);
+    msg = cJSON_Print(notification);
+    if (!msg)
+        return ;
+
+    for (i = 0; observers[i]; i++)
+    {
+        o = observers[i];
+        if (!o)
+            continue;
+
+        send(o->socket_fd, msg, strlen(msg), 0);
+    }
+
+    free(msg);
+}
+
 int server_create_response_msg(int fd, char *cmd, char *arg, char* status)
 {
     cJSON *response;
@@ -197,6 +225,9 @@ int server_create_response_to_command(int fd, char *cmd, char *arg, char* status
 
     send(fd, json, strlen(json), 0);
 
+    /* send to observers */
+    m_server_notify_observers(fd, response);
+
     cJSON_Delete(response);
     free(json);
 
@@ -225,6 +256,9 @@ static int m_create_json_response(int fd, char* type, char* msg, char* args)
     }
 
     send(fd, json, strlen(json), 0);
+
+    /* send to observers */
+    m_server_notify_observers(fd, response);
 
     cJSON_Delete(response);
     free(json);

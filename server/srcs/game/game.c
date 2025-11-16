@@ -154,6 +154,11 @@ level_requisites level_reqs[LEVEL_MAX] =
     {6, {0, 2, 2, 2, 2, 2, 1}}  /* 7-8 */
 };
 
+observers** game_get_observers()
+{
+    return m_server.observers;
+}
+
 static int m_game_init_team(team *team, char *name, int max_players)
 {
     team->name = strdup(name);
