@@ -17,6 +17,6 @@ void game_get_map_size(int *width, int *height);
 
 int game_kill_player(int fd);
 
-observers** game_get_observers();
+observer** game_get_observers();
 
 #endif /* GAME_H */
