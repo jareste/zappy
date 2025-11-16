@@ -1,0 +1,273 @@
+[gd_scene load_steps=2 format=3 uid="uid://d01wcqvgamr8t"]
+
+[ext_resource type="Script" uid="uid://mv07co8dv5w6" path="res://scenes/UI/UI.gd" id="1_1xm2m"]
+
+[node name="UI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_1xm2m")
+
+[node name="TileInfoPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -335.0
+offset_top = 4.0
+offset_right = -186.0
+offset_bottom = 267.0
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="TileInfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Tile Info"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="TileIDLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "ID: -"
+
+[node name="TilePositionLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Position: -"
+
+[node name="TilePlayersLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Players: -"
+
+[node name="TileEggsLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Eggs: -"
+
+[node name="HSeparator2" type="HSeparator" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="TileNourritureLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Nourriture: -"
+
+[node name="TileLinemateLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "linemate: -"
+
+[node name="TileDeraumereLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "deraumere: -"
+
+[node name="TileSiburLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "sibur: -"
+
+[node name="TileMendianeLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "mendiane: -"
+
+[node name="TilePhirasLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "phiras: -"
+
+[node name="TileThystameLabel" type="Label" parent="TileInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "thystame: -"
+
+[node name="PlayerInfoPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -166.0
+offset_top = 4.0
+offset_right = -17.0
+offset_bottom = 316.965
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="PlayerInfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlayerTitleLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Player info"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="PlayerIDLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "ID: -"
+
+[node name="PlayerPositionLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Position:-"
+
+[node name="PlayerLevelLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Level: -"
+
+[node name="PlayerOrientationLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Orientation: -"
+
+[node name="PlayerTeamLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Team: -"
+
+[node name="PlayerStatusLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Status: -"
+
+[node name="HSeparator2" type="HSeparator" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="PlayerNourritureLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Nourriture: -"
+
+[node name="PlayerLinemateLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "linemate: -"
+
+[node name="PlayerDeraumereLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "deraumere: -"
+
+[node name="PlayerSiburLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "sibur: -"
+
+[node name="PlayerMendianeLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "mendiane: -"
+
+[node name="PlayerPhirasLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "phiras: -"
+
+[node name="PlayerThystameLabel" type="Label" parent="PlayerInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "thystame: -"
+
+[node name="EggInfoPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -337.0
+offset_top = 281.0
+offset_right = -188.0
+offset_bottom = 401.0
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="EggInfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EggTitleLabel" type="Label" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "EGG"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+
+[node name="EggIDLabel" type="Label" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "ID: -"
+
+[node name="EggPositionLabel" type="Label" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Position:-"
+
+[node name="EggTeamLabel" type="Label" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Team: -"
+
+[node name="EggStatusLabel" type="Label" parent="EggInfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Status: -"
+
+[node name="ResourceTypePanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -168.0
+offset_top = 328.0
+offset_right = -19.0
+offset_bottom = 368.0
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="ResourceTypePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.0062773, 1.0054314)
+
+[node name="ResourceLabel" type="Label" parent="ResourceTypePanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Resource type"
+horizontal_alignment = 1

@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://babvh68siwu4s"]
+
+[ext_resource type="PackedScene" uid="uid://c71yf3ff5nnjy" path="res://scenes/resources/sibur.glb" id="1_kqqkv"]
+
+[node name="sibur" instance=ExtResource("1_kqqkv")]

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5drwbvka2ea3"]
+
+[ext_resource type="PackedScene" uid="uid://drp2lwwvaf23v" path="res://scenes/player/icy.glb" id="1_oic5x"]
+
+[node name="icy" instance=ExtResource("1_oic5x")]
+transform = Transform3D(-4.371139e-09, 0, -0.1, 0, 0.1, 0, 0.1, 0, -4.371139e-09, 0, 0, 0)

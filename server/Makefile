@@ -46,7 +46,9 @@ $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(@D)
 	${CC} -MMD $(CFLAGS) -Isrcs/parse_arg -Isrcs/server -c $< -o $@
 
+
 all: .gitignore create_cert
+
 	$(MAKE) $(NAME)
 
 $(NAME): $(OBJ) $(CJSON_LIB) Makefile

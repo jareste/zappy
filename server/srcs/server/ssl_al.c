@@ -11,6 +11,7 @@
     * 0xE: Reserved for future use
     * 0xF: Reserved for future use
  */
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -54,13 +55,17 @@ static struct timeval m_end_time;
 
 static void base64_encode(const unsigned char *input, int len, char *output)
 {
-    BIO *b64 = BIO_new(BIO_f_base64());
-    BIO *bio = BIO_new(BIO_s_mem());
+    BIO *b64;
+    BIO *bio;
+    BUF_MEM *buffer_ptr;
+
+    b64 = BIO_new(BIO_f_base64());
+    bio = BIO_new(BIO_s_mem());
     b64 = BIO_push(b64, bio);
     BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
     BIO_write(b64, input, len);
+
     (void)BIO_flush(b64);
-    BUF_MEM *buffer_ptr;
     BIO_get_mem_ptr(b64, &buffer_ptr);
     memcpy(output, buffer_ptr->data, buffer_ptr->length);
     output[buffer_ptr->length] = 0;
@@ -354,6 +359,7 @@ static int _init_server(int port)
         perror("socket");
         return ERROR;
     }
+
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
@@ -429,6 +435,7 @@ int init_ssl_al(char* cert, char* key, int port, callback_success_SSL_accept cb)
     method = TLS_server_method();
     
     m_ctx = SSL_CTX_new(method);
+
     if (!m_ctx)
     {
         ERR_print_errors_fp(stderr);
@@ -508,6 +515,7 @@ int ssl_al_accept_client()
     // END_TIMER;
 
     ssl = SSL_new(m_ctx);
+
     if (!ssl)
         goto error;
     // START_TIMER;
@@ -522,6 +530,7 @@ error:
         ERR_print_errors_fp(stderr);
         SSL_free(ssl);
     }
+
     if (client != -1)
     {
         close(client);

@@ -1,0 +1,24 @@
+[gd_scene load_steps=4 format=3 uid="uid://dmcylcbrmpyhu"]
+
+[ext_resource type="PackedScene" uid="uid://b8qvkart0eeqt" path="res://scenes/resources/egg.tscn" id="1_ykyu7"]
+[ext_resource type="Script" uid="uid://cg7qgq8nvr7j" path="res://scenes/resources/EggManager.gd" id="2_7k80f"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_7k80f"]
+
+[node name="egg_resource" type="Node3D"]
+
+[node name="egg" parent="." instance=ExtResource("1_ykyu7")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0.46188354, 0)
+script = ExtResource("2_7k80f")
+
+[node name="drop_top_down" parent="egg" index="4"]
+transform = Transform3D(-4.3257952e-08, -1.926265e-08, 0.07313894, 0.07286063, -0.006374456, 4.1414495e-08, -0.0063744574, -0.07286061, -2.2959517e-08, -0.00025735793, 1.4636092, -0.06339463)
+
+[node name="Area3D" type="Area3D" parent="egg"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -0.46188354, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="egg/Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.229065, 0)
+shape = SubResource("SphereShape3D_7k80f")
+
+[editable path="egg"]

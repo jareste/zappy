@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://dff7dxi2o2yon"]
+
+[ext_resource type="PackedScene" uid="uid://dlrxnhitceecc" path="res://scenes/resources/linemate.glb" id="1_i3a02"]
+
+[node name="linemate" instance=ExtResource("1_i3a02")]

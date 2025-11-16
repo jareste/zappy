@@ -1,0 +1,71 @@
+[gd_scene load_steps=5 format=3 uid="uid://citftddd846dt"]
+
+[ext_resource type="Script" uid="uid://chsumim6hl5dm" path="res://scenes/tile/TileManager.gd" id="1_tkj7q"]
+[ext_resource type="PackedScene" uid="uid://d0qdgsrec4ey2" path="res://scenes/tile/tile_arch_03.tscn" id="2_tkj7q"]
+[ext_resource type="Material" uid="uid://jpgjvia5t5ga" path="res://materials/TileMaterial.tres" id="3_ye6io"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pa0rx"]
+size = Vector3(1, 6.8757324, 1)
+
+[node name="Tile" type="Area3D"]
+script = ExtResource("1_tkj7q")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.446167, 0)
+shape = SubResource("BoxShape3D_pa0rx")
+
+[node name="Marker3D_TL" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, -0.45, 0.2, -0.25)
+
+[node name="Marker3D_TL_2" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, -0.25, 0.2, -0.45)
+
+[node name="Marker3D_PL_TL" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, 0.2, -0.2)
+
+[node name="Marker3D_PL_TR" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 0.2, -0.2)
+
+[node name="Marker3D_PL_BL" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, 0.2, 0.2)
+
+[node name="Marker3D_PL_BR" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 0.2, 0.2)
+
+[node name="Marker3D_TR" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, 0.25, 0.2, -0.43)
+
+[node name="Marker3D_TR_2" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, 0.45, 0.2, -0.25)
+
+[node name="Marker3D_BR" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, 0.45, 0.2, 0.25)
+
+[node name="Marker3D_BR_2" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.14999999, 0, 0, 0, 0.14999999, 0, 0, 0, 0.14999999, 0.25, 0.2, 0.45)
+
+[node name="Marker3D_BL" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, -0.25, 0.2, 0.45)
+
+[node name="Marker3D_BL_2" type="Marker3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, -0.45, 0.2, 0.25)
+
+[node name="tile_base" parent="." instance=ExtResource("2_tkj7q")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+
+[node name="tile_3f" parent="tile_base" index="0"]
+material_override = ExtResource("3_ye6io")
+
+[editable path="tile_base"]

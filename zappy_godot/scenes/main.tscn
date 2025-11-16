@@ -1,0 +1,252 @@
+[gd_scene load_steps=14 format=3 uid="uid://bohcw6ef7e55a"]
+
+[ext_resource type="Script" uid="uid://b2yc51sdfhp5r" path="res://scenes/Main.gd" id="1_tipki"]
+[ext_resource type="Script" uid="uid://dfd525mqeflrb" path="res://scenes/scripts/WorldManager.gd" id="4_ya4ey"]
+[ext_resource type="Script" uid="uid://cqlc6khfoxqod" path="res://scenes/player/PlayerManager.gd" id="5_eb6dy"]
+[ext_resource type="PackedScene" uid="uid://d01wcqvgamr8t" path="res://scenes/UI/UI.tscn" id="6_trceg"]
+[ext_resource type="Script" uid="uid://2yx4asihvwhu" path="res://scenes/scripts/CameraController.gd" id="7_a8y0u"]
+[ext_resource type="Shader" uid="uid://bb6v6h5mrc31j" path="res://materials/shaders/post_processing_test.gdshader" id="7_o6xl0"]
+[ext_resource type="Shader" uid="uid://pv47rqgm4g3o" path="res://materials/shaders/chromatic_aberration.gdshader" id="8_85g3d"]
+[ext_resource type="PackedScene" uid="uid://rrvgfd65iocc" path="res://scenes/level/enviro.tscn" id="8_tipki"]
+
+[sub_resource type="GDScript" id="GDScript_tefeu"]
+script/source = "extends Node
+
+var tcp := StreamPeerTCP.new()
+var connected := false
+
+signal line_received(line: String)
+
+func connect_to_server():
+	var err = tcp.connect_to_host(\"127.0.0.1\", 4242)
+	if err == OK:
+		print(\"Connected to Zappy server\")
+		connected = true
+		tcp.put_utf8_string(\"GRAPHIC\\n\")
+
+func _process(delta):
+	if not connected:
+		return
+
+	while tcp.get_available_bytes() > 0:
+		var line = tcp.get_utf8_string(tcp.get_available_bytes())
+		for l in line.split(\"\\n\"):
+			if l.strip_edges() != \"\":
+				emit_signal(\"line_received\", l.strip_edges())
+"
+
+[sub_resource type="GDScript" id="GDScript_o6xl0"]
+script/source = "# GameData.gd - Singleton to manage game state
+extends Node
+
+# Game state data structures
+var game_data = {}
+var map_size = Vector2i(0, 0)
+var tiles = {}
+var players = {}
+var eggs = {}
+var teams = {}
+var game_info = {}
+
+# Resource types for easy reference
+var RESOURCES = [
+	\"nourriture\", \"linemate\", \"deraumere\", 
+	\"sibur\", \"mendiane\", \"phiras\", \"thystame\"
+]
+
+# Player orientations
+enum Orientation {
+	NORTH = 1,
+	EAST = 2, 
+	SOUTH = 3,
+	WEST = 4
+}
+
+# Signals for UI updates
+signal game_state_updated
+signal player_updated(player_id)
+signal tile_updated(x, y)
+signal team_updated(team_name)
+
+func update_game_state(json_data):
+	\"\"\"Update the entire game state from JSON\"\"\"
+	game_data = json_data
+	
+	if json_data.has(\"map\"):
+		_update_map_data(json_data.map)
+	
+	if json_data.has(\"players\"):
+		_update_players_data(json_data.players)
+	
+	if json_data.has(\"eggs\"):
+		_update_eggs_data(json_data.eggs)
+	
+	if json_data.has(\"game\"):
+		_update_game_info(json_data.game)
+	
+	emit_signal(\"game_state_updated\")
+
+func _update_map_data(map_data):
+	map_size.x = map_data.width
+	map_size.y = map_data.height
+	
+	# Clear existing tiles data
+	tiles.clear()
+	
+	# Update tiles
+	for tile_data in map_data.tiles:
+		var pos = Vector2i(tile_data.x, tile_data.y)
+		tiles[pos] = {
+			\"resources\": tile_data.resources,
+			\"players\": tile_data.players,
+			\"eggs\": tile_data.eggs
+		}
+		emit_signal(\"tile_updated\", tile_data.x, tile_data.y)
+
+func _update_players_data(players_data):
+	players.clear()
+	for player_data in players_data:
+		var player_id = int(player_data.id)  # Convert to integer
+		players[player_id] = {
+			\"position\": Vector2i(int(player_data.position.x), int(player_data.position.y)),
+			\"orientation\": int(player_data.orientation),
+			\"level\": int(player_data.level),
+			\"team\": player_data.team,
+			\"inventory\": player_data.inventory,
+			\"status\": player_data.status
+		}
+		emit_signal(\"player_updated\", player_id)
+
+func _update_eggs_data(eggs_data):
+	eggs.clear()
+	for egg_data in eggs_data:
+		eggs[egg_data.id] = {
+			\"position\": Vector2i(egg_data.position.x, egg_data.position.y),
+			\"status\": egg_data.status,
+			\"parent_id\": egg_data.parent_id,
+			\"team\": egg_data.team
+		}
+
+func _update_game_info(game_data_info):
+	game_info = {
+		\"tick\": game_data_info.tick,
+		\"time_unit\": game_data_info.time_unit,
+		\"teams\": {}
+	}
+	
+	# Update teams data
+	teams.clear()
+	for team_data in game_data_info.teams:
+		teams[team_data.name] = {
+			\"player_count\": team_data.player_count,
+			\"remaining_connections\": team_data.remaining_connections
+		}
+		emit_signal(\"team_updated\", team_data.name)
+
+func get_tile_data(x: int, y: int):
+	var pos = Vector2i(x, y)
+	return tiles.get(pos, null)
+
+func get_player_data(player_id: int):
+	return players.get(player_id, null)
+
+func get_team_data(team_name: String):
+	return teams.get(team_name, null)
+
+func get_resource_total(resource_name: String) -> int:
+	var total = 0
+	for tile_pos in tiles:
+		var tile = tiles[tile_pos]
+		if tile.resources.has(resource_name):
+			total += tile.resources[resource_name]
+	return total
+"
+
+[sub_resource type="QuadMesh" id="QuadMesh_tipki"]
+flip_faces = true
+size = Vector2(2, 2)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_85g3d"]
+render_priority = 0
+shader = ExtResource("7_o6xl0")
+shader_parameter/aberration_direction = Vector2(1, 1)
+shader_parameter/strength = 0.0010000000475
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_choun"]
+shader = ExtResource("8_85g3d")
+shader_parameter/aberration = 0.10000000475
+shader_parameter/strength = 0.10000000149012
+shader_parameter/scanline_intensity = 0.3
+shader_parameter/scanline_thickness = 1.0
+shader_parameter/noise_intensity = 0.1
+shader_parameter/grain_intensity = 0.05
+shader_parameter/flicker_intensity = 0.02
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_tipki")
+
+[node name="MapRoot" type="Node3D" parent="."]
+
+[node name="PlayerRoot" type="Node3D" parent="."]
+
+[node name="EggRoot" type="Node3D" parent="."]
+
+[node name="NetworkManager" type="Node" parent="."]
+script = SubResource("GDScript_tefeu")
+
+[node name="DataManager" type="Node" parent="."]
+script = SubResource("GDScript_o6xl0")
+
+[node name="WorldManager" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_ya4ey")
+gap = 0.0
+
+[node name="PlayerManager" type="Node3D" parent="."]
+script = ExtResource("5_eb6dy")
+
+[node name="UI" parent="." instance=ExtResource("6_trceg")]
+unique_name_in_owner = true
+
+[node name="CameraPosition" type="Node3D" parent="."]
+transform = Transform3D(-0.652826, 0.535639, -0.535639, 0, 0.707107, 0.707107, 0.757508, 0.461618, -0.461618, -0.515, 2.49332, -1)
+script = ExtResource("7_a8y0u")
+move_speed = 0.3
+lerp_speed = 0.1
+isometric_angle = 5.0
+
+[node name="CameraRotationX" type="Node3D" parent="CameraPosition"]
+unique_name_in_owner = true
+
+[node name="CameraZoomPivot" type="Node3D" parent="CameraPosition/CameraRotationX"]
+unique_name_in_owner = true
+
+[node name="Camera" type="Camera3D" parent="CameraPosition/CameraRotationX/CameraZoomPivot"]
+unique_name_in_owner = true
+projection = 1
+current = true
+
+[node name="enviro" parent="." instance=ExtResource("8_tipki")]
+
+[node name="DirectionalLight3D" parent="enviro" index="1"]
+transform = Transform3D(0.5000001, -0.75, 0.4330126, 2.7805946e-08, 0.49999994, 0.86602545, -0.8660254, -0.4330128, 0.25, 0, 0, 0)
+light_color = Color(0.85897857, 0.99265605, 0.9756332, 1)
+light_indirect_energy = 3.833
+
+[node name="PostProcessing" type="MeshInstance3D" parent="."]
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_tipki")
+surface_material_override/0 = SubResource("ShaderMaterial_85g3d")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+visible = false
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer"]
+material = SubResource("ShaderMaterial_choun")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[editable path="enviro"]
