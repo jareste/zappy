@@ -1,0 +1,6 @@
+[configuration]
+entry_symbol = "ws_lib_init"
+compatibility_minimum = "4.5"
+
+[libraries]
+linux.x86_64 = "res://bin/libws.linux.release.x86_64.so"
