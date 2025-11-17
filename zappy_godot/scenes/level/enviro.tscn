@@ -1,19 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://rrvgfd65iocc"]
-
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_jg7hq"]
-sky_top_color = Color(0.2, 0.35, 0.6, 1)
-sky_horizon_color = Color(0.45, 0.65, 0.85, 1)
-ground_bottom_color = Color(0.1, 0.1, 0.15, 1)
-ground_horizon_color = Color(0.3, 0.3, 0.4, 1)
-
-[sub_resource type="Sky" id="Sky_rdhbp"]
-sky_material = SubResource("ProceduralSkyMaterial_jg7hq")
+[gd_scene load_steps=2 format=3 uid="uid://rrvgfd65iocc"]
 
 [sub_resource type="Environment" id="Environment_fqgig"]
 background_mode = 1
-sky = SubResource("Sky_rdhbp")
-ambient_light_color = Color(0.4, 0.5, 0.7, 1)
-ambient_light_energy = 0.3
+background_color = Color(0.02286979, 0.005679672, 0.124098726, 1)
+ambient_light_color = Color(0.6, 0.6, 0.7, 1)
+ambient_light_energy = 0.5
 reflected_light_source = 2
 tonemap_mode = 2
 tonemap_exposure = 1.2
@@ -28,10 +19,11 @@ glow_normalized = true
 glow_intensity = 0.3
 glow_strength = 0.8
 fog_enabled = true
-fog_light_color = Color(0.0664017, 0.09710743, 0.12874389, 1)
+fog_light_color = Color(0.023529412, 0.003921569, 0.1254902, 1)
 fog_sun_scatter = 0.1
 fog_aerial_perspective = 0.1
-fog_height_density = 2.0
+fog_height = 0.1
+fog_height_density = 1.0
 volumetric_fog_emission_energy = 0.1
 volumetric_fog_gi_inject = 0.5
 volumetric_fog_ambient_inject = 0.2

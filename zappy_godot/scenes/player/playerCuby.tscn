@@ -2,43 +2,20 @@
 
 [ext_resource type="PackedScene" uid="uid://sbqr8qph4lbd" path="res://scenes/player/cuby.tscn" id="1_ebg58"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_ebg58"]
-size = Vector3(1.9949462, 2.0237548, 2.0234132)
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_ebg58"]
+points = PackedVector3Array(-1, -1, -1, 1, 1, 1, 1, -1, 1, 1, 1, -1, -1, 1, 1, 1, -1, -1, -1, -1, 1, -1, 1, -1)
 
 [node name="Player" type="Node3D"]
 
 [node name="test_cuby" parent="." instance=ExtResource("1_ebg58")]
 
-[node name="body" parent="test_cuby" index="0"]
-transform = Transform3D(0.99240386, -0.08682408, -0.08715573, 0.08715573, 0.9961947, 2.3283063e-10, 0.086824074, -0.0075961226, 0.99619466, 0.4141747, 2.542834, -0.09545612)
+[node name="body" parent="test_cuby/Empty" index="0"]
+transform = Transform3D(0.32952166, -0.02882941, 0, 0.02882941, 0.32952166, 0, 0, 0, 0.3307803, 0, 0, 3.7252903e-09)
 
-[node name="Skeleton3D" parent="test_cuby/body/left_arm" index="0"]
-bones/1/rotation = Quaternion(0.12164684, -8.563517e-09, 0.019266967, 0.99238646)
-bones/2/rotation = Quaternion(0.12164685, -1.5719333e-08, 0.019266956, 0.99238646)
-bones/3/rotation = Quaternion(0.12164685, 8.211591e-09, 0.019266954, 0.99238646)
-bones/4/rotation = Quaternion(0.12164684, 2.5338625e-08, 0.01926695, 0.99238646)
+[node name="Area3D" type="Area3D" parent="test_cuby/Empty/body" index="2"]
 
-[node name="Skeleton3D" parent="test_cuby/body/right_arm" index="0"]
-bones/1/rotation = Quaternion(0.12164684, -3.988487e-09, 0.019266985, 0.99238646)
-bones/2/rotation = Quaternion(0.121646784, 1.1730898e-10, 0.01926699, 0.99238646)
-bones/3/rotation = Quaternion(0.12164677, 4.1996426e-08, 0.01926699, 0.99238646)
-bones/4/rotation = Quaternion(0.12164674, 5.9475386e-08, 0.019266978, 0.99238646)
-
-[node name="Area3D" type="Area3D" parent="test_cuby/body" index="2"]
-transform = Transform3D(0.9984467, 0.019437367, -0.05221462, -0.019411288, 0.9998111, 0.0010065485, 0.052224316, 8.568117e-06, 0.9986354, -0.42571712, -0.3622954, 0.07369268)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="test_cuby/body/Area3D"]
-transform = Transform3D(0.9987257, -0.0010824725, 0.050455168, 0.0012630895, 0.9999897, -0.0035483842, -0.050451428, 0.0036076298, 0.9987222, 0.39493713, 0.36690903, -0.10510026)
-shape = SubResource("BoxShape3D_ebg58")
-
-[node name="Skeleton3D" parent="test_cuby/right_leg" index="0"]
-bones/0/position = Vector3(4.27272e-08, -0.061352678, -5.4451687e-07)
-bones/0/rotation = Quaternion(-4.0584597e-15, 2.6220143e-08, -0.17364815, 0.9848078)
-bones/2/rotation = Quaternion(-1.2663704e-13, -6.1437553e-15, 0.17364815, 0.9848078)
-
-[node name="Skeleton3D" parent="test_cuby/left_leg" index="0"]
-bones/0/position = Vector3(1.40249e-07, -0.061352674, -5.277888e-07)
-bones/0/rotation = Quaternion(-4.0584597e-15, 2.6220143e-08, -0.17364815, 0.9848078)
-bones/2/rotation = Quaternion(-1.2663704e-13, -6.1437553e-15, 0.17364815, 0.9848078)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="test_cuby/Empty/body/Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 3.5527137e-15, 0, 1, 0, 0, 0)
+shape = SubResource("ConvexPolygonShape3D_ebg58")
 
 [editable path="test_cuby"]

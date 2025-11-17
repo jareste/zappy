@@ -1,4 +1,3 @@
-# UI.gd - Main UI Controller
 extends Control
 
 # Tile Info Panel labels
@@ -45,6 +44,8 @@ extends Control
 @onready var egg_status_label: Label = $EggInfoPanel/VBox/EggStatusLabel
 
 # Panel - cursor tracking variables
+var hovered_tile_position: Vector2i
+var hovered_player_id: int
 var is_hovering_tile:= false
 var is_hovering_player:= false
 var is_hovering_egg:= false
@@ -58,6 +59,10 @@ func _ready():
 	# Connect to GameData updates
 	if GameData.has_signal("game_state_updated"):
 		GameData.connect("game_state_updated", _on_game_state_updated)
+	if  GameData.has_signal("tile_updated"):
+		GameData.connect("tile_updated", _on_tile_updated)
+	if GameData.has_signal("player_inventory_updated"):
+		GameData.connect("player_inventory_updated", _on_player_inventory_updated)
 
 func _process(delta: float) -> void:
 	if is_following_cursor and tile_info_panel.visible and is_hovering_tile:
@@ -77,11 +82,50 @@ func _on_game_state_updated():
 	"""Called when the entire game state is updated"""
 	pass
 
+func _on_tile_updated(x: int, y: int, reason: String = ""):
+	var tile_data = GameData.get_tile_data(x, y)
+	if is_hovering_tile and hovered_tile_position.x == x and hovered_tile_position.y == y:
+		match reason:
+			"EGG_ADD":
+				tile_eggs_label.text = "Eggs: " + str(tile_data.get("eggs", []).size())
+			"PLAYER_ENTER":
+				tile_players_label.text = "Players: " + str(tile_data.get("players", []).size())
+			"PLAYER_EXIT":
+				tile_players_label.text = "Players: " + str(tile_data.get("players", []).size())
+			"RESOURCE_SIBUR":
+				var resources = tile_data.get("resources", {})
+				tile_sibur_label.text = "Sibur: " + str(resources.get("sibur", 0))
+			_:
+				return
+
+func _on_player_inventory_updated(id: int, object: String):
+	var player_data = GameData.get_player_data(id)
+	var inventory = player_data.get("inventory", {})
+	if is_hovering_player and hovered_player_id == id:
+		match object:
+			"nourriture":
+				player_nourriture_label.text = "Nourriture: " + str(inventory.get("nourriture", 0))
+			"sibur":
+				player_sibur_label.text = "Sibur: " + str(inventory.get("sibur", 0))
+			"linemate":
+				player_linemate_label.text = "Linemate: " + str(inventory.get("linemate", 0))
+			"deraumere":
+				player_deraumere_label.text = "Deraumere: " + str(inventory.get("deraumere", 0))
+			"mendiane":
+				player_mendiane_label.text = "Mendiane: " + str(inventory.get("mendiane", 0))
+			"phiras":
+				player_phiras_label.text = "Phiras: " + str(inventory.get("phiras", 0))
+			"thystame":
+				player_thystame_label.text = "Thystame: " + str(inventory.get("thystame", 0))
+			_:
+				return
+
 func update_ui_tile_stats(tile_data, tile_x: int, tile_y: int):
 	if not tile_nourriture_label or not tile_info_panel or not tile_data:
 		tile_info_panel.visible = false
 		return
 	
+	hovered_tile_position = Vector2i(tile_x, tile_y)
 	is_hovering_tile = true
 	tile_info_panel.visible = true
 	is_following_cursor = true
@@ -111,6 +155,7 @@ func update_ui_player_stats(player_id: int):
 		player_info_panel.visible = false
 		return
 	
+	hovered_player_id = player_id
 	is_hovering_player = true
 	player_info_panel.visible = true
 	is_following_cursor = true

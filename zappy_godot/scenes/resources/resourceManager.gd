@@ -9,6 +9,7 @@ extends Node3D
 
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 
+var quantity: float
 var base_position: Vector3
 var time_elapsed: float = 0.0
 var animation_timer: float = 0.0

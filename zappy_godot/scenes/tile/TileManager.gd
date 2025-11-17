@@ -14,6 +14,7 @@ extends Area3D
 @onready var marker_3d_pl_bl: Marker3D = %Marker3D_PL_BL
 @onready var marker_3d_pl_br: Marker3D = %Marker3D_PL_BR
 
+var tile_position: Vector2i
 var resource_positions: Array[Marker3D]
 var player_positions: Array[Marker3D]
 
@@ -35,6 +36,7 @@ var hovered_tile_x: int
 var hovered_tile_y: int
 
 func _ready() -> void:
+	CommandProcessor.connect("object_amount_change", _on_object_amount_change)
 	setup_resource_grid()
 	
 	resource_positions = [
@@ -55,6 +57,8 @@ func _ready() -> void:
 		marker_3d_pl_br,
 	]
 
+func initialize_tile_position(x: int, y: int):
+	tile_position = Vector2i(x, y)
 
 func setup_resource_grid():
 	for i in range(4):
@@ -151,3 +155,30 @@ func get_player_position_values(position_index: int) -> Vector3:
 	
 	print("Warning: Invalid position index: ", position_index)
 	return Vector3.ZERO
+
+func _on_object_amount_change(position: Vector2i, object: String):
+	if tile_position == position:
+		_handle_resource_change(object)
+
+func _handle_resource_change(object: String):
+	var target_child_name = object + "_resource"
+
+	for i in range(resource_positions.size()):
+		var marker = resource_positions[i]
+		
+		for child in marker.get_children():
+			if child.name == target_child_name:
+				var object_quantity = child.get_child(0).quantity
+
+				if object_quantity == 1.0:
+					if ui_ref:
+						ui_ref.hide_resource_label_display()
+					child.queue_free()
+					free_resource_position(i)
+				else:
+					child.get_child(0).quantity -= 1.0
+					
+					var scale_factor = 0.5 + (child.get_child(0).quantity - 1) * 0.2
+					child.scale = Vector3(scale_factor, scale_factor, scale_factor)
+				return
+			

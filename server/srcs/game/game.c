@@ -1596,8 +1596,6 @@ int game_play()
         if (c == NULL)
             continue; /* No client */
 
-        printf("processing %d\n", i);
-        printf("Processing client %d\n", c->socket_fd);
         if (!PLAYER_IS_ALIVE(c, t_api->current_time_units))
         {
             game_player_die(c);

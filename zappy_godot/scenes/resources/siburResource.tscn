@@ -10,13 +10,13 @@
 [node name="sibur" parent="." instance=ExtResource("1_c8oa4")]
 script = ExtResource("2_n6yxt")
 
+[node name="AnimationPlayer" parent="sibur" index="9"]
+autoplay = "sibur"
+
 [node name="Area3D" type="Area3D" parent="sibur"]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="sibur/Area3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5080261, 0)
 shape = SubResource("BoxShape3D_n6yxt")
-
-[node name="AnimationPlayer" parent="sibur" index="10"]
-autoplay = "sibur"
 
 [editable path="sibur"]

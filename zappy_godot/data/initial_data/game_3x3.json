@@ -1,0 +1,120 @@
+{
+	"type": "initial_game_state",
+	"map": {
+		"width": 3,
+		"height": 3,
+	"tiles": [
+			{
+			"x": 0, "y": 0,
+			"resources": {
+				"nourriture": 1, "linemate": 0, "deraumere": 0,
+				"sibur": 1, "mendiane": 0, "phiras": 0, "thystame": 0
+			},
+			"players": [1],
+			"eggs": []
+			},
+			{
+			"x": 1, "y": 0,
+			"resources": {
+				"nourriture": 0, "linemate": 1, "deraumere": 0,
+				"sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+			},
+			"players": [],
+			"eggs": [101]
+			},
+			{
+			"x": 2, "y": 0,
+			"resources": {
+				"nourriture": 0, "linemate": 2, "deraumere": 0,
+				"sibur": 3, "mendiane": 0, "phiras": 0, "thystame": 0
+			},
+			"players": [],
+			"eggs": []
+			},
+			{
+			"x": 0, "y": 1,
+			"resources": {
+				"nourriture": 2, "linemate": 0, "deraumere": 1,
+				"sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+			},
+			"players": [],
+			"eggs": []
+			},
+			{
+			"x": 1, "y": 1,
+			"resources": {
+				"nourriture": 0, "linemate": 0, "deraumere": 0,
+				"sibur": 0, "mendiane": 1, "phiras": 0, "thystame": 0
+			},
+			"players": [],
+			"eggs": []
+			},
+			{
+			"x": 2, "y": 1,
+			"resources": {
+				"nourriture": 1, "linemate": 0, "deraumere": 0,
+				"sibur": 0, "mendiane": 0, "phiras": 3, "thystame": 1
+			},
+			"players": [],
+			"eggs": []
+			},
+			{
+			"x": 0, "y": 2,
+			"resources": {
+				"nourriture": 1, "linemate": 1, "deraumere": 0,
+				"sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+			},
+			"players": [],
+			"eggs": []
+			},
+			{
+			"x": 1, "y": 2,
+			"resources": {
+				"nourriture": 1, "linemate": 0, "deraumere": 0,
+				"sibur": 1, "mendiane": 0, "phiras": 3, "thystame": 0
+			},
+			"players": [],
+			"eggs": []
+			},
+			{
+			"x": 2, "y": 2,
+			"resources": {
+				"nourriture": 0, "linemate": 1, "deraumere": 0,
+				"sibur": 1, "mendiane": 1, "phiras": 0, "thystame": 0
+			},
+			"players": [],
+			"eggs": []
+			}
+		]
+	},
+	"players": [
+		{
+			"id": 1,
+			"position": { "x": 0, "y": 0 },
+			"orientation": 4,
+			"level": 3,
+			"team": "Alpha",
+			"inventory": {
+			"nourriture": 5, "linemate": 1, "deraumere": 0,
+			"sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0
+			},
+			"status": "normal"
+		}
+	],
+	"eggs": [
+		{
+			"id": 101,
+			"position": { "x": 1, "y": 0 },
+			"status": "laid",
+			"parent_id": 1,
+			"team": "Alpha"
+		}
+	],
+	"game": {
+		"tick": 150,
+		"time_unit": 100,
+		"teams": [
+			{ "name": "Alpha", "player_count": 1, "remaining_connections": 0 }
+		]
+	}
+}

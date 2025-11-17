@@ -17,10 +17,12 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameData="*res://scenes/scripts/DataManager.gd"
-GameConfig="*res://scenes/scripts/GameConfig.gd"
+GameData="*res://scripts/DataManager.gd"
+GameConfig="*res://scripts/GameConfig.gd"
 UI="*res://scenes/UI/UI.gd"
-WorldBuilder="*res://scenes/scripts/WorldBuilder.gd"
+WorldBuilder="*res://scripts/WorldBuilder.gd"
+CommandProcessor="*res://scripts/CommandProcessor.gd"
+MockServer="*res://scripts/MockServer.gd"
 
 [display]
 

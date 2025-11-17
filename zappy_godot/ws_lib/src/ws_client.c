@@ -12,8 +12,20 @@
 #include <openssl/rand.h>
 #include <openssl/evp.h>
 
-#define WS_SERVER_IP   "127.0.0.1"
-#define WS_SERVER_PORT 8674
+#define WS_DEFAULT_IP   "127.0.0.1"
+#define WS_DEFAULT_PORT 8674
+
+// Get server IP from environment variable or use default
+static const char* get_server_ip() {
+    const char* env_ip = getenv("ZAPPY_SERVER_IP");
+    return env_ip ? env_ip : WS_DEFAULT_IP;
+}
+
+// Get server port from environment variable or use default  
+static int get_server_port() {
+    const char* env_port = getenv("ZAPPY_SERVER_PORT");
+    return env_port ? atoi(env_port) : WS_DEFAULT_PORT;
+}
 
 #define MSG_QUEUE_SIZE 64
 #define MSG_MAX_LEN    2048

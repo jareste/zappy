@@ -1,10 +1,10 @@
 [gd_scene load_steps=14 format=3 uid="uid://bohcw6ef7e55a"]
 
 [ext_resource type="Script" uid="uid://b2yc51sdfhp5r" path="res://scenes/Main.gd" id="1_tipki"]
-[ext_resource type="Script" uid="uid://dfd525mqeflrb" path="res://scenes/scripts/WorldManager.gd" id="4_ya4ey"]
+[ext_resource type="Script" uid="uid://dfd525mqeflrb" path="res://scripts/WorldManager.gd" id="4_ya4ey"]
 [ext_resource type="Script" uid="uid://cqlc6khfoxqod" path="res://scenes/player/PlayerManager.gd" id="5_eb6dy"]
 [ext_resource type="PackedScene" uid="uid://d01wcqvgamr8t" path="res://scenes/UI/UI.tscn" id="6_trceg"]
-[ext_resource type="Script" uid="uid://2yx4asihvwhu" path="res://scenes/scripts/CameraController.gd" id="7_a8y0u"]
+[ext_resource type="Script" uid="uid://2yx4asihvwhu" path="res://scripts/CameraController.gd" id="7_a8y0u"]
 [ext_resource type="Shader" uid="uid://bb6v6h5mrc31j" path="res://materials/shaders/post_processing_test.gdshader" id="7_o6xl0"]
 [ext_resource type="Shader" uid="uid://pv47rqgm4g3o" path="res://materials/shaders/chromatic_aberration.gdshader" id="8_85g3d"]
 [ext_resource type="PackedScene" uid="uid://rrvgfd65iocc" path="res://scenes/level/enviro.tscn" id="8_tipki"]
@@ -169,18 +169,27 @@ size = Vector2(2, 2)
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_85g3d"]
 render_priority = 0
 shader = ExtResource("7_o6xl0")
-shader_parameter/aberration_direction = Vector2(1, 1)
-shader_parameter/strength = 0.0010000000475
+shader_parameter/shadows_enabled = true
+shader_parameter/highlights_enabled = true
+shader_parameter/shadow_strength = 0.4
+shader_parameter/highlight_strength = 0.1
+shader_parameter/highlight_color = Color(1, 1, 1, 1)
+shader_parameter/shadow_color = Color(0, 0, 0, 1)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_choun"]
 shader = ExtResource("8_85g3d")
-shader_parameter/aberration = 0.10000000475
-shader_parameter/strength = 0.10000000149012
-shader_parameter/scanline_intensity = 0.3
-shader_parameter/scanline_thickness = 1.0
-shader_parameter/noise_intensity = 0.1
-shader_parameter/grain_intensity = 0.05
-shader_parameter/flicker_intensity = 0.02
+shader_parameter/aberration = 1.06400005054
+shader_parameter/strength = 0.0770000036575
+shader_parameter/ink_color_1 = Color(0.2, 0.8, 0.7, 1)
+shader_parameter/ink_color_2 = Color(0.6, 0.3, 0.8, 1)
+shader_parameter/ink_color_3 = Color(0.4, 0.9, 0.5, 1)
+shader_parameter/ink_mix_mode = 0.3999999910592
+shader_parameter/paper_grain_intensity = 0.31999999284736
+shader_parameter/paper_grain_scale = 50.0
+shader_parameter/paper_color = Color(0.9706488, 0.96044666, 0.91437066, 1)
+shader_parameter/paper_color_intensity = 0.5999999865888
+shader_parameter/vignette_intensity = 0.73999998345952
+shader_parameter/vignette_smoothness = 2.0
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_tipki")
@@ -194,13 +203,15 @@ script = ExtResource("1_tipki")
 [node name="NetworkManager" type="Node" parent="."]
 script = SubResource("GDScript_tefeu")
 
+[node name="CommandProcessor" type="Node" parent="."]
+
 [node name="DataManager" type="Node" parent="."]
 script = SubResource("GDScript_o6xl0")
 
 [node name="WorldManager" type="Node3D" parent="."]
 unique_name_in_owner = true
 script = ExtResource("4_ya4ey")
-gap = 0.0
+debug_mode = true
 
 [node name="PlayerManager" type="Node3D" parent="."]
 script = ExtResource("5_eb6dy")
@@ -234,12 +245,12 @@ light_color = Color(0.85897857, 0.99265605, 0.9756332, 1)
 light_indirect_energy = 3.833
 
 [node name="PostProcessing" type="MeshInstance3D" parent="."]
+visible = false
 extra_cull_margin = 16384.0
 mesh = SubResource("QuadMesh_tipki")
 surface_material_override/0 = SubResource("ShaderMaterial_85g3d")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-visible = false
 
 [node name="ColorRect" type="ColorRect" parent="CanvasLayer"]
 material = SubResource("ShaderMaterial_choun")
@@ -248,5 +259,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [editable path="enviro"]

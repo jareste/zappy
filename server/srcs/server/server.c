@@ -139,34 +139,39 @@ int server_send(int fd, char *msg)
         log_msg(LOG_LEVEL_ERROR, "Failed to send message to client %d\n", fd);
         return ERROR;
     }
+    else
+        log_msg(LOG_LEVEL_ERROR, "sent map to observer\n");
+
 
     return SUCCESS;
 }
 
 void m_server_notify_observers(int fd, cJSON* notification)
 {
-    int i;
+    // int i;
     char* msg;
-    observer** observers;
-    observer* o;
+    // observer** observers;
+    // observer* o;
 
-    observers = game_get_observers();
-    if (!observers)
-        return ;
+    /* TODO UNCOMMENT */
+    // observers = game_get_observers();
+    // if (!observers)
+    //     return ;
 
     cJSON_AddNumberToObject(notification, "player_id", fd);
     msg = cJSON_Print(notification);
     if (!msg)
         return ;
 
-    for (i = 0; observers[i]; i++)
-    {
-        o = observers[i];
-        if (!o)
-            continue;
+    // for (i = 0; observers[i]; i++)
+    // {
+    //     o = observers[i];
+    //     if (!o)
+    //         continue;
 
-        send(o->socket_fd, msg, strlen(msg), 0);
-    }
+    //     send(o->socket_fd, msg, strlen(msg), 0);
+    // }
+    log_msg(LOG_LEVEL_DEBUG, "Sent[%d]:\n%s\n",69, msg);
 
     free(msg);
 }
@@ -583,7 +588,7 @@ int server_select()
     memcpy(&read_fds, &m_read_fds, sizeof(m_read_fds));
 
     timeout.tv_sec = 0;
-    timeout.tv_usec = 0;
+    timeout.tv_usec = 200;
 
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
@@ -607,6 +612,8 @@ int server_select()
                 log_msg(LOG_LEVEL_ERROR, "Failed to accept new client\n");
                 ret = 0;
             }
+            else
+                log_msg(LOG_LEVEL_ERROR, "accepted new client\n");
         }
         else
         {

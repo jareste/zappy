@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
-    args.time_unit = 300;
+    args.time_unit = 50;
     
     if (parse_config("config") == ERROR)
             goto error;
