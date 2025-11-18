@@ -1,7 +1,6 @@
 extends Node3D
 
 # Node references
-@onready var network_manager = $NetworkManager
 @onready var map_root = $MapRoot
 @onready var player_root = $PlayerRoot
 @onready var egg_root = $EggRoot
@@ -12,25 +11,45 @@ extends Node3D
 # Manager components
 @onready var world_manager = $WorldManager
 @onready var player_manager = $PlayerManager
+@onready var integration_manager = $IntegrationManager
 
 @export var tile_size: float = 1.0
 @export var gap: float = 0.0
+@export var use_mock_server: bool = true
+@export_group("Real Server Settings")
+@export var server_ip: String = "127.0.0.1"
+@export var server_port: int = 8674
 
 func _ready():
 	CommandProcessor.set_tile_size_and_gap(tile_size, gap)
 	
-	test_websocket_connection()
-
 	_setup_managers()
-	
-	network_manager.connect("line_received", _on_server_line)
-	
-	_load_test_data()
+	_setup_server_connection()
 	
 	# Debug signals
 	CommandProcessor.command_processed.connect(_on_command_processed)
 	CommandProcessor.command_failed.connect(_on_command_failed)
 	CommandProcessor.player_orientation_change.connect(_on_player_orientation_changed)
+
+func _setup_server_connection():
+	"""Initialize server connection based on export settings
+	
+	MOCK MODE: Loads test data → Initialize MockServer → Send commands locally
+	REAL MODE: Connect as observer → Wait for server data → Build from server state
+	"""
+	integration_manager.connect("command_processed", _on_command_processed)
+	integration_manager.connect("command_failed", _on_command_failed)
+	integration_manager.connect("server_message_received", _on_server_message_received)
+	integration_manager.connect("connection_established", _on_real_server_connected)
+	integration_manager.connect("connection_failed", _on_real_server_failed)
+	
+	if use_mock_server:
+		print("Using Mock Server")
+		integration_manager.use_mock_server()
+		_load_test_data()
+	else:
+		print("Connecting to Real Server as Observer: ", server_ip, ":", server_port)
+		integration_manager.connect_to_real_server(server_ip, server_port)
 
 func _setup_managers():
 	"""Initialize all manager components"""
@@ -48,7 +67,8 @@ func _on_game_state_loaded():
 		camera_controller.initialize_camera_for_map(GameData.map_size)
 
 func _load_test_data():
-	"""Load test data for demonstration (remove when connecting to real server)"""
+	"""Load test data for mock server mode only"""
+	print("Loading test data for mock server...")
 	await get_tree().create_timer(1.0).timeout
 	
 	var file = FileAccess.open("res://data/initial_data/game_3x3.json", FileAccess.READ)
@@ -62,47 +82,35 @@ func _load_test_data():
 			GameData.update_game_state(json.data)
 			print("Test data loaded successfully")
 			
+			# Initialize MockServer only in mock mode
 			MockServer.initialize()
 		else:
 			print("Error parsing JSON: ", json.get_error_message())
 	else:
 		print("Could not load test data file")
 
-func _on_server_line(line: String):
-	"""Handle incoming server messages"""
-	print("Zappy server says:", line)
-	
-	var json = JSON.new()
-	var parse_result = json.parse(line)
-	if parse_result == OK:
-		GameData.update_game_state(json.data)
-		return
-	
-	var tokens = line.split(" ")
-	_handle_server_command(tokens)
+func _on_real_server_connected():
+	"""Called when successfully connected to real server"""
+	print("Successfully connected to real server as observer")
+	print("Waiting for initial game state from server...")
 
-func _handle_server_command(tokens: Array):
-	"""Handle individual server commands. Placeholder until server connection is coded."""
-	if tokens.is_empty():
-		return
-		
-	match tokens[0]:
-		"msz":
-			if tokens.size() >= 3:
-				var new_size = Vector2i(int(tokens[1]), int(tokens[2]))
-				if GameData.map_size != new_size:
-					GameData.map_size = new_size
-					print("Map size updated: ", new_size)
-		"pnw":
-			print("New player detected")
-		"ppo":
-			print("Player position update")
+func _on_real_server_failed():
+	"""Called when real server connection failed"""
+	print("Failed to connect to real server")
+	print("Consider switching to mock mode for development")
+
+func _on_server_message_received(message_type: String, data: Dictionary):
+	"""Handle messages from real server"""
+	print("Server message received: ", message_type)
+	
+	match message_type:
+		"game_state":
+			GameData.update_game_state(data)
+			print("Game world built from server data")
+		"status":
+			print("Server status: ", data.get("message", "Unknown status"))
 		_:
-			print("Unknown command: ", tokens[0])
-
-func connect_to_server():
-	"""Connect to the Zappy server"""
-	network_manager.connect_to_server()
+			print("Unknown message type: ", message_type, " - ", data)
 
 func get_game_stats() -> Dictionary:
 	"""Get current game statistics for UI"""
@@ -122,133 +130,3 @@ func _on_command_processed(command_type: String, player_id: int):
 
 func _on_command_failed(command_type: String, error: String):
 	print ("Command failed: ", command_type, " - ", error)
-
-# func send_message(message: String):
-#     if socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
-#         socket.send_text(message)
-
-func test_websocket_connection():
-	print("Testing WebSocket connection...")
-	print("ZappyWS class available: ", ZappyWS != null)
-	
-	# if ZappyWS != null:
-	if true:
-		# var ws_client = ZappyWS.new()
-		var ws_client = WebSocketPeer.new()
-		print("ZappyWS instance created: ", ws_client != null)
-		
-		if ws_client != null:
-			print("Available methods:")
-			# print("  - init: ", ws_client.has_method("init"))
-			# print("  - send: ", ws_client.has_method("send"))
-			# print("  - recv: ", ws_client.has_method("recv"))
-			# print("  - close: ", ws_client.has_method("close"))
-			var tls := TLSOptions.client_unsafe()
-
-
-
-			var err = ws_client.connect_to_url("wss://127.0.0.1:8674", tls)
-			if err != OK:
-				print("Unable to connect!!")
-				print("#######################################################################################################################################")
-
-
-			# ws_client.poll()
-			# # ws_client.init()
-			# print("WebSocket initialized and connecting...")
-			
-			# # ws_client.send("{\"type\": \"login\", \"key\": \"SOME_KEY\", \"role\": \"observer\"}")
-
-			# var err2 = ws_client.send_text("{\"type\": \"login\", \"key\": \"SOME_KEY\", \"role\": \"observer\"}")
-			# if (err2 != OK):
-			# 	print("*****************************************************************************************************************")
-			
-
-			while ws_client.get_ready_state() == WebSocketPeer.STATE_CONNECTING:
-				ws_client.poll()
-				await get_tree().process_frame
-
-			if ws_client.get_ready_state() != WebSocketPeer.STATE_OPEN:
-				print("Failed to connect!")
-				return
-
-			print("Connected! Sending login...")
-			ws_client.send_text('{"type":"login","key":"SOME_KEY","role":"observer"}')
-
-
-			await get_tree().create_timer(2.0).timeout
-			
-			# print("Sending test message...")
-			# ws_client.send("test from godot")
-
-			OS.delay_msec(300)
-			# var msg := ws_client.recv()
-			# print("Recibido:", msg)
-
-			var message
-			while ws_client.get_available_packet_count() > 0:
-				var packet = ws_client.get_packet()
-				message = packet.get_string_from_utf8()
-			# var packet = ws_client.get_packet()
-			# var message = packet.get_string_from_utf8()
-			if message:
-				print("Received: ", message)
-
-
-			message = null
-			ws_client.poll()
-
-			OS.delay_msec(300)
-			# var msg := ws_client.recv()
-			# print("Recibido:", msg)
-
-			while ws_client.get_available_packet_count() > 0:
-				var packet = ws_client.get_packet()
-				message = packet.get_string_from_utf8()
-				print("message:", message)
-			# var packet = ws_client.get_packet()
-			# var message = packet.get_string_from_utf8()
-			if message:
-				print("Received: ", message)
-
-
-			message = null
-			OS.delay_msec(1000)
-			ws_client.poll()
-
-			# var msg := ws_client.recv()
-			# print("Recibido:", msg)
-
-			while ws_client.get_available_packet_count() > 0:
-				var packet = ws_client.get_packet()
-				message = packet.get_string_from_utf8()
-			# var packet = ws_client.get_packet()
-			# var message = packet.get_string_from_utf8()
-			if message:
-				print("Received: ", message)
-			else:
-				print("**********************************")
-
-			# print("Attempting to receive messages...")
-			# for i in range(10):
-			# 	var received = ws_client.recv()
-			# 	if received != "":
-			# 		print("Received: ", received)
-			# 	else:
-			# 		print("No message received (attempt ", i + 1, ")")
-			# 	await get_tree().create_timer(0.5).timeout
-			
-			# print("Sending another test message...")
-			# ws_client.send("ping")
-			
-			# await get_tree().create_timer(1.0).timeout
-			# var ping_response = ws_client.recv()
-			# if ping_response != "":
-			# 	print("Ping response: ", ping_response)
-			# else:
-			# 	print("No ping response received")
-			
-			print("Closing WebSocket connection...")
-			# ws_client.close()
-	else:
-		print("ZappyWS class not available - extension not loaded")

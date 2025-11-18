@@ -118,10 +118,10 @@ int main(int argc, char **argv)
     srand(time(NULL));
     // args.width = rand() % 1000 + 4;
     // args.width = 10000;
-    args.width = 10;
+    args.width = 5;
     // args.height = rand() % 1000 + 4;
     // args.height = 10000;
-    args.height = 10;
+    args.height = 5;
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;

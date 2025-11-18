@@ -141,8 +141,6 @@ func _on_player_orientation_change(player_id: int, new_orientation: int):
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_QUART)
 	tween.tween_property(test_cuby, "rotation:y", target_rotation, 0.3)
-	
-	print("Rotating player ", player_id, " from ", old_orientation, " to ", new_orientation, " (turn: ", rad_to_deg(turn_amount), "°)")
 
 func _find_animation_player(player_scene: Node3D) -> AnimationPlayer:
 	"""Find AnimationPlayer in the player scene hierarchy"""
@@ -193,8 +191,6 @@ func _move_player_visual(player_scene: Node3D, old_pos: Vector2i, new_pos: Vecto
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_QUART)
 	tween.tween_property(player_scene, "global_position", target_world_pos, 1)
-	
-	print("Moving player from ", old_pos, " to ", new_pos, " (", current_world_pos, " → ", target_world_pos, ")")
 
 func _calculate_target_world_position(old_pos: Vector2i, new_pos: Vector2i, orientation: int, current_pos: Vector3) -> Vector3:
 	"""Calculate the target world position handling wrapping"""

@@ -74,6 +74,10 @@ func _execute_command(json_data: Dictionary) -> void:
 			handle_gauche(player_id)
 		"droit":
 			handle_droit(player_id)
+		"voir":
+			handle_voir(player_id)
+		"inventaire":
+			handle_inventaire(player_id)
 		"prend":
 			handle_prend(player_id, json_data.get("object", ""))
 		"pose":
@@ -125,6 +129,28 @@ func handle_droit(player_id: int) -> void:
 	
 	player_orientation_change.emit(player_id, new_orientation)
 	command_processed.emit("droit", player_id)
+
+func handle_voir(player_id: int) -> void:
+	var player_data = GameData.get_player_data(player_id)
+	if not player_data:
+		print("Warning: Player ", player_id, " not found in GameData yet")
+		command_failed.emit("voir", "Player data not loaded")
+		return
+	
+	# Mock implementation - return what player can see
+	var vision_data = ["player", "nourriture", "linemate"]  # Mock data
+	print("Player ", player_id, " vision: ", vision_data)
+	command_processed.emit("voir", player_id)
+
+func handle_inventaire(player_id: int) -> void:
+	var player_data = GameData.get_player_data(player_id)
+	if not player_data:
+		print("Warning: Player ", player_id, " not found in GameData yet")
+		command_failed.emit("inventaire", "Player data not loaded")
+		return
+	
+	print("Player ", player_id, " inventory: ", player_data.inventory)
+	command_processed.emit("inventaire", player_id)
 
 func handle_prend(player_id: int, object: String) -> void:
 	var player_data = GameData.get_player_data(player_id)

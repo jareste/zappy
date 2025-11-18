@@ -33,23 +33,33 @@ signal team_updated(team_name)
 
 func update_game_state(json_data):
 	"""Update the entire game state from JSON"""
+	print("DataManager: Updating game state with keys: ", json_data.keys())
 	game_data = json_data
 	
 	if json_data.has("map"):
+		print("DataManager: Processing map data...")
 		_update_map_data(json_data.map)
 	
 	if json_data.has("players"):
+		print("DataManager: Processing players data...")
 		_update_players_data(json_data.players)
 	
 	if json_data.has("eggs"):
+		print("DataManager: Processing eggs data...")
 		_update_eggs_data(json_data.eggs)
+	else:
+		print("DataManager: No eggs data in JSON")
 	
 	if json_data.has("game"):
+		print("DataManager: Processing game data...")
 		_update_game_info(json_data.game)
 	
+	print("DataManager: Emitting game_state_updated signal...")
 	game_state_updated.emit()
 
 func _update_map_data(map_data):
+	print("DataManager: Map data - width: ", map_data.width, ", height: ", map_data.height)
+	print("DataManager: Tiles count: ", map_data.tiles.size())
 	map_size.x = map_data.width
 	map_size.y = map_data.height
 	
@@ -66,8 +76,9 @@ func _update_map_data(map_data):
 			player_ids.append(int(player_id))
 		
 		var egg_ids = []
-		for egg_id in tile_data.eggs:
-			egg_ids.append(int(egg_id))
+		if tile_data.has("eggs"):
+			for egg_id in tile_data.eggs:
+				egg_ids.append(int(egg_id))
 		
 		tiles[pos] = {
 			"id": tiles.size(),

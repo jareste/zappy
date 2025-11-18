@@ -2,7 +2,7 @@ extends Node3D
 
 @onready var map_root: Node3D
 
-@export var debug_mode: bool = false
+@export var flat_mode: bool = false
 
 var tile_size: float
 var gap: float
@@ -28,11 +28,16 @@ func initialize(map_root_node: Node3D, ui_node: Control, tile_s: float, tile_gap
 
 func _on_game_state_updated():
 	"""Regenerate the entire world when game state updates"""
+	print("WorldManager: Game state updated, generating map...")
+	print("Map size: ", GameData.map_size)
+	print("Total tiles in GameData: ", GameData.tiles.size())
 	_generate_map()
 
 func _generate_map():
 	"""Generate the visual representation of the map"""
+	print("WorldManager: Starting map generation...")
 	if not map_root:
+		print("WorldManager: No map_root node, aborting generation")
 		return
 
 	world_ready_emitted = false
@@ -42,10 +47,12 @@ func _generate_map():
 	tiles.clear()
 
 	# Select pattern based on map size
-	var selected_pattern = WorldBuilder.select_pattern(debug_mode, GameData.map_size)
+	var selected_pattern = WorldBuilder.select_pattern(flat_mode, GameData.map_size)
+	print("WorldManager: Selected pattern: ", selected_pattern)
 	
 	# Use batch processing for large maps to prevent frame drops
 	var total_tiles = GameData.map_size.x * GameData.map_size.y
+	print("WorldManager: Total tiles to generate: ", total_tiles)
 	if total_tiles > 100:  # For maps larger than 10x10
 		_generate_map_batched(selected_pattern)
 	else:

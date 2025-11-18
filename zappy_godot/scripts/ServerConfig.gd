@@ -3,8 +3,7 @@ extends Node
 var server_config = {
 	"ip": "127.0.0.1",
 	"port": 8674,
-	"use_ssl": true,
-	"team_name": "default_team"
+	"use_ssl": true
 }
 
 func set_server(ip: String, port: int, use_ssl: bool = true):
@@ -20,9 +19,3 @@ func set_server(ip: String, port: int, use_ssl: bool = true):
 func get_server_url() -> String:
 	var protocol = "wss" if server_config.use_ssl else "ws"
 	return protocol + "://" + server_config.ip + ":" + str(server_config.port)
-
-func set_team_name(team: String):
-	server_config.team_name = team
-
-func get_team_name() -> String:
-	return server_config.team_name

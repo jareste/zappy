@@ -1,6 +1,7 @@
 [gd_scene load_steps=14 format=3 uid="uid://bohcw6ef7e55a"]
 
 [ext_resource type="Script" uid="uid://b2yc51sdfhp5r" path="res://scenes/Main.gd" id="1_tipki"]
+[ext_resource type="Script" uid="uid://djgyarjjv4bmt" path="res://scripts/IntegrationManager.gd" id="3_integration"]
 [ext_resource type="Script" uid="uid://dfd525mqeflrb" path="res://scripts/WorldManager.gd" id="4_ya4ey"]
 [ext_resource type="Script" uid="uid://cqlc6khfoxqod" path="res://scenes/player/PlayerManager.gd" id="5_eb6dy"]
 [ext_resource type="PackedScene" uid="uid://d01wcqvgamr8t" path="res://scenes/UI/UI.tscn" id="6_trceg"]
@@ -8,32 +9,6 @@
 [ext_resource type="Shader" uid="uid://bb6v6h5mrc31j" path="res://materials/shaders/post_processing_test.gdshader" id="7_o6xl0"]
 [ext_resource type="Shader" uid="uid://pv47rqgm4g3o" path="res://materials/shaders/chromatic_aberration.gdshader" id="8_85g3d"]
 [ext_resource type="PackedScene" uid="uid://rrvgfd65iocc" path="res://scenes/level/enviro.tscn" id="8_tipki"]
-
-[sub_resource type="GDScript" id="GDScript_tefeu"]
-script/source = "extends Node
-
-var tcp := StreamPeerTCP.new()
-var connected := false
-
-signal line_received(line: String)
-
-func connect_to_server():
-	var err = tcp.connect_to_host(\"127.0.0.1\", 4242)
-	if err == OK:
-		print(\"Connected to Zappy server\")
-		connected = true
-		tcp.put_utf8_string(\"GRAPHIC\\n\")
-
-func _process(delta):
-	if not connected:
-		return
-
-	while tcp.get_available_bytes() > 0:
-		var line = tcp.get_utf8_string(tcp.get_available_bytes())
-		for l in line.split(\"\\n\"):
-			if l.strip_edges() != \"\":
-				emit_signal(\"line_received\", l.strip_edges())
-"
 
 [sub_resource type="GDScript" id="GDScript_o6xl0"]
 script/source = "# GameData.gd - Singleton to manage game state
@@ -193,6 +168,7 @@ shader_parameter/vignette_smoothness = 2.0
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_tipki")
+use_mock_server = false
 
 [node name="MapRoot" type="Node3D" parent="."]
 
@@ -200,8 +176,8 @@ script = ExtResource("1_tipki")
 
 [node name="EggRoot" type="Node3D" parent="."]
 
-[node name="NetworkManager" type="Node" parent="."]
-script = SubResource("GDScript_tefeu")
+[node name="IntegrationManager" type="Node" parent="."]
+script = ExtResource("3_integration")
 
 [node name="CommandProcessor" type="Node" parent="."]
 
@@ -211,7 +187,7 @@ script = SubResource("GDScript_o6xl0")
 [node name="WorldManager" type="Node3D" parent="."]
 unique_name_in_owner = true
 script = ExtResource("4_ya4ey")
-debug_mode = true
+flat_mode = true
 
 [node name="PlayerManager" type="Node3D" parent="."]
 script = ExtResource("5_eb6dy")

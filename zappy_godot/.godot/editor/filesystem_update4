@@ -1,0 +1,8 @@
+res://scenes/Main.gd
+res://scripts/CommandProcessor.gd
+res://scenes/player/PlayerManager.gd
+res://scripts/IntegrationManager.gd
+res://scripts/ServerConnectionManager.gd
+res://scenes/main.tscn
+res://scripts/DataManager.gd
+res://scripts/WorldManager.gd
