@@ -15,3 +15,9 @@ Para la GUI:
 - para lanzar el juego:
 	-(fn)F5 o play arriba a la derecha
 
+
+
+cambios cliente -> mvn compile.
+
+cliente -> './client -n team2 -p 8674'
+opcion '-c' lanzas n clientes
