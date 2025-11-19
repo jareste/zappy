@@ -121,17 +121,6 @@ var tile_scenes = {
 	TileRule.TileType.ARCH_3F: preload("res://scenes/tile/tile_arch_03_scene.tscn")
 }
 
-# Preload resource scenes for performance
-var resource_scenes = {
-	"linemate": preload("res://scenes/resources/linemateResource.tscn"),
-	"deraumere": preload("res://scenes/resources/deraumereResource.tscn"),
-	"sibur": preload("res://scenes/resources/siburResource.tscn"),
-	"mendiane": preload("res://scenes/resources/mendianeResource.tscn"),
-	"phiras": preload("res://scenes/resources/phirasResource.tscn"),
-	"thystame": preload("res://scenes/resources/thystameResource.tscn"),
-	"nourriture": preload("res://scenes/resources/nourritureResource.tscn")
-}
-
 func _create_tile_from_type(tile_type: TileRule.TileType) -> Node3D:
 	"""Create a tile scene based on the tile type"""
 	var scene_resource = tile_scenes.get(tile_type, tile_scenes[TileRule.TileType.BASIC])
@@ -153,7 +142,8 @@ func _set_up_tile(x: int,y: int):
 	
 	_apply_checkerboard_pattern(tile_scene, x, y)
 	
-	_place_resources(tile_scene, tile_data)
+	# Let the tile manage its own resource placement
+	tile_scene.place_initial_resources(tile_data)
 
 func place_resource_in_tile(tile_scene: Node3D, resource_scene: Node3D, scale_factor: float) -> void:
 	var position_index = tile_scene.get_resource_available_position_index()
@@ -208,30 +198,3 @@ func _find_tile_mesh(tile_scene: Node3D) -> MeshInstance3D:
 		if mesh:
 			return mesh
 	return null
-
-func _place_resources(tile_scene: Node3D, tile_data):
-	"""Optimized resource placement using preloaded scenes"""
-	for resource in tile_data.resources:
-		var quantity = tile_data.resources[resource]
-		if quantity <= 0:
-			continue
-			
-		tile_scene.available_resources[resource] = quantity
-		
-		var scene_resource = resource_scenes.get(resource, resource_scenes["linemate"])
-		var resource_scene = scene_resource.instantiate()
-		
-		var resource_node = resource_scene.get_node(resource) if resource_scene.has_node(resource) else null
-		if resource_node:
-			resource_node.position_tile = tile_data.position
-			if resource == "nourriture":
-				resource_node.setup_nourriture_hover_signals(ui_reference)
-			else:
-				resource_node.setup_resource_hover_signals(ui_reference, resource)
-		
-		var scale_factor = 0.5 + (quantity - 1) * 0.2
-		resource_scene.scale = Vector3(scale_factor, scale_factor, scale_factor)
-
-		resource_scene.get_child(0).quantity = quantity
-		
-		place_resource_in_tile(tile_scene, resource_scene, scale_factor)

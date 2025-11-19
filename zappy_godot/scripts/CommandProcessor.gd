@@ -6,7 +6,7 @@ signal player_orientation_change(player_id, new_orientation)
 signal player_position_change(player_id, current_orientation)
 signal egg_laid(egg_id)
 
-signal object_amount_change(position, object_name)
+signal object_amount_change(tile_pos, object_name, change_type)
 
 var tile_size: float
 var gap: float
@@ -171,7 +171,7 @@ func handle_prend(player_id: int, object: String) -> void:
 		player_data.inventory[object] += 1
 		
 		# Emit signal for object visual transformation
-		object_amount_change.emit(player_data.position, object)
+		object_amount_change.emit(player_data.position, object, "remove")
 
 	command_processed.emit("prend " + object, player_id)
 	GameData.tile_updated.emit(player_data.position.x, player_data.position.y, "RESOURCE_" + object.to_upper())
@@ -194,10 +194,8 @@ func handle_pose(player_id: int, object: String) -> void:
 		inventory[object] -= 1
 		current_tile.resources[object] += 1
 		command_processed.emit("pose " + object, player_id)
-		object_amount_change.emit(player_data.position, object)
+		object_amount_change.emit(player_data.position, object, "add")
 		GameData.tile_updated.emit(player_data.position.x, player_data.position.y, "RESOURCE_" + object.to_upper())
-	
-	
 
 
 func handle_incantation(player_id: int) -> void:

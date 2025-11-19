@@ -1,5 +1,6 @@
 {
   "type": "cmd",
   "cmd": "droit",
-  "player_id": 2
+  "player_id": 1,
+  "status": "ok"
 }

@@ -35,6 +35,17 @@ var ui_ref
 var hovered_tile_x: int
 var hovered_tile_y: int
 
+# Preload resource scenes for performance
+var resource_scenes = {
+	"linemate": preload("res://scenes/resources/linemateResource.tscn"),
+	"deraumere": preload("res://scenes/resources/deraumereResource.tscn"),
+	"sibur": preload("res://scenes/resources/siburResource.tscn"),
+	"mendiane": preload("res://scenes/resources/mendianeResource.tscn"),
+	"phiras": preload("res://scenes/resources/phirasResource.tscn"),
+	"thystame": preload("res://scenes/resources/thystameResource.tscn"),
+	"nourriture": preload("res://scenes/resources/nourritureResource.tscn")
+}
+
 func _ready() -> void:
 	CommandProcessor.connect("object_amount_change", _on_object_amount_change)
 	setup_resource_grid()
@@ -156,11 +167,11 @@ func get_player_position_values(position_index: int) -> Vector3:
 	print("Warning: Invalid position index: ", position_index)
 	return Vector3.ZERO
 
-func _on_object_amount_change(position: Vector2i, object: String):
-	if tile_position == position:
-		_handle_resource_change(object)
+func _on_object_amount_change(tile_pos: Vector2i, object: String, change_type: String):
+	if tile_position == tile_pos:
+		_handle_resource_change(object, tile_pos, change_type)
 
-func _handle_resource_change(object: String):
+func _handle_resource_change(object: String, tile_pos: Vector2i, change_type: String):
 	var target_child_name = object + "_resource"
 
 	for i in range(resource_positions.size()):
@@ -168,21 +179,85 @@ func _handle_resource_change(object: String):
 		
 		for child in marker.get_children():
 			if child.name == target_child_name:
-				var object_quantity = child.get_child(0).quantity
-
-				if object_quantity == 1.0:
-					if ui_ref:
-						ui_ref.hide_resource_label_display()
-					child.queue_free()
-					free_resource_position(i)
-				else:
-					child.get_child(0).quantity -= 1.0
-					
-					var scale_factor = 0.5 + (child.get_child(0).quantity - 1) * 0.2
+				var tile_data = GameData.get_tile_data(tile_pos.x, tile_pos.y)
+				if not tile_data:
+					print("Warning: Could not find tile data for position ", tile_pos)
+					return
+				
+				var new_quantity = tile_data.resources.get(object, 0)
+				
+				if change_type == "remove":
+					# Handle removing resources (prend command)
+					if new_quantity == 0:
+						if ui_ref:
+							ui_ref.hide_resource_label_display()
+						child.queue_free()
+						free_resource_position(i)
+						available_resources[object] = 0
+					else:
+						child.get_child(0).quantity = new_quantity
+						var scale_factor = 0.5 + (new_quantity - 1) * 0.2
+						child.scale = Vector3(scale_factor, scale_factor, scale_factor)
+						available_resources[object] = new_quantity
+				
+				elif change_type == "add":
+					# Handle adding resources (pose command)
+					child.get_child(0).quantity = new_quantity
+					var scale_factor = 0.5 + (new_quantity - 1) * 0.2
 					child.scale = Vector3(scale_factor, scale_factor, scale_factor)
+					available_resources[object] = new_quantity
 				
 				return
 
-	# No object of type sent in tile, need to add it
-	print("I should place some ", object)
+	# No existing resource scene found - need to create one (only for "add" operations)
+	if change_type == "add":
+		_place_new_resource_in_tile(tile_pos, object)
+
+func place_initial_resources(tile_data) -> void:
+	"""Place all resources for this tile based on tile data - called during world generation"""
+	for resource in tile_data.resources:
+		var quantity = tile_data.resources[resource]
+		if quantity <= 0:
+			continue
+			
+		available_resources[resource] = quantity
+		_create_and_place_resource(resource, quantity, tile_data.position)
+
+func _place_new_resource_in_tile(tile_pos: Vector2i, resource: String):
+	"""Place a single new resource in the tile - called when placing resources during gameplay"""
+	var tile_data = GameData.get_tile_data(tile_pos.x, tile_pos.y)
+	if not tile_data:
+		print("Warning: Could not find tile data for position ", tile_pos)
+		return
+		
+	var quantity = tile_data.resources.get(resource, 1)
+	if quantity <= 0:
+		quantity = 1
+	
+	available_resources[resource] = quantity
+	_create_and_place_resource(resource, quantity, tile_pos)
+
+func _create_and_place_resource(resource: String, quantity: int, tile_pos: Vector2i):
+	"""Shared logic for creating and placing a resource scene"""
+	var scene_resource = resource_scenes.get(resource, resource_scenes["linemate"])
+	var resource_scene = scene_resource.instantiate()
+	
+	var resource_node = resource_scene.get_node(resource) if resource_scene.has_node(resource) else null
+	if resource_node:
+		resource_node.position_tile = tile_pos
+		if resource == "nourriture":
+			resource_node.setup_nourriture_hover_signals(ui_ref)
+		else:
+			resource_node.setup_resource_hover_signals(ui_ref, resource)
+
+	var scale_factor = 0.5 + (quantity - 1) * 0.2
+	resource_scene.scale = Vector3(scale_factor, scale_factor, scale_factor)
+	resource_scene.get_child(0).quantity = quantity
+
+	var position_index = get_resource_available_position_index()
+	if position_index != -1:
+		occupy_resource_position(position_index, resource_scene, scale_factor)
+	else:
+		print("Warning: No available position for resource ", resource, " at tile ", tile_pos)
+	
 			

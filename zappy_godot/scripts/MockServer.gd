@@ -1,7 +1,7 @@
 extends Node
 
 var commands_folder_path: String = "res://data/commands/"
-var command_interval: float = 0.2 # seconds
+var command_interval: float = 0.07 # seconds
 var auto_start: bool = true
 var use_realistic_timing: bool = false
 
@@ -79,8 +79,12 @@ func _send_next_command():
 	if json_data:
 		var command_type = json_data.get("type", "avance")
 
-		# Send to CommandProcessor
-		CommandProcessor.process_command(json_data)
+		var command_status = json_data.get("status", "ko")
+		if command_status == "ko":
+			print("command status is KO, not processing it")
+		else:
+			# Send to CommandProcessor
+			CommandProcessor.process_command(json_data)
 
 		if use_realistic_timing:
 			var next_delay = get_command_delay(command_type)
