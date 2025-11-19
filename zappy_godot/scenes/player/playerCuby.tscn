@@ -1,21 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://4fbbvh4js1no"]
+[gd_scene load_steps=2 format=3 uid="uid://4fbbvh4js1no"]
 
 [ext_resource type="PackedScene" uid="uid://sbqr8qph4lbd" path="res://scenes/player/cuby.tscn" id="1_ebg58"]
 
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_ebg58"]
-points = PackedVector3Array(-1, -1, -1, 1, 1, 1, 1, -1, 1, 1, 1, -1, -1, 1, 1, 1, -1, -1, -1, -1, 1, -1, 1, -1)
-
 [node name="Player" type="Node3D"]
 
-[node name="test_cuby" parent="." instance=ExtResource("1_ebg58")]
+[node name="playerCuby" parent="." instance=ExtResource("1_ebg58")]
 
-[node name="body" parent="test_cuby/Empty" index="0"]
-transform = Transform3D(0.32952166, -0.02882941, 0, 0.02882941, 0.32952166, 0, 0, 0, 0.3307803, 0, 0, 3.7252903e-09)
-
-[node name="Area3D" type="Area3D" parent="test_cuby/Empty/body" index="2"]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="test_cuby/Empty/body/Area3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 3.5527137e-15, 0, 1, 0, 0, 0)
-shape = SubResource("ConvexPolygonShape3D_ebg58")
-
-[editable path="test_cuby"]
+[editable path="playerCuby"]

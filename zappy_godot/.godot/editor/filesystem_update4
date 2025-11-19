@@ -1,8 +1,12 @@
-res://scenes/Main.gd
-res://scripts/CommandProcessor.gd
-res://scenes/player/PlayerManager.gd
-res://scripts/IntegrationManager.gd
-res://scripts/ServerConnectionManager.gd
 res://scenes/main.tscn
+res://scripts/CommandProcessor.gd
+res://scripts/MockServer.gd
+res://scenes/player/PlayerManager.gd
+res://scenes/player/playerCuby.tscn
+res://scenes/player/cuby.tscn
+res://scenes/player/player.tscn
+res://scenes/player/playerPiry.tscn
+res://scenes/player/playerDody.tscn
 res://scripts/DataManager.gd
+res://scenes/tile/TileManager.gd
 res://scripts/WorldManager.gd

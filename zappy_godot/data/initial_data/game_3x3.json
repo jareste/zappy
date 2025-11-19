@@ -46,7 +46,7 @@
 				"nourriture": 0, "linemate": 0, "deraumere": 0,
 				"sibur": 0, "mendiane": 1, "phiras": 0, "thystame": 0
 			},
-			"players": [],
+			"players": [1],
 			"eggs": []
 			},
 			{
@@ -94,6 +94,18 @@
 			"orientation": 4,
 			"level": 3,
 			"team": "Alpha",
+			"inventory": {
+			"nourriture": 5, "linemate": 1, "deraumere": 0,
+			"sibur": 1, "mendiane": 0, "phiras": 0, "thystame": 50
+			},
+			"status": "normal"
+		},
+		{
+			"id": 2,
+			"position": { "x": 1, "y": 1 },
+			"orientation": 1,
+			"level": 3,
+			"team": "Beta",
 			"inventory": {
 			"nourriture": 5, "linemate": 1, "deraumere": 0,
 			"sibur": 0, "mendiane": 0, "phiras": 0, "thystame": 0

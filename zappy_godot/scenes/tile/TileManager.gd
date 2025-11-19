@@ -180,5 +180,9 @@ func _handle_resource_change(object: String):
 					
 					var scale_factor = 0.5 + (child.get_child(0).quantity - 1) * 0.2
 					child.scale = Vector3(scale_factor, scale_factor, scale_factor)
+				
 				return
+
+	# No object of type sent in tile, need to add it
+	print("I should place some ", object)
 			

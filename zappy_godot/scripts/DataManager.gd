@@ -27,7 +27,6 @@ enum Orientation {
 # Signals for UI updates
 signal game_state_updated
 signal player_updated(player_id)
-signal player_inventory_updated(player_id, object)
 signal tile_updated(x, y, object)
 signal team_updated(team_name)
 

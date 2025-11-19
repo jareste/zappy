@@ -7,13 +7,13 @@ points = PackedVector3Array(0.477234, 0.186252, -1.6621095, 1.1920916, 1.0198628
 
 [node name="Player" type="Node3D"]
 
-[node name="dody" parent="." instance=ExtResource("1_dn2o3")]
+[node name="player" parent="." instance=ExtResource("1_dn2o3")]
 
-[node name="Area3D" type="Area3D" parent="dody/body" index="2"]
+[node name="Area3D" type="Area3D" parent="player/body" index="2"]
 transform = Transform3D(-0.86824137, 0.8715575, 9.92404, 0.07596127, 9.961947, -0.8682409, -9.961947, 0, -0.8715579, -0.62436336, -2.4979224, 0.1311906)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="dody/body/Area3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="player/body/Area3D"]
 transform = Transform3D(-0.008682413, 0.00075961265, -0.09961947, 0.008715574, 0.09961947, 2.3283065e-11, 0.09924039, -0.008682408, -0.008715578, 0.00954561, 0.2542834, 0.041417472)
 shape = SubResource("ConvexPolygonShape3D_dn2o3")
 
-[editable path="dody"]
+[editable path="player"]

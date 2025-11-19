@@ -1,12 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://sbqr8qph4lbd"]
+[gd_scene load_steps=3 format=3 uid="uid://sbqr8qph4lbd"]
 
 [ext_resource type="PackedScene" uid="uid://2ngtpy6xoubc" path="res://scenes/player/cuby.glb" id="1_y4q7f"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_55dl2"]
+points = PackedVector3Array(-1, -1, -1, 1, 1, 1, 1, -1, 1, 1, 1, -1, -1, 1, 1, 1, -1, -1, -1, -1, 1, -1, 1, -1)
 
 [node name="test_cuby" instance=ExtResource("1_y4q7f")]
 transform = Transform3D(-4.371139e-09, 0, -0.1, 0, 0.1, 0, 0.1, 0, -4.371139e-09, 0, 0, 0)
 
 [node name="body" parent="." index="0"]
 transform = Transform3D(0.99844664, -0.019411288, 0.05222431, 0.019437367, 0.99981105, 8.567935e-06, -0.052214608, 0.0010065484, 0.99863535, 0.4141747, 2.5839524, -0.09545612)
+
+[node name="Area3D" type="Area3D" parent="body" index="0"]
+transform = Transform3D(0.99999994, 0, -3.7252903e-09, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="body/Area3D" index="0"]
+transform = Transform3D(1.0000001, 0, 7.450581e-09, 0, 1.0000001, 1.1641532e-10, 0, 0, 1, 0, 0, 0)
+shape = SubResource("ConvexPolygonShape3D_55dl2")
 
 [node name="Skeleton3D" parent="body/left_arm" index="0"]
 bones/0/rotation = Quaternion(0.3291453, -4.9389257e-09, 0.05213152, 0.94283915)

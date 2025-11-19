@@ -128,11 +128,11 @@ func _on_player_orientation_change(player_id: int, new_orientation: int):
 	if anim_player.current_animation != "idle":
 		anim_player.play("idle")
 	
-	var test_cuby = player_scene.get_node("test_cuby")
+	var player_model = player_scene.get_node("player")
 	var old_orientation = player_logical_orientations.get(player_id, new_orientation)
 	
 	var turn_amount = _calculate_turn_amount(old_orientation, new_orientation)
-	var current_rotation = test_cuby.rotation.y
+	var current_rotation = player_model.rotation.y
 	var target_rotation = current_rotation + turn_amount
 	
 	player_logical_orientations[player_id] = new_orientation
@@ -140,11 +140,11 @@ func _on_player_orientation_change(player_id: int, new_orientation: int):
 	var tween = create_tween()
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_QUART)
-	tween.tween_property(test_cuby, "rotation:y", target_rotation, 0.3)
+	tween.tween_property(player_model, "rotation:y", target_rotation, 0.3)
 
 func _find_animation_player(player_scene: Node3D) -> AnimationPlayer:
 	"""Find AnimationPlayer in the player scene hierarchy"""
-	var test_cuby = player_scene.get_node("test_cuby")
+	var test_cuby = player_scene.get_node("player")
 	if test_cuby:
 		return test_cuby.find_child("AnimationPlayer", true, false)
 	return null
@@ -190,7 +190,7 @@ func _move_player_visual(player_scene: Node3D, old_pos: Vector2i, new_pos: Vecto
 	tween.set_ease(Tween.EASE_IN)
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_QUART)
-	tween.tween_property(player_scene, "global_position", target_world_pos, 1)
+	tween.tween_property(player_scene, "global_position", target_world_pos, 0.5)
 
 func _calculate_target_world_position(old_pos: Vector2i, new_pos: Vector2i, orientation: int, current_pos: Vector3) -> Vector3:
 	"""Calculate the target world position handling wrapping"""

@@ -60,7 +60,7 @@ func _process_next_queued_command():
 	_execute_command(command_data)
 
 func _execute_command(json_data: Dictionary) -> void:
-	var command_type = json_data.get("type", "")
+	var command_type = json_data.get("cmd", "")
 	var player_id = json_data.get("player_id", -1)
 
 	if (player_id == -1):
@@ -175,10 +175,30 @@ func handle_prend(player_id: int, object: String) -> void:
 
 	command_processed.emit("prend " + object, player_id)
 	GameData.tile_updated.emit(player_data.position.x, player_data.position.y, "RESOURCE_" + object.to_upper())
-	GameData.player_inventory_updated.emit(player_id, object)
 
 func handle_pose(player_id: int, object: String) -> void:
-	pass
+	var player_data = GameData.get_player_data(player_id)
+	if not player_data:
+		print("Warning: Player ", player_id, " not found in GameData yet")
+		command_failed.emit("prend " + object, player_id)
+		return
+	
+	var current_tile = GameData.tiles[player_data.position]
+	var inventory = player_data.get("inventory", {})
+	var stored_amount = inventory[object]
+
+	if not stored_amount > 0:
+		command_failed.emit("pose", "player doesn't have " + object + " in their inventory")
+		return
+	else:
+		inventory[object] -= 1
+		current_tile.resources[object] += 1
+		command_processed.emit("pose " + object, player_id)
+		object_amount_change.emit(player_data.position, object)
+		GameData.tile_updated.emit(player_data.position.x, player_data.position.y, "RESOURCE_" + object.to_upper())
+	
+	
+
 
 func handle_incantation(player_id: int) -> void:
 	pass

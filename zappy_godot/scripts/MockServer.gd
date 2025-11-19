@@ -1,7 +1,7 @@
 extends Node
 
 var commands_folder_path: String = "res://data/commands/"
-var command_interval: float = 0.5 # seconds
+var command_interval: float = 0.2 # seconds
 var auto_start: bool = true
 var use_realistic_timing: bool = false
 
