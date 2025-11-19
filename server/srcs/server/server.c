@@ -3,6 +3,7 @@
 #include <sys/select.h>
 #include <ft_malloc.h>
 #include <error_codes.h>
+#include <errno.h>
 #include <ft_list.h>
 #include "ssl_table.h"
 #include "ssl_al.h"
@@ -588,7 +589,9 @@ int server_select()
     ret = select(m_max_fd + 1, &read_fds, NULL, NULL, &timeout);
     if (ret < 0) /* Error... */
     {
-        log_msg(LOG_LEVEL_ERROR, "Select error: (%d) (%d) \n", ret, m_max_fd);
+        if (errno == EINTR)
+            return 0;
+        log_msg(LOG_LEVEL_ERROR, "Select error: (%d) (%d) (%d) \n", ret, m_max_fd, errno);
         return ERROR;
     }
     else if (ret == 0) /* No new data to read. */
