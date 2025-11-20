@@ -17,12 +17,28 @@
 #define PORT 8674
 
 static bool m_die = false;
+static bool m_play = false;
 
 void signal_handler(int signum)
 {
+    log_msg(LOG_LEVEL_WARN, "Received signal[%d][%d][%d]: %d\n", SIGINT, SIGTERM, SIGUSR1,signum);
     if (signum == SIGINT || signum == SIGTERM)
     {
         m_die = true;
+    }
+    if (signum == SIGUSR1)
+    {
+        m_play = !m_play;
+        if (m_play)
+        {
+            time_api_run(NULL);
+            log_msg(LOG_LEVEL_ERROR, "Time api resumed\n");
+        }
+        else
+        {
+            time_api_pause(NULL);
+            log_msg(LOG_LEVEL_ERROR, "Time api paused\n");
+        }
     }
 }
 
@@ -118,14 +134,14 @@ int main(int argc, char **argv)
     srand(time(NULL));
     // args.width = rand() % 1000 + 4;
     // args.width = 10000;
-    args.width = 5;
+    args.width = 10;
     // args.height = rand() % 1000 + 4;
     // args.height = 10000;
-    args.height = 5;
+    args.height = 10;
     // args.nb_teams = rand() % 14 + 1;
     args.nb_teams = 2;
     // args.time_unit = rand() % 1000 + 1;
-    args.time_unit = 50;
+    args.time_unit = 100;
     
     if (parse_config("config") == ERROR)
             goto error;
@@ -176,8 +192,8 @@ int main(int argc, char **argv)
     printf("Server started on port %d\n", args.port);
 
     /* if server closes us something weird could happen */
-    signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, signal_handler);
+    signal(SIGUSR1, signal_handler);
     main_loop();
     log_msg(LOG_LEVEL_INFO, "Exiting...\n");
     log_close();

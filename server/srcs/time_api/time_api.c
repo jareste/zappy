@@ -35,6 +35,7 @@ time_api *time_api_init(int t)
 
     api->t = t;
     api->start_time_ms = get_current_time_ms();
+    api->paused_ms = api->start_time_ms;
     api->current_time_units = 0;
     return api;
 }
@@ -76,10 +77,53 @@ uint64_t time_get_current_time_units(time_api *_api)
         return -1;
     }
 
+    if (api->paused_ms > 0)
+        return api->current_time_units;
+
     now = get_current_time_ms();
     /* Each time unit lasts 1000/t milliseconds */
     return (uint64_t)((now - api->start_time_ms) * api->t / 1000);
 }
+
+void time_api_pause(time_api *_api)
+{
+    time_api *api;
+
+    api= _api ? _api : m_time;
+    if (!api)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
+        return;
+    }
+
+    api->paused_ms = get_current_time_ms();
+}
+
+void time_api_run(time_api *_api)
+{
+    time_api *api;
+    long now;
+    long paused_duration_ms;
+
+    api= _api ? _api : m_time;
+    if (!api)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
+        return;
+    }
+
+    log_msg(LOG_LEVEL_INFO, "Time API .[%ld]\n", api->paused_ms);
+    if (api->paused_ms == 0)
+        return;
+
+    now = get_current_time_ms();
+    paused_duration_ms = now - api->paused_ms;
+    api->start_time_ms += paused_duration_ms;
+    api->paused_ms = 0;
+
+    time_api_update(NULL);
+}
+
 
 /* Update the current game time stored in the API */
 int time_api_update(time_api *_api)
@@ -91,6 +135,11 @@ int time_api_update(time_api *_api)
     {
         log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
         return ERROR;
+    }
+
+    if (api->paused_ms > 0)
+    {
+        return SUCCESS;
     }
 
     api->current_time_units = time_get_current_time_units(api);
