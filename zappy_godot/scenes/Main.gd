@@ -19,6 +19,7 @@ extends Node3D
 @export_group("Real Server Settings")
 @export var server_ip: String = "127.0.0.1"
 @export var server_port: int = 8674
+@export var auto_start:bool = false
 
 func _ready():
 	CommandProcessor.set_tile_size_and_gap(tile_size, gap)
@@ -50,6 +51,24 @@ func _setup_server_connection():
 	else:
 		print("Connecting to Real Server as Observer: ", server_ip, ":", server_port)
 		integration_manager.connect_to_real_server(server_ip, server_port)
+		if auto_start:
+			print("**********************************************AUTOSTART**************************************")
+			_start_server_time_api()
+
+func _start_server_time_api():
+	"""Start the server's time API to begin the game"""
+	var script_path = ProjectSettings.globalize_path("/home/hmunoz-g/42-OuterCore/zappy/server/run.sh")
+	var output = []
+	var exit_code = OS.execute("bash", [script_path], output, true, true)
+	
+	if exit_code == 0:
+		print("Game time started successfully")
+		for line in output:
+			print("Server output: ", line)
+	else:
+		print("Failed to start game time. Exit code: ", exit_code)
+		for line in output:
+			print("Error output: ", line)
 
 func _setup_managers():
 	"""Initialize all manager components"""

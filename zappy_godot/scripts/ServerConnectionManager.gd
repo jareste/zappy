@@ -94,7 +94,6 @@ func _start_authentication():
 	var auth_response = _receive_message()
 	
 	if auth_response != "":
-		print("Authentication response: ", auth_response)
 		_handle_authentication_response(auth_response)
 	else:
 		print("No authentication response received")

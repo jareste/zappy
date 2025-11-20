@@ -168,6 +168,8 @@ shader_parameter/vignette_smoothness = 2.0
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_tipki")
+use_mock_server = false
+auto_start = true
 
 [node name="MapRoot" type="Node3D" parent="."]
 
