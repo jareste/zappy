@@ -11,6 +11,7 @@ typedef struct
 {
     int t;
     long start_time_ms;
+    long paused_ms;
     uint64_t current_time_units; /* No overflow protection, but goodluck trying to overflow :) */
 } time_api;
 
@@ -46,5 +47,15 @@ int time_api_schedule_client_event_front(time_api *_api, event_buffer *buffer, i
  * time is less than or equal to the current game time. Events are processed in FIFO order.
  */
 int time_api_process_client_events(time_api *_api, event_buffer *buffer);
+
+int time_api_schedule_single_event(time_api* _api, event* event, int delay, int (*callback)(void *, void *), void *data, void *arg);
+int time_api_process_single_event(time_api *_api, event *ev);
+
+
+void time_api_run(time_api *_api);
+void time_api_pause(time_api *_api);
+
+// by hugo
+long get_current_time_ms();
 
 #endif /* TIME_API_H */

@@ -1,0 +1,134 @@
+[gd_scene load_steps=2 format=3 uid="uid://c7quaqu6mpm06"]
+
+[ext_resource type="PackedScene" uid="uid://bldsvpppgwof4" path="res://scenes/resources/phiras.glb" id="1_cx5vp"]
+
+[node name="phiras" instance=ExtResource("1_cx5vp")]
+
+[node name="Cube" parent="Empty" index="0"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_027" parent="Empty" index="1"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_028" parent="Empty" index="2"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_029" parent="Empty" index="3"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_030" parent="Empty" index="4"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_031" parent="Empty" index="5"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 2.4959445e-07)
+
+[node name="Cube_032" parent="Empty" index="6"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_033" parent="Empty" index="7"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_034" parent="Empty" index="8"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_035" parent="Empty" index="9"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_039" parent="Empty" index="13"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_041" parent="Empty" index="15"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_042" parent="Empty" index="16"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_044" parent="Empty" index="18"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_048" parent="Empty" index="22"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_050" parent="Empty" index="24"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_051" parent="Empty" index="25"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_053" parent="Empty" index="27"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.0430813e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_057" parent="Empty" index="31"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_059" parent="Empty" index="33"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_060" parent="Empty" index="34"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_062" parent="Empty" index="36"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_063" parent="Empty" index="37"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_064" parent="Empty" index="38"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_065" parent="Empty" index="39"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_066" parent="Empty" index="40"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_067" parent="Empty" index="41"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_068" parent="Empty" index="42"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_069" parent="Empty" index="43"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_070" parent="Empty" index="44"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_071" parent="Empty" index="45"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_072" parent="Empty" index="46"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_074" parent="Empty" index="48"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_075" parent="Empty" index="49"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.0430813e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_076" parent="Empty" index="50"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_077" parent="Empty" index="51"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_080" parent="Empty" index="54"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.091991e-07)
+
+[node name="Cube_081" parent="Empty" index="55"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_082" parent="Empty" index="56"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_083" parent="Empty" index="57"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_085" parent="Empty" index="59"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.0430813e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="Cube_086" parent="Empty" index="60"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, -1.9967556e-06, -1.7881393e-07, 3.3900142e-07)
+
+[node name="AnimationPlayer" parent="." index="1"]
+autoplay = "phiras"

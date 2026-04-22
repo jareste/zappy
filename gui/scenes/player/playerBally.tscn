@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://dlg54j77nlx0"]
+
+[ext_resource type="PackedScene" uid="uid://bv37nhoys8vg5" path="res://scenes/player/bally.tscn" id="1_7tf80"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_7tf80"]
+radius = 1.2780639
+
+[node name="Player" type="Node3D"]
+
+[node name="bally" parent="." instance=ExtResource("1_7tf80")]
+
+[node name="Area3D" type="Area3D" parent="bally/body" index="2"]
+transform = Transform3D(-0.86824137, 0.8715575, 9.92404, 0.07596127, 9.961947, -0.8682409, -9.961947, 0, -0.8715579, -0.62436336, -2.4979224, 0.1311906)
+
+[node name="BodyCollider" type="CollisionShape3D" parent="bally/body/Area3D"]
+transform = Transform3D(-0.008682413, 0.00075961265, -0.09961947, 0.008715574, 0.09961947, 2.328306e-11, 0.09924039, -0.008682408, -0.008715578, 0.00954561, 0.26499116, 0.041417472)
+shape = SubResource("SphereShape3D_7tf80")
+
+[editable path="bally"]

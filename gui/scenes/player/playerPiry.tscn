@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://56et8b8h8xv"]
+
+[ext_resource type="PackedScene" uid="uid://b4obbn8eve484" path="res://scenes/player/piry.tscn" id="1_wy7gy"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_wy7gy"]
+points = PackedVector3Array(-1.1778307, -0.9988562, -1.1869165, -1.1778307, -0.9988562, 1.1869165, 0.009318471, 1.519153, -0.0002323389, 1.1957705, -0.9988562, -1.1869165, 1.1957705, -0.9988562, 1.1869165)
+
+[node name="Player" type="Node3D"]
+
+[node name="player" parent="." instance=ExtResource("1_wy7gy")]
+
+[node name="body" parent="player" index="0"]
+transform = Transform3D(0.9924039, -0.08682408, -0.08715573, 0.08715574, 0.9961947, 2.3283063e-10, 0.08682408, -0.0075961226, 0.99619466, 0.4141747, 2.542834, -0.09545612)
+
+[node name="Area3D" type="Area3D" parent="player/body" index="2"]
+transform = Transform3D(-0.86824137, 0.8715575, 9.92404, 0.07596127, 9.961947, -0.8682409, -9.961947, 0, -0.8715579, -0.62436336, -2.4979224, 0.1311906)
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="player/body/Area3D"]
+transform = Transform3D(-0.008682412, 0.0007596126, -0.099619456, 0.008715574, 0.09961947, -5.5683493e-11, 0.09924038, -0.008682407, -0.0087155765, 0.00954561, 0.2542834, 0.04141747)
+shape = SubResource("ConvexPolygonShape3D_wy7gy")
+
+[editable path="player"]

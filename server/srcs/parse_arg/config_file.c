@@ -15,6 +15,8 @@ typedef struct
 {
     int    INITIAL_LIFE_UNITS;
     int    LIFE_UNIT_TO_TIME;
+    int    NUMBER_OF_CLIENTS;
+    int    TIME_UNIT;
 
     double DENSITY_NOURRITURE;
     double DENSITY_LINEMATE;
@@ -51,6 +53,9 @@ typedef struct
     char* LOG_FILE_PATH;
     bool LOG_ERASE;
 
+    char* CERT_CERT;
+    char* CERT_KEY;
+
 } config_t;
 
 config_t* m_config_content = NULL;
@@ -59,8 +64,10 @@ static void m_init_config_content()
 {
     if (!m_config_content)
         return;
-    m_config_content->INITIAL_LIFE_UNITS = 10;
+    m_config_content->INITIAL_LIFE_UNITS = 100;
     m_config_content->LIFE_UNIT_TO_TIME = 126;
+    m_config_content->NUMBER_OF_CLIENTS = 100;
+    m_config_content->TIME_UNIT = 100;
 
     m_config_content->DENSITY_NOURRITURE = 1.0;
     m_config_content->DENSITY_LINEMATE   = 0.02;
@@ -93,9 +100,12 @@ static void m_init_config_content()
     m_config_content->SPAWN_MORE_RESOURCES_PHIRAS    = 0.04;
     m_config_content->SPAWN_MORE_RESOURCES_THYSTAME  = 0.005;
 
-    m_config_content->LOG_LEVEL = LOG_LEVEL_WARN;
+    m_config_content->LOG_LEVEL = 4;
     m_config_content->LOG_FILE_PATH = strdup("log.txt");
     m_config_content->LOG_ERASE = true;
+
+    m_config_content->CERT_CERT = NULL;
+    m_config_content->CERT_KEY = NULL;
 }
 
 void parse_set_initial_density(spawn_ctx* ctx)
@@ -109,6 +119,20 @@ void parse_set_initial_density(spawn_ctx* ctx)
     ctx->d_mendiane    = m_config_content->DENSITY_MENDIANE;
     ctx->d_phiras      = m_config_content->DENSITY_PHIRAS;
     ctx->d_thystame    = m_config_content->DENSITY_THYSTAME;
+}
+
+void parse_set_nb_clients(int* nb_clients)
+{
+    if (!m_config_content)
+        return;
+    *nb_clients = m_config_content->NUMBER_OF_CLIENTS;
+}
+
+void parse_override_nb_clients(int nb_clients)
+{
+    if (!m_config_content || nb_clients <= 0)
+        return;
+    m_config_content->NUMBER_OF_CLIENTS = nb_clients;
 }
 
 void parse_set_commands_delay(command cmd[MAX_COMMANDS])
@@ -145,6 +169,12 @@ void parse_set_respawn_context(spawn_ctx* ctx)
 
 void parse_set_log_config(log_config* log)
 {
+    if (!m_config_content) {
+        log->LOG_ERASE = true;
+        log->LOG_FILE_PATH = "log.txt";
+        log->LOG_LEVEL = 2;
+        return;
+    }
     log->LOG_ERASE = m_config_content->LOG_ERASE;
     log->LOG_FILE_PATH = m_config_content->LOG_FILE_PATH;
     log->LOG_LEVEL = m_config_content->LOG_LEVEL;
@@ -174,10 +204,33 @@ void parse_set_start_life_units(int* start_life_units)
     *start_life_units = m_config_content->INITIAL_LIFE_UNITS;
 }
 
+void parse_get_certificates(char** cert, char** key)
+{
+    if (!m_config_content)
+        return;
+
+    if (cert)
+        *cert = m_config_content->CERT_CERT;
+    if (key)
+        *key = m_config_content->CERT_KEY;
+}
+
 void parse_free_config()
 {
+    free(m_config_content->CERT_CERT);
+    m_config_content->CERT_CERT = NULL;
+    free(m_config_content->CERT_KEY);
+    m_config_content->CERT_KEY = NULL;
     free(m_config_content);
     m_config_content = NULL;
+}
+
+int parse_get_time_unit(void)
+{
+    if (!m_config_content)
+        return 100;
+    
+    return m_config_content->TIME_UNIT;
 }
 
 int parse_config(const char *filename)
@@ -190,17 +243,22 @@ int parse_config(const char *filename)
     char*   val;
     char    c;
 
-    m_config_content = malloc(sizeof(config_t));
-
-    /* Set default values */
-    m_init_config_content();
-
     fp = fopen(filename, "r");
     if (!fp)
     {
         perror("Unable to open config file");
         return ERROR;
     }
+    
+    m_config_content = malloc(sizeof(config_t));
+    if (!m_config_content)
+    {
+        fclose(fp);
+        return ERROR;
+    }
+
+    /* Set default values */
+    m_init_config_content();
 
     while (fgets(line, sizeof(line), fp))
     {
@@ -229,6 +287,10 @@ int parse_config(const char *filename)
             m_config_content->INITIAL_LIFE_UNITS = atoi(val);
         else if (strcmp(key, "LIFE_UNIT_TO_TIME") == 0)
             m_config_content->LIFE_UNIT_TO_TIME = atoi(val);
+        else if (strcmp(key, "NUMBER_OF_CLIENTS") == 0)
+            m_config_content->NUMBER_OF_CLIENTS = atoi(val);
+        else if (strcmp(key, "TIME_UNIT") == 0)
+            m_config_content->TIME_UNIT = atoi(val);
         else if (strcmp(key, "DENSITY_NOURRITURE") == 0)
             m_config_content->DENSITY_NOURRITURE = strtod(val, NULL);
         else if (strcmp(key, "DENSITY_LINEMATE") == 0)
@@ -300,7 +362,21 @@ int parse_config(const char *filename)
             c = val[0];
             m_config_content->LOG_ERASE = (c=='y'||c=='Y'||c=='1');
         }
-        
+        else if (strcmp(key, "CERT_CERT") == 0)
+        {
+            free(m_config_content->CERT_CERT);
+            m_config_content->CERT_CERT = strdup(val);
+        }
+        else if (strcmp(key, "CERT_KEY") == 0)
+        {
+            free(m_config_content->CERT_KEY);
+            m_config_content->CERT_KEY = strdup(val);
+        }
+        else
+        {
+            log_msg(LOG_LEVEL_WARN, "Unknown config key: %s\n", key);
+            continue;
+        }
     }
 
     fclose(fp);

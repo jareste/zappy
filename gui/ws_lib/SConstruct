@@ -1,0 +1,37 @@
+from SCons.Script import ARGUMENTS, Environment
+
+# Compile with:
+# scons platform=linux target=release -j$(nproc)
+
+platform = ARGUMENTS.get("platform", "linux")
+target   = ARGUMENTS.get("target", "release")
+bits     = "x86_64"
+
+env = Environment()
+
+env.Append(CCFLAGS=["-fPIC"])
+env.Append(CXXFLAGS=["-fPIC"])
+
+env.Append(CPPPATH=[
+    "godot-cpp/include",
+    "godot-cpp/gen/include",
+    "godot-cpp/gdextension",
+])
+
+env.Append(LIBPATH=["godot-cpp/bin"])
+
+env.Append(LIBS=[
+    "godot-cpp.linux.template_release.x86_64",
+    "ssl",
+    "crypto",
+    "pthread",
+])
+
+sources = [
+    "src/ws_client.c",
+    "src/wrapper.cpp",
+    "src/register.cpp",
+]
+
+out = f"bin/libws.{platform}.{target}.{bits}"
+env.SharedLibrary(target=out, source=sources)

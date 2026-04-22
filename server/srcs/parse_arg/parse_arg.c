@@ -12,6 +12,46 @@
 #include <parse_arg.h>
 #include <error_codes.h>
 
+#define MAX_PARSED_TEAMS 16
+
+static int m_parse_positive_int(const char *s, int *out)
+{
+    long val;
+    char *endptr;
+
+    if (!s || !*s)
+        return ERROR;
+    errno = 0;
+    endptr = NULL;
+    val = strtol(s, &endptr, 10);
+    if (errno != 0 || endptr == s || *endptr != '\0' || val <= 0 || val > 65535)
+        return ERROR;
+    *out = (int)val;
+    return SUCCESS;
+}
+
+static int m_parse_team_names(int argc, char *argv[], t_args *args, const char *first_team)
+{
+    static char *parsed_teams[MAX_PARSED_TEAMS];
+    int count;
+
+    if (!first_team || !*first_team)
+        return ERROR;
+
+    count = 0;
+    parsed_teams[count++] = (char *)first_team;
+    while (optind < argc && argv[optind] && argv[optind][0] != '-')
+    {
+        if (count >= (MAX_PARSED_TEAMS - 1))
+            return ERROR;
+        parsed_teams[count++] = argv[optind++];
+    }
+    parsed_teams[count] = NULL;
+    args->teams = parsed_teams;
+    args->nb_teams = (uint16_t)count;
+    return SUCCESS;
+}
+
 /***************************/
 /*        DEFINES          */
 /***************************/
@@ -36,11 +76,6 @@ void check_params(t_args* args)
         fprintf(stderr, "Width and height must be greater than 9\n");
         exit(EXIT_FAILURE);
     }
-    if (args->nb_clients < 3)
-    {
-        fprintf(stderr, "Number of clients must be greater than 2\n");
-        exit(EXIT_FAILURE);
-    }
     if (args->time_unit < 1)
     {
         fprintf(stderr, "Time unit must be greater than 0\n");
@@ -55,31 +90,61 @@ void check_params(t_args* args)
 
 int parse_args(int argc, char *argv[], t_args* args)
 {
-    int         opt;
-
-    return SUCCESS;
-
+    int opt;
+    int parsed_port;
+    
     static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"file", required_argument, 0, 'f'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "?hp:x:y:n:c:t:f:", long_options, NULL)) != -1)
+    if (argc <= 1)
+        ZAPPY_USAGE(EXIT_FAILURE);
+
+    if (argc == 2 && m_parse_positive_int(argv[1], &parsed_port) == SUCCESS)
+    {
+        args->port = parsed_port;
+        check_params(args);
+        return SUCCESS;
+    }
+
+    while ((opt = getopt_long(argc, argv, "hp:x:y:n:t:c:f:", long_options, NULL)) != -1)
     {
         switch (opt)
         {
-            case '?':
+            case 'p':
+                args->port = atoi(optarg);
+                break;
+            case 'x':
+                args->width = atoi(optarg);
+                break;
+            case 'y':
+                args->height = atoi(optarg);
+                break;
+            case 'n':
+                if (m_parse_team_names(argc, argv, args, optarg) == ERROR)
+                    ZAPPY_USAGE(EXIT_FAILURE);
+                break;
+            case 't':
+                args->time_unit = atoi(optarg);
+                break;
+            case 'c':
+                if (m_parse_positive_int(optarg, &parsed_port) == ERROR)
+                    ZAPPY_USAGE(EXIT_FAILURE);
+                args->nb_clients = parsed_port;
+                break;
+            case 'f':
+                // Config file - but you already loaded it
+                break;
             case 'h':
                 ZAPPY_USAGE(EXIT_SUCCESS);
-                exit(0);
+                break;
             default:
-                ZAPPY_USAGE(EXIT_SUCCESS);
+                ZAPPY_USAGE(EXIT_FAILURE);
         }
     }
 
     check_params(args);
-
     return SUCCESS;
 }
-

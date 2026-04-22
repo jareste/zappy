@@ -1,0 +1,7 @@
+{
+  "type": "cmd",
+  "cmd": "prend",
+  "object": "nourriture",
+  "player_id": 2,
+  "status": "ok"
+}

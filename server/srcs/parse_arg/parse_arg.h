@@ -29,9 +29,9 @@ typedef struct s_args
     int         port;
     uint32_t    width;
     uint32_t    height;
+    int         nb_clients;
     char**      teams; /* this will be a list while parsing, no sense to be reallocating or whatever. */
     uint16_t    nb_teams; /* no sense to have more than 65535 teams being honest, even 65535 are way too many. */
-    uint16_t    nb_clients; /* no sense to have more than 65535 clients being honest, even 65535 are way too many. */
     time_t      time_unit;
     char*       cert; /* cert for SSL */
     char*       key; /* key for SSL */

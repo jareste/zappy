@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3 uid="uid://rrvgfd65iocc"]
+
+[sub_resource type="Environment" id="Environment_fqgig"]
+background_mode = 1
+background_color = Color(0.02286979, 0.005679672, 0.124098726, 1)
+ambient_light_color = Color(0.6, 0.6, 0.7, 1)
+ambient_light_energy = 0.5
+reflected_light_source = 2
+tonemap_mode = 2
+tonemap_exposure = 1.2
+ssao_enabled = true
+ssao_radius = 0.5
+ssao_intensity = 1.0
+ssao_power = 2.0
+sdfgi_use_occlusion = true
+sdfgi_bounce_feedback = 0.2
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 0.3
+glow_strength = 0.8
+fog_enabled = true
+fog_light_color = Color(0.023529412, 0.003921569, 0.1254902, 1)
+fog_sun_scatter = 0.1
+fog_aerial_perspective = 0.1
+fog_height = 0.1
+fog_height_density = 1.0
+volumetric_fog_emission_energy = 0.1
+volumetric_fog_gi_inject = 0.5
+volumetric_fog_ambient_inject = 0.2
+
+[node name="Node3D" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_fqgig")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+light_color = Color(1, 0.95, 0.8, 1)
+shadow_enabled = true
+directional_shadow_max_distance = 50.0
+sky_mode = 1
+
+[node name="FillLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.4999999, 0.75000006, -0.4330127, 5.5611892e-08, 0.4999999, 0.86602545, 0.86602545, 0.43301266, -0.24999999, 0, 5, 0)
+light_color = Color(0.7, 0.8, 1, 1)
+light_energy = 0.3

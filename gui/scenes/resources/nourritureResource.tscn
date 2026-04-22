@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://cetb5rdusoh55"]
+
+[ext_resource type="PackedScene" uid="uid://dyos1tydpq428" path="res://scenes/resources/nourriture.tscn" id="1_lbyul"]
+[ext_resource type="Script" uid="uid://sx8my1hd5a7r" path="res://scenes/resources/NouritureManager.gd" id="2_l6ny4"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_l6ny4"]
+points = PackedVector3Array(0.36458582, 0.41745615, -0.85459155, 0.07172341, 0.2672895, 0.9638159, -0.075487345, 0.270464, 0.9560735, -0.027174987, 2.2680056, -0.023273641, -0.9137514, 0.021149024, -0.3185248, 0.815963, -0.47895867, 0.12545055, -0.12843351, -0.956185, -0.023456287, 0.8450034, 0.85536444, 0.025661416, -0.90686446, 0.124347925, 0.36828122, -0.5702157, 0.11886115, -0.8134582, 0.32176396, -0.4852293, -0.77125466, -0.27617308, -0.4345215, 0.8240922, 0.564552, 0.1201079, 0.81485, -0.7079874, 0.80761564, 0.5127352, 0.16770165, 1.5362726, 0.5115996, -0.79843503, 0.9512312, -0.07059851, 0.9029611, 0.07483525, -0.36531687, -0.5735791, -0.7297381, -0.17214023, -0.22135486, 0.90550834, -0.8025457, 0.64380497, 0.9487801, -0.5007944, 0.3780285, -0.85991675, 0.28046313, -0.70884705, 0.8077932, -0.5100941, -0.27661932, -0.43630645, -0.8221678, -0.6750025, -0.5341284, 0.42522058, 0.6960528, 0.90261906, 0.45907587, 0.90599257, 0.12207491, 0.36962205, 0.32124653, -0.4833967, 0.7732833, 0.16820845, 1.5388827, -0.5098583, 0.4718095, -0.7855111, -0.32258373, -0.27182224, 0.857911, 0.8110363, -0.56846535, 0.12053393, 0.8142104, -0.07664997, 0.06549781, -0.9679286)
+
+[node name="nourriture_resource" type="Node3D"]
+
+[node name="nourriture" parent="." instance=ExtResource("1_lbyul")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+script = ExtResource("2_l6ny4")
+
+[node name="Icosphere_002" parent="nourriture" index="0"]
+transform = Transform3D(-0.30214903, 0, 0.02282481, 0, 0.30300993, 0, -0.02282481, 0, -0.30214903, 3.697549e-05, 0.31625605, 0.0058689006)
+
+[node name="Torus_001" parent="nourriture" index="1"]
+transform = Transform3D(-7.271949, 0, -0.5493344, 0, 7.2926683, 0, 0.5493344, 0, -7.271949, -8.748066e-06, 0.3658421, 0.0053019635)
+
+[node name="Area3D" type="Area3D" parent="nourriture"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="nourriture/Area3D"]
+transform = Transform3D(0.30300993, 0, 0, 0, 0.30300993, 0, 0, 0, 0.30300993, 3.6975493e-05, 0.31625605, 0.0058689006)
+shape = SubResource("ConvexPolygonShape3D_l6ny4")
+
+[editable path="nourriture"]

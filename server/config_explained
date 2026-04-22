@@ -1,6 +1,7 @@
 # Game modifiers
 INITIAL_LIFE_UNITS=10 /* How many life units the player will have on start */
 LIFE_UNIT_TO_TIME=126 /* each life unit how many time unit survives */
+NUMBER_OF_CLIENTS=100 /* How many clients can connect to the server at the same time */
 
 # INITIAL_DENSITY_RESOURCES
 /* Initial density of resources on the map must be a double*/

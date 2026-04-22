@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'develop-v3-*'
+  pull_request:
+    branches:
+      - main
+      - 'develop-v3-*'
+
+jobs:
+
+  # ------------------------------------------------------------------ #
+  #  Client — builds the client and runs the gtest suite                #
+  # ------------------------------------------------------------------ #
+  client:
+    name: Client tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            git \
+            valgrind \
+            libssl-dev
+
+      - name: Cache googletest
+        uses: actions/cache@v4
+        with:
+          path: client/libs/googletest
+          key: ${{ runner.os }}-gtest-v1.14.0
+          restore-keys: ${{ runner.os }}-gtest-
+
+      - name: Generate test certificates
+        run: |
+          mkdir -p ../server/certs
+          openssl req -x509 -newkey rsa:2048 -keyout ../server/certs/key.pem \
+            -out ../server/certs/cert.pem -days 1 -nodes \
+            -subj "/CN=localhost"
+        working-directory: client
+
+      - name: Build and run tests
+        run: make ci-test OPENSSL_DIR=/usr
+        env:
+          LD_LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+
+      - name: Upload test binary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-test-binary
+          path: client/run_tests_debug
+          if-no-files-found: ignore
+
+  # ------------------------------------------------------------------ #
+  #  Server — placeholder, no automated tests yet                       #
+  # ------------------------------------------------------------------ #
+  # server:
+  #   name: Server build
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: server
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y build-essential cmake git
+  #
+  #     - name: Build server
+  #       run: make all
+  #
+  #     # Uncomment when server tests exist:
+  #     # - name: Run server tests
+  #     #   run: make test
+
+  # ------------------------------------------------------------------ #
+  #  GUI — placeholder, no automated tests yet                          #
+  # ------------------------------------------------------------------ #
+  # gui:
+  #   name: GUI (Godot) tests
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: gui
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     # Godot CI typically uses the godot-ci Docker image or a manual
+  #     # Godot headless binary. Example with godot-ci:
+  #     #
+  #     # - name: Run Godot tests
+  #     #   uses: docker://barichello/godot-ci:4.3
+  #     #   with:
+  #     #     args: godot --headless --run-tests
+  #     #
+  #     # See https://github.com/aBARICHELLO/godot-ci for setup details.

@@ -3,8 +3,9 @@ NAME = zappy
 #########
 RM = rm -rf
 CC = cc
-CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL -lpthread #-DDEBUG
-# CFLAGS = -Werror -Wextra -Wall -g -fsanitize=address -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
+# CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc  -lpthread #-DDEBUG
+# CFLAGS = -Werror -Wextra -Wall -g -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc  -DUSE_SSL #-DDEBUG
+CFLAGS = -Werror -Wextra -Wall -g -fsanitize=address -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
 # CFLAGS = -Werror -Wextra -Wall -g -fsanitize=thread -O3 -I$(OPENSSL_BUILD_DIR)/include -I$(THIRD_PARTY_PATH)/cJSON -Iinc -DUSE_SSL #-DDEBUG
 LDFLAGS = -L$(OPENSSL_BUILD_DIR)/lib -lssl -lcrypto -lm
 RELEASE_CFLAGS = -Werror -Wextra -Wall -g -O3
@@ -46,12 +47,12 @@ $(OBJ_DIR)/%.o: %.c
 	${CC} -MMD $(CFLAGS) -Isrcs/parse_arg -Isrcs/server -c $< -o $@
 
 
-all: .gitignore create_cert
+all: .gitignore create_cert check_openssl
 
 	$(MAKE) $(NAME)
 
 $(NAME): $(OBJ) $(CJSON_LIB) Makefile
-	$(CC) $(CFLAGS) $(OBJ) $(CJSON_LIB) -lssl -lcrypto -ldl -lpthread -o $(NAME) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OBJ) $(CJSON_LIB) -o $(NAME) $(LDFLAGS) -ldl -lpthread
 	@echo "EVERYTHING DONE  "
 #	@./.add_path.sh
 
@@ -97,7 +98,7 @@ re: fclean
 		echo ".gitignore already exists."; \
 	fi
 
-.PHONY: all clean fclean re release .gitignore compile_ssl create_cert
+.PHONY: all clean fclean re release .gitignore compile_ssl create_cert check_openssl
 
 create_cert:
 	@if [ ! -f certs/cert.pem ]; then \
@@ -108,18 +109,36 @@ create_cert:
 	fi
 
 compile_ssl:
-	cd third_party
-	wget https://www.openssl.org/source/openssl-3.2.1.tar.gz
-	tar -xzf openssl-3.2.1.tar.gz
-	mv openssl-3.2.1 openssl
-	rm openssl-3.2.1.tar.gz
+	@mkdir -p $(THIRD_PARTY_PATH)
+	wget -O $(THIRD_PARTY_PATH)/openssl-3.2.1.tar.gz https://www.openssl.org/source/openssl-3.2.1.tar.gz
+	rm -rf $(OPENSSL_SRC_DIR)
+	tar -xzf $(THIRD_PARTY_PATH)/openssl-3.2.1.tar.gz -C $(THIRD_PARTY_PATH)
+	mv $(THIRD_PARTY_PATH)/openssl-3.2.1 $(OPENSSL_SRC_DIR)
+	rm -f $(THIRD_PARTY_PATH)/openssl-3.2.1.tar.gz
 	cd $(OPENSSL_SRC_DIR) && ./config no-shared --prefix=$(abspath $(OPENSSL_INSTALL_DIR)) && make && make install_sw
+	@rm -rf $(OPENSSL_BUILD_DIR)/include $(OPENSSL_BUILD_DIR)/lib
 	@mkdir -p $(OPENSSL_BUILD_DIR)/include
 	@mkdir -p $(OPENSSL_BUILD_DIR)/lib
-	cp $(OPENSSL_INSTALL_DIR)/libssl.a $(OPENSSL_BUILD_DIR)/lib
-	cp $(OPENSSL_INSTALL_DIR)/libcrypto.a $(OPENSSL_BUILD_DIR)/lib
-	cp -r $(OPENSSL_INSTALL_DIR)/include $(OPENSSL_BUILD_DIR)/include
+	cp $(OPENSSL_INSTALL_DIR)/lib*/libssl.a $(OPENSSL_BUILD_DIR)/lib
+	cp $(OPENSSL_INSTALL_DIR)/lib*/libcrypto.a $(OPENSSL_BUILD_DIR)/lib
+	cp -r $(OPENSSL_INSTALL_DIR)/include/. $(OPENSSL_BUILD_DIR)/include
 	@echo "OPENSSL DONE  "
+
+check_openssl:
+	@echo "Checking OpenSSL dependencies..."
+	@if [ ! -f "$(OPENSSL_BUILD_DIR)/lib/libssl.a" ] || [ ! -f "$(OPENSSL_BUILD_DIR)/lib/libcrypto.a" ]; then \
+		echo "⚠️  OpenSSL libraries incomplete or missing. Rebuilding..."; \
+		$(MAKE) compile_ssl; \
+	else \
+		LIBSSL_SIZE=$$(stat -f%z "$(OPENSSL_BUILD_DIR)/lib/libssl.a" 2>/dev/null || stat -c%s "$(OPENSSL_BUILD_DIR)/lib/libssl.a" 2>/dev/null || echo 0); \
+		LIBCRYPTO_SIZE=$$(stat -f%z "$(OPENSSL_BUILD_DIR)/lib/libcrypto.a" 2>/dev/null || stat -c%s "$(OPENSSL_BUILD_DIR)/lib/libcrypto.a" 2>/dev/null || echo 0); \
+		if [ "$$LIBSSL_SIZE" -lt 100000 ] || [ "$$LIBCRYPTO_SIZE" -lt 100000 ]; then \
+			echo "⚠️  OpenSSL libraries appear corrupted or too small. Rebuilding..."; \
+			$(MAKE) compile_ssl; \
+		else \
+			echo "✓ OpenSSL dependencies OK"; \
+		fi; \
+	fi
 
 
 -include $(DEP)
