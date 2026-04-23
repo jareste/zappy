@@ -26,8 +26,6 @@ struct WorldState {
 	std::string serverHost;
 	int serverPort;
 
-	// NOTE: server does not send orientation in welcome; player starts at N by default.
-	// If the server ever adds this field, the optional handles it correctly.
 	void onWelcome(const ServerMessage& msg) {
 		std::cout << msg.raw << std::endl;
 		if (msg.playerX.has_value())

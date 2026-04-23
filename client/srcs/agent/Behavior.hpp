@@ -139,7 +139,7 @@ class Behavior {
 
 		void setVisionStale()    { _staleVision = true; }
 
-		void setAIState(AIState s) { _aiState = s; } // for TESTING
+		void setAIState(AIState s) { _aiState = s; }
 		void setInventoryStale() { _staleInventory = true; }
 		void clearNavPlan()      { _navPlan.clear(); _navTarget.clear(); }
 

@@ -4,17 +4,15 @@
 #include <string>
 #include <optional>
 
-// Orientation is always 0-indexed matching the server enum. N=0,E=1,S=2,W=3. Never convert this.
 enum class Orientation {
 	N = 0, E = 1, S = 2, W = 3
 };
 
-// tile info data struct
-// stores info for a viewed tile: contents and position relative to viewing player
+
 struct VisionTile {
-	int							distance;	// 0 = player's own tile
-	int							localX;		// negative = left, 0 = center, positive = right
-	int							localY;		// always a distance value (amount of rows fwd)
+	int							distance;
+	int							localX;
+	int							localY;
 	int							playerCount;
 	std::vector<std::string>	items;
 
@@ -77,7 +75,7 @@ struct ServerMessage {
 
 	// for broadcast
 	std::optional<std::string> messageText;
-	std::optional<int> broadcastDirection; // 0 - same tile, 1-8 = octants (server told)
+	std::optional<int> broadcastDirection;
 
 	// for connect_nrb
 	std::optional<int> connectNbr;

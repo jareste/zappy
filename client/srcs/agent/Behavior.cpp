@@ -1003,7 +1003,6 @@ void Behavior::tickWaitingForHatch(int64_t nowMs) {
 		return;
 	}
 
-	// absolute timeout-> egg dead or hatch missed
 	if (nowMs >= _hatchTimeoutMs) {
 		Logger::warn("Behavior: WaitinForHatch timed out - egg may have died");
 		_forkInProgress = false;
@@ -1012,7 +1011,6 @@ void Behavior::tickWaitingForHatch(int64_t nowMs) {
 		return;
 	}
 
-	// wait for enough real time to start polling
 	if (nowMs - _lastHatchPollMs < _hatchPollIntervalMs)
 		return;
 
@@ -1040,7 +1038,6 @@ void Behavior::tickWaitingForHatch(int64_t nowMs) {
 			spawnChildClient();
 			_aiState = AIState::CollectStones;
 		}
-		// slots == 0, keep waiting
 	});
 }
 
@@ -1290,7 +1287,6 @@ void Behavior::spawnChildClient() {
     }
 
     if (pid == 0) {
-        // Child process
         std::string teamNumber = _teamName.substr(4);
         std::string logFile = "logs/client_log_normal_egg_team" + teamNumber + "_" + std::to_string(getpid()) + ".txt";
         
@@ -1304,12 +1300,11 @@ void Behavior::spawnChildClient() {
         std::string port = std::to_string(_state.serverPort);
         std::string team = _teamName;
 
-        // Use positional arguments, NOT named flags
         execl("./client/client",
               "./client/client",
-              host.c_str(),    // positional host
-              port.c_str(),    // positional port
-              team.c_str(),    // positional team name
+              host.c_str(),
+              port.c_str(),
+              team.c_str(),
               NULL);
 
         std::cerr << "execl failed: " << strerror(errno) << std::endl;

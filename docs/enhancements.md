@@ -1,0 +1,3 @@
+- Get rid of the server's leader management, go into full broadcast management (dangerous)
+- Rewrite navigation to follow an A* approach
+- Rewrite fork pipeline to have a fork leader (just for the laughs, no other reason realy)
