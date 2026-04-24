@@ -217,7 +217,6 @@ void Behavior::tick(int64_t nowMs) {
 	switch (_aiState) {
 		case AIState::CollectFood:      tickCollectFood();				break;
 		case AIState::CollectStones:    tickCollectStones();			break;
-		case AIState::Idle:             tickIdle();						break;
 		case AIState::Incantating:      tickIncantating();				break;
 		case AIState::ClaimingLeader:   tickClaimingLeader();			break;
 		case AIState::Leading:          tickLeading(nowMs);				break;
@@ -225,6 +224,7 @@ void Behavior::tick(int64_t nowMs) {
 		case AIState::Rallying:         tickRallying(nowMs);			break;
 		case AIState::Forking:			tickForking();					break;
 		case AIState::WaitingForHatch:	tickWaitingForHatch(nowMs);		break;
+		case AIState::Idle:             tickIdle();						break;
 	}
 }
 

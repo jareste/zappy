@@ -1,10 +1,317 @@
 # Zappy Client - Devlog - 4
 
 ## Table of Contents
-1. [Rally-Ho!]
+1. [Rally-Ho!](#41---rally-ho)
+2. [Going With the Flowing](#42---going-with-the-flowing)
+3. [Everything the light touches](#43-everything-the-light-touches)
 
 <br>
 <br>
 
 # 4.1 - Rally-Ho!
-A
+I might come across as a broken record, but with clients being able to act acordingly to their level in our hands, the realy tricky part comes now, as there's no more delaying the Rallying stuff. It might be PTSD talking (writing), but this almost broke my spirit. Conceptually, things are more or less easily feasable, and that acquired initial step of thinking about what Rallying means and needs comes and goes fast. Then, adjusting the increasingly more complex state machine... Well, that's the work, there are the hours, my tears are all collected down the neverending pitfalls that live in that darkness. I write this from the other side, with an already finished AI client that, while having ample room for improvement and refinement, works perfectly fine to the best of my knowledge. I write this, too, after dozens of tweaks and probes, after reading an instream of thousands of log lines, after finally achieving cooperative, team-focused, game-winning clients. All this to say that my record may be broken, but that I'm extremely sure that this can be considered the core challenge of this development process. So let's tread with extreme caution so as to not get ourselves lost in our own sauce.
+
+With our focus in the conceptual level, let's jot down what a Rally means and needs in the context of *Zappy*. First, a situation description. Say a client at level 4 has found and picked up the necessary resources for an incantation, which according to the rules are 1 linemate, 1 deraumere, 2 sibur, 1 phiras. Our little dude has been roaming the game arena, keeping itself fed, looking for stones, growing its pockets, and has realized that there is no more need for stone collecting and the time for incantation has arrived. Now, as per the same rules, the 4->5 ritual needs 4 level 4 players to concurr in the same tile where the specified resources are placed, so our little dude needs tools to make that happen. If he's the first one to reach this situation, he'll want to tell other level 4 peers that he is in fact reached that point, and those peers would need to react. Here's were the **Leader-Follower** approach comes in handy: our little dude will temporarily claim leadership, the addressed peers will act as followers. The specifics on how this transition happens are a little bit more complicated and context related, but the basics are those. And because we'll define the `Rallying` state as that which corresponds to a client being in the needed position, which in itself is the tile with the needed resources for the little dude to level up, we'll also have to add two other states that 1) act as gateways to `Rallying`, and 2) enforce different behavior for leaders and followers. We'll call those, respectively, `Leading` and `MovingToRally`:
+- `Leading` will be owned by a single client at any given time per-team and per-level, which means that a single team can have a leading client for the 2->3 incantation while also having some other leader for the 6->7, and so on, without caring for existing leaders in other teams.
+	- This state will have the Leader be stationary until:
+		- Food goes below critical threshold, in which case the Rally will disband and the specific level leadership will be back for claims
+		- Enough peers responding to the rally call arrive to its tile, in which case it will go into `Rally` state and, quickly, into `Incantation` state, which will trigger the level up process for all participants.
+		- Also, and because the required follower amount will always take some time, the Leader will also use those in-between ticks to call `pose()` and place stones in the incantation tile.
+- `MovingToRally` will be the state related to the Follower status. Every client in the same team and level as the promoted Leader will respond to the call for a Rally, turn into a follower and move in the *direction* of the leaders broadcasts, all of it enclosed in some restrictions and checks:
+	- This transition will only happen if the set up food thresholds are met. These are in place (although with different values) both for Leaders and Followers, and they are needed because as the levels go up, the incantations become more restrictive and, therefore, need more time. And in *Zappy*, time means food, so it wouldn't make sense for a Leader or a Follower to take up any of the related states if they're not going to be able to sustain them for enough time to give some assurance that the actual incantation *can* take place.
+	- Followers will use the same mechanism as Leaders use to call for Rally, the `broadcast` pipeline. While leaders call this function with a `RALLY` value, which everyone in the game receives and, after checking that they qualify as target (correct level and team), react to, Followers broadcat `HERE` when they arrive to the Leader's tile. They know this is the case because the computation of the `direction` value, done in the server, returns 0, at which point they **inform about it JUST ONCE** and: 1) transition to `Rallying` state, 2) wait for other peers or for a critical food situation, 3) level up if everything goes fine. If not, they'll just get disbanded and go back to the baseline, `CollectingFood` state.
+
+With this two set ups, Rallies can happen, and if finely tuned there will never be a case in which leadership is contentious. Only if by extreme chance two same team and level clients try to become leaders at the same time those calls might be answered at the some-ish time by the server and break things, but that's easily fixed by time-jittering a little bit the exact instant in which leadership is claimed in the client side. The key stuff here is that **a client either finds itself in the conditions needed to become a leader or gets called as follower before that**. The `Rally` calls that trigger the transition to Follower only happen if there is a Leader, and Leaders register the amount of same-tile peers by reacting to `HERE` receptions. A time buffer happens in the intraction of the `tick()` and the `broadcast()` timings, but that's just something that we have to assume and be at peace with some high level incantations not succedding on first try. Something that, on the other hand, is just rational and makes for a more interesting game, giving way to possibility for every team beyond the one who came first.
+
+Implementing this is an incremental process. My curent Behavior class has around 17 flags, around 9 time trackers, and a handful of counters, which might be a collection that could use some cleanup, almost surely, but I say this because attempting to place all of this at once would be insane. While writing the code, one finds themselves in need for this or that attribute, so once again: take it slow, go little by little. My finished functions work around timeouts, check-oriented flags and condition tracking integers, and at this point I think we should once again try to look at things from a couple of steps back and talk a little bit about **Finite State Machines**, their design, how to wrap our minds around them and, maybe most importantly, how to communicate about them. And for that we're going to have to go into the magic world of F L O W  D I A G R A M S.
+
+I guess I should say at this point that coding the AI client for *Zappy* around a FSM is a good way to get ourselves close to their limitations. It's not that this is a game that requires a complex protocol, but as routines cristalized and transitions piled on top of each others I could feel a certain tightness slowly creeping in. Maybe this is all because I have a not-that-good FSM design, which I'll let you tell me if that is the case, but the matter of the fact is that my current layout, which can be conceptualized as a **Finite State Machine with event-driven transitions and some side effects**, has multiple kinds of transitions (with some *"hidden"* ones), hierarchichal behavior and opportunistic side tracking possibilities, which all together kind of signal towards a **behavior tree**, which we are NOT going to follow at this moment of our lives. It is just worth noting, nothing else, and someday, somehow, I'll get into them.
+
+Anyways, let's get diagramatical.
+
+<br>
+<br>
+
+# 4.2 - Going With the Flowing
+
+> *The diagrams in this sections might be ASCII placeholders for something more elaborated. I hope I find enough time to make better ones after writing the document, but if you still find them in their barebones conditions: sorry about that! After all, the information is the same ;D*
+
+I know this will come as a great shock to *thou who art reading*, but drawing flow charts and diagrams can be kind of hard. Well, maybe not *hard*, but something that can easily become convoluted, but luckily for us something that can be quite fun and that is kind of a neccesary step towards proofing your pudding. Flow diagrams are very, very useful for both the design process and for the review stages of mesh-y codebases development like our AI's behavior. At the very least is going to be a nice addition to your toolkit, and something which will help you a lot when working in shared codebases. In the case of my proposed AI behavior, we could make several considerations regarding what information we should translate into diagrams. To me, this piece of code could use:
+- A) **Core Loop Diagram**, one that embodies the general functioning of the FSM, showing how the decision making works and is processed in a **gameplay loop representation**
+- B) **Rally System Specifics**, so that we can separate everything related to coordination around broadcast events, this being a *system diagram* capturing the multiplayer coordination system
+- C) **Global Rules Structure**, as to make visible every implicit derivation and transition between states that occur due to conditions such as not-passed checks, participation constrains, etc, more in the form of a **rule listing** than an arrow-based scheme.
+
+So, let's start with the core structure. The following diagram is something that should be in mind from the very beginning of the design process, that moment in which we sit down, put ourselves in front of the first decision making layout and need to trace a structure that will then be turned into code and, then, back into a diagram. For me, the **Core Loop Diagram** of my FMS, looks like this:
+```
+          +------------------+
+    +---> |   CollectFood    |
+    |     +------------------+
+    |             ↓
+    |     +------------------+
+    +-----|  CollectStones   | <-------------+
+          +------------------+               |
+                   ↓                         |
+          +------------------+               |
+          | ClaimingLeader   |               |
+          +------------------+               |
+           ↓ success     ↓ fail              |
+      +---------+     +------------------+   |
+      | Leading |     | MovingToRally    |   |
+      +---------+     +------------------+   |
+           ↓                |                |
+        Rallying <----------+                |
+           ↓                                 |
+      Incantating ---------------------------+
+```
+This loop guarantees:
+- survival (food)
+- progression (stones → level)
+- coordination (rally → incantation)
+
+It doesn't have the forking sub-routine, but that's secondary to the core loop, so we can safely say that *this is it*, the irreducible loop, the minimal cycle that guarantees progression. Clients gather resources, move into the rallying protocol by acquiring roles, try to level up, go back to resource gathering. Forever, and ever, until they die, they win, or the computer running the simulation explodes. The crucial aspect here is that there is a **visible circularity**, whithout which our FSM would not work in, well, a loop. The flow starts at the top and, from there, you can follow any arrowed path of your choice and you will never stop moving, which is how we need the AI to work. The only exception to this would be the exit point, the `Idle` state that's not part of the flow *per se* but just the state in which the clients go when the loop is broken, which will only happen if the game is won by a team. It is not really necessary, but I need to set up a way to enter a possible end-game state when every part of the project is done and wired, so that a display of statistics with a the final state of the players and the game arena can be (re)viewed, for example. Irrelevant for now!
+
+By having this pinned down to the brain, one can have a fallback document if things go south: you might be missing the *how*, but you can be sure about the *what*, and that's the best safenet there is. The next step would be to design the code structure that can sustain this flow, which in my case is done, under the hood, by laying out the specific collection of needed states and the interfacing mechanism. Regarding the first, I devised the following:
+
+```cpp
+AIState::CollectFood
+AIState::CollectStones
+AIState::ClaimingLeader
+AIState::Leading
+AIState::MovingToRally
+AIState::Rallying
+AIState::Incantating
+AIState::Forking
+AIState::WaitingForHatch
+AIState::Idle
+```
+Regarding the second, what I wrote was somewhat of a `tick()` orchestrator that delegated the flow to specific, state-related sub-ticking functions. There's a central loop that acts as the **FSM driver** and there are distinct logic pathways, peppered with some event-driven transitions, so we can say that this is **tick-based Finite State Machine reacting to external events**, which could qualify as a simple game AI (every long journey starts with a single step!). So, with the driver in place, the next thing to do is design the hierarchical behavior and its layers, which in my case can be divided in:
+- **Survival layer**, made up of `CollectFood`, the bottom-most fallback state in which clients focus solely in avoiding death by collecting food
+- **Progression layer**, made up of `CollectStones` and `Incantating`, sandwiching the social related states, in which clients colaborate to advance in the game
+- **Social layer**, made up of `ClaimingLeader`, `Leading`, `MovingToRally` and `Rallying`, all of them conforming the scaffolding of cooperation and inter-client communication, which makes little dudes be able to talk and answer to each other
+- **Reproduction layer**, made up of `Forking` and `WaitingForHatch`, more like a side-line layer, an occasional deviation from the main loop that lets clients extend or replenish their teams.
+
+Because the **surviving layer** is both the entry point and the safest fallback, it's easy to identify that the strongest constrain regarding state transitions should be **food amounts**. Depending on the specific transition, additional checks and requirements will be in place, but if food-related gateways are not carefully managed the clients are most likely to end up 1) dying, 2) constantly looping back to surviving without achieving anything beyond keeping themselves alive. In *Zappy*, time rules, authors, imposes certain rythms, and because commands have execution delays and every action is composed of multiple commands, any little dude that sets a little objective for itself is going to need, well, time, and because time in our context is meassured in food, there you have it. Even collecting food needs food, so a critical lower-clamp is paramount to avoid starvation to the best of our capabilities (some, sadly, will always die, nothing we can do about it, well, maybe having quite a high critical food threshold, which would get in the way of PROGRESS and will make things very difficult for any little dude that aspires to be SOMEONE IN LIFE, so I guess it all boils down to a choice: do you want to eat or do you want to succeed???). Food thresholds are set up via class constants, with values that need to come from continuous testing in order to find those that give to your AI the correct equilibrium between living and working. This is starting to become sad. Am I a little dude? Was *The Matrix* a live-action adaptation of the world renowned game classic *Zappy*? I, as Neo did towards the end of the first movie, am starting to believe.
+
+Moving on, and without getting into the specificities of each logic path, here's the heart of the FMS:
+```cpp
+void Behavior::tick(int64_t nowMs) {
+	_lastTickMs = nowMs;
+	if (hasCommandInFlight()) return;
+
+	if (nowMs - _lastInventoryRefreshMs > 5000) {
+		_lastInventoryRefreshMs = nowMs;
+		if (!isInventoryStale() && !hasCommandInFlight()) {
+			refreshInventory();
+			return;
+		}
+	}
+
+	if (_aiState == AIState::MovingToRally) {
+
+		bool navJustDrained = _navPlan.empty() && _waitingForBroadcast;
+		if (isVisionStale() && (navJustDrained || nowMs - _lastMovingToRallyVisionMs > 2000)) {
+			_lastMovingToRallyVisionMs = nowMs;
+			refreshVision();
+			return;
+		}
+	} else {
+		if (isVisionStale()) { refreshVision(); return; }
+	}
+
+	if (isInventoryStale()) { refreshInventory(); return; }
+
+	switch (_aiState) {
+		case AIState::CollectFood:      tickCollectFood();				break;
+		case AIState::CollectStones:    tickCollectStones();			break;
+		case AIState::Incantating:      tickIncantating();				break;
+		case AIState::ClaimingLeader:   tickClaimingLeader();			break;
+		case AIState::Leading:          tickLeading(nowMs);				break;
+		case AIState::MovingToRally:    tickMovingToRally(nowMs);		break;
+		case AIState::Rallying:         tickRallying(nowMs);			break;
+		case AIState::Forking:			tickForking();					break;
+		case AIState::WaitingForHatch:	tickWaitingForHatch(nowMs);		break;
+		case AIState::Idle:             tickIdle();						break;
+	}
+}
+```
+
+Divided in steps, this:
+- Updates the time tracker `nowMs`
+- Triggers periodic inventory refresh calls
+- Triggers vision refresh under specific conditions
+- Drives the flow forward to the switch base `AIState` delegator
+
+From here, development really is just a (not-so-simple) matter of coding the behavior sub-protocol for every state and correctly place transitions between them. To do so, I've learned (the hard way) that these considerations must be taken:
+- Every state is most likely going to need an array of checks in their entry point, before their specific, local initializations. Generally speaking, these checks detect a collection of situations that shoud either trigger a state transition or trigger a specific micro-pathway in the current state. Things like "is this my first tick in this state?", "do I have enough food to keep doing what I'm doing?", "have I gone through the my current instruction?", "are there any opportunity-related decisions I should think about?", ... Every state will slightly defer, all while some constrains being somewhat universal, like critical food level triggers, which in themselves will again have different consequences depending on the particular state. And, obviously, when juggling all of these, you'll most likely hit a thousand walls, so my best advice here would be to **build in progressive circles**. I, for example, aimed for a first testable client being able to move around and gather food. Nothing more, nothing less, enough to start putting both `Behavior` and `Navigator` against the ropes, calling a big portion of the overall commands that *Zappy* AI clients need, and easily reviewable. My first probes just returned an infinite chain of logs of a single little dude ever-growing its food reserves. From there, that initial loop can be extended: let's also make it pick up stones; then we'll have it pick up specific stones related to the current level of the client; then, we'll introduce the placing-in-tile command and close the basis of the game loop;... Then a second circle, related to the social layer, one that can first be unit-tested and then progressively implemented in the probe-based test. And so on and so forth. There's absolutely no way of writing this perfectly on first try (well, maybe a senior developer can, what do I know), so the mindset here is: organize to avoid mistakes going ham. Bind yourself to the building procedures we've been following up until this point: identify your next, little objective, then lay it down logically, proceed to coding it, finally test it. Little steps require little time to make little fixes. And so goes the other way around.
+
+We can simplify the diagram regarding everything up to here by specifying some of the transition logic, in order to illustrate the state->Requirement-check->transition pipeline. Something like this:
+```
+                     +------------------+
+       +-----------> |    CollectFood   |
+       |             +------------------+
+       |                      |
+(food < critical)     (food >= threshold)
+       |                      ↓
+       |             +------------------+
+       +-------------|   CollectStones  | <------+
+                     +------------------+        |
+                              |                  |
+                   (stones ready for level)      |
+                              ↓                  |
+                     +------------------+        |
+                     |  Rally progress  |        |
+                     |   (Leading or    |    (disband)
+                     |    following)    |        |
+                     +------------------+        |
+                              |                  |
+		     (Enough peers / at leader's tile)   |
+                              ↓                  |
+                 +-------------------------+     |
+                 |  Rally -> Incantating   |-----+
+                 +-------------------------+
+```
+
+And alongisde this, we can make a list-like diagram of the **Global Rules** to condense the flow triggers and the interrupting switches that the overall system has. For example:
+```
+ANY STATE → CollectFood
+	if food < critical threshold
+
+CollectStones → Forking
+	if:
+		- sufficient level
+		- food >= fork threshold
+		- cooldown elapsed
+
+	then:
+		Forking → WaitingForHatch → CollectStones (circularity!)
+
+CollectStones → CLaimingLeader
+	if:
+		- all stones required collected
+		- food >= level threshold for LEADING
+
+	then:
+		- Claim leadership → ClaimingLeader → Leading
+		- Leading → Broadcat RALLY
+
+Ignore RALLY if:
+	- food too low
+	- currently incantating
+
+Aswer to RALLY if:
+	- target level and team coincides
+	- food >= level threshold for FOLLOWING
+
+	then:
+		- MovingToRally → Rallying WHEN at leader's tile
+		- Broadcat HERE → Wait for peers or ritual celebration
+
+TIMEOUTS:
+	- Leading → Timeout → disband as LEADER → broadcast DONE → CollectStones
+	- MovingToRally → Timeout → disband as FOLLOWER → CollectStones
+	- Rallying → Timeout → disband as current role → CollectStones
+
+DONE interruption:
+	- Both LEADER and FOLLOWERS
+	- disband the current role → reset flags and trackers
+	- fallback → CollectStones
+
+EXIT POINTS:
+	if:
+		- level = 8 → Idle
+```
+
+With all these diagrams, I'd say we've broken down the AI logic design pretty well, but we could go crazy style and try to draw an all encompasing, full information chart. Communication-wise it would be not that good idea, but as a recollection of the production state of the logic it can be quite illuminating, so doing this only makes sense as a development document. I'd advice against using it to explain the flow to anyone not related to its coding process, but to each its own. The reality is that I think that trying to draw a full diagram of the flow would be fun, so let's do it!
+```
+		                          ░░░░░░░░░░░░░░░░░░░░                 ░░░░░░░░░░░░░░░░░░░░░
+		            ┌-----------> ░    CollectFood   ░ <---(OK | KO)---░  WaitingForHatch  ░ 
+		            |             ░░░░░░░░░░░░░░░░░░░░                 ░░░░░░░░░░░░░░░░░░░░░    
+		            |                      |                                     ↑
+		     (food < critical)     (food >= threshold)                           |
+		            |                      ↓                       (food & level >= Fork Threshold)
+		            |            ░░░░░░░░░░░░░░░░░░░░							 |	
+		            └------------░                  ░ ---------------------------┘
+					             ░                  ░<---------------------------------------------------------------------┐
+		 ╔══════════════════════>░                  ░<--------------------------------------------------------------┐      |
+		 ║     ╔════════════════>░	 CollectStones  ░<════════════════════════════════════════════════╗             |      |
+	   	 ║     ║                 ░                  ░                                                 ║             |      |
+		 ║     ║	╔═══════════>░                ┌-░----------------------------┐  				  ║             |      |
+		 ║     ║	║			 ░                └·░<············┐              |					  ║             |      |
+		 ║     ║    ║            ░░░░░░░░░░░░░░░░░░░░             ·              |					  ║             |      |
+		 ║     ║    ║                     |                       ·              |					  ║             |      |
+		 ║     ║    ║          (stones ready for level)           · (food >= level threadshold)		  ║         (DISBAND)  |
+		 ║     ║	║		    & (food >= threshold)            ·       & (received RALLY)		      ║             |      |
+		 ║     ║	║                     ↓                       ·              |                    ║             |      |
+		 ║     ║ (TIMEOUT)		░░░░░░░░░░░░░░░░░░░░░             ·              |                (TIMEOUT)         |      |
+		 ║     ║	║			░   ClaimingLeader  ░          (RALLY)           |                    ║             |      |
+		 ║     ║	║			░░░░░░░░░░░░░░░░░░░░░             ·              |                    ║             |      |
+		 ║     ║	║					  |                       ·              |                    ║             |      |
+		 ║     ║	║					(OK)                      ·     ░░░░░░░░░░░░░░░░░░░           ║             |      |
+		 ║     ║	║					  ↓                       ·     ░                 ░═══════════╝             |      |
+		 ║     ║	║      		░░░░░░░░░░░░░░░░░░░░░             ·     ░  MovingToRally┌-░-------------------------┘      |
+		 ║     ║	╚═══════════░      Leading      ░·············┘     ░               └·░<····┐                          |
+		 ║     ║				░░░░░░░░░░░░░░░░░░░░░                   ░░░░░░░░░░░░░░░░░░░     ·                          |
+		 ║     ║						  |                                      |              ·                          |
+		 ║     ║						  |                                      |              ·                          |
+		 ║ (TIMEOUT)	    	   (Stones placed)  <·······(HERE)········(At LEADER's tile)    ·                          |
+		 ║ (DISBAND)			  & (all peers HERE) 						   	 |	            ·                          |
+		 ║     ║						  |										 |          (TIMEOUT)                      |
+		 ║     ║						  ↓                                      |           (DONE)                        |
+		 ║     ║				 ░░░░░░░░░░░░░░░░░░░░                            |              ·                      (DISBAND)
+		 ║     ║				 ░                  ░<---------------------------┘              ·                          |
+		 ║     ╚═════════════════░     Rallying     ░                                           ·                          |
+		 ║                       ░                  ░···········································┘                          |
+		 ║   					 ░░░░░░░░░░░░░░░░░░░░                                                                      |  
+		 ║                                |                                                                                |
+	 (TIMEOUT)							  |                                                                                |
+	 (DISBAND)						  (LEADER)                                                                             |
+		 ║							      |                                                                                |
+		 ║								  ↓                ┌-----(OK = LEVEL UP)-----┐                                     |
+		 ║						 ░░░░░░░░░░░░░░░░░░░░      |                         |                                     |
+		 ╚═══════════════════════░    Incantating   ░------┤                         ├-------------------------------------┘
+								 ░░░░░░░░░░░░░░░░░░░░      |                         |
+								                           └---------(KO)------------┘
+```
+```
+--------  State Transition
+········  Broadcast Connection
+════════  Fallback Path
+```
+Damn, this is extremely cool, if I can say so myself. I think I spent the good part of a whole hour drawing this with ASCII characters, but look at it. LOOK AT IT!! The whole AI client's Behaviour condensed in a cute, little diagram. I think we can say that we're done with this part and we can move on! The Behavior has been explained, the approach and process broken down in detail, anything else you'd need I think you can just find about yourself by directly going into the codebase. There's details here and there like how to properly parse the JSON server communications and build a data flow that correctly feeds the Client, how to properly set up a dynamic waiting logic in the main network loop (the client's cycle that, among other things, calls the `tick()` entrypoint), maybe some other thing... But I trust in you and your code reading skills. You've got this.
+
+<br>
+<br>
+
+# 4.3 Everything the light touches
+*One day, this will all be yours*. The only thing left in my notes is the stuff regarding **client forking**. The implementation of this pipelines is honestly more relying in server side code, which is where the slot opening and assigning occurs for both initial and new, forked clients along the game's execution, but there's a couple of things worth a look in our client code. The first one being how to set it up, the second one how to limit it. 
+
+Setting the fork pipeline in the client's Behavior is the simples thing. At this point we have all the tools we could ever need to do so, we just need to decide on the conditions and placement of the side-tracking logic in which a client will, via `Sender`'s functions, call `fork()`, then `connect_nbr()`. To me, the best to place this possibility is in the core state, `CollectStones` (you can easily identify it as such in the last diagram above, it being the biggest box with the most connections, both inwards and outwards), which can have a derivation point based mainly in food amount. If a client's reservers of `nourriture` go above `FOOD_FORK`, they can try to spawn a new, child client, which will then try to connect to the server and, if accepted, join the team as a new client. There's some constrains regarding the time it takes for the egg produced by forking to hatch, as well as how much will the server wait for a new possible connection to occur before closing it up, but that's just some timestamp juggling, old news for us, champions of this AI behavior. With a couple of extra `AIState`s to set the client in i-want-to-fork mode and in i-am-waiting-for-the-egg-to-hatch predicament, we're preemium. Just be sure to hook up both success and failure to the necessary fallback routes and nothing should break.
+
+UNLESS, that is, you don't take care of restrictions. See, at first I just set up the fork entry conditions based on food and level, which resulted in clients perma-going into fork attempts. Not good, obviously, but the solution was quite easy: just add a **cooldown**. Pair that with a limitation to the amount of concurrent eggs and you'll have a client that just occasionally tries to fork, then keeps going with the regular logics of resource gathering and rallying attempts. The rest of the limitations are handled by the server, who will reject any attempt at forking if there's no available slots. I guess, once again, that the client could more elegantly manage himself regarding its fork attempts, as right now it will just periodically try to fork, most likely be rejected, don't worry about it, but without tweaking protocols and server-client communications this seems like extremely bothersome. It wouldn't give anything back, really, and I might end up extending the whole project setup beyond what I'm allowed it, so in summary: nah.
+
+The relevant piece of code here, therefore, is the function that manages the forking conditions:
+```cpp
+bool Behavior::shouldFork() const {
+	if (_state.player.level < FORK_MIN_LEVEL)			return false;
+	if (_state.player.food() < FOOD_FORK)				return false;
+	if (!_state.forkEnabled)							return false;
+	if (_pendingEggCount >= MAX_PENDING_EGGS)			return false;
+	if (_forkInProgress || _forkSent)					return false;
+	if (_lastTickMs - _lastForkMs < FORK_COOLDOWN_MS)	return false; 
+
+	if (_aiState == AIState::Leading ||
+		_aiState == AIState::ClaimingLeader ||
+		_aiState == AIState::MovingToRally ||
+		_aiState == AIState::Rallying ||
+		_aiState == AIState::Incantating)
+		return false;
+
+	return true;
+}
+```
+
+By calling this at the top of `CollectStones`, just after the initial critical food safe trigger, the client can manage itself along the fork pipeline. If this returns true, take a fork detour, else just keep on with your life.
+
+And so, we're done. All my probes, even those with a lot of teams and clients, seem to be playing the game without any problem, wonderfully reaching with 100% consistency an endgame state via some team reaching level 8. I'm happy, I'm relieved, I'm tired but, above everything else, I'm eager to get back to the GUI after some months, give myself in to it's development and, at some point, be able to finish this *Zappy* endeavour and move on with my life.
+
+See you in the GUI log side!!!!
