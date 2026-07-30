@@ -29,6 +29,27 @@ time_api *time_api_get_local()
     return m_time;
 }
 
+int time_api_update_t(time_api *_api, int t)
+{
+    time_api *api;
+
+    api= _api ? _api : m_time;
+    if (!api)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Time API not initialized.\n");
+        return ERROR;
+    }
+
+    if (t <= 0)
+    {
+        log_msg(LOG_LEVEL_ERROR, "Invalid time divider 't': %d. Must be > 0.\n", t);
+        return ERROR;
+    }
+
+    api->t = t;
+    return SUCCESS;
+}
+
 time_api *time_api_init(int t)
 {
     time_api *api = malloc(sizeof(time_api));

@@ -1465,6 +1465,46 @@ int game_register_player(int fd, char *team_name)
     return SUCCESS;
 }
 
+bool game_fd_is_observer(int fd)
+{
+    observer** observers;
+    observer* o;
+    int i;
+
+    observers = game_get_observers();
+    if (!observers)
+        return false;
+
+    for (i = 0; observers[i]; i++)
+    {
+        o = observers[i];
+        if (o->socket_fd == fd)
+            return true;
+    }
+    return false;
+}
+
+int game_execute_obs_action(int fd, char *cmd, char *_arg)
+{
+    if (game_fd_is_observer(fd) == false)
+    {
+        log_msg(LOG_LEVEL_WARN, "Client %d is not an observer\n", fd);
+        return ERROR;
+    }
+
+    if (strcmp(cmd, "time") != 0)
+    {
+        log_msg(LOG_LEVEL_WARN, "Unknown observer command %s\n", cmd);
+        return ERROR;
+    }
+
+    time_api_update_t(NULL, atoi(_arg));
+
+    server_create_response_to_command(fd, "time", NULL, "OK");
+
+    return SUCCESS;
+}
+
 int game_execute_command(int fd, char *cmd, char *_arg)
 {
     client *c;
@@ -1654,7 +1694,7 @@ int game_kill_player(int fd)
     return SUCCESS;
 }
 
-int m_game_spawn_resources(void* data, void* arg)
+static int m_game_spawn_resources(void* data, void* arg)
 {
     const int W = m_server.map_x;
     const int H = m_server.map_y;

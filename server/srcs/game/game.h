@@ -9,6 +9,7 @@ void game_clean();
 int game_register_player(int fd, char *team_name);
 int game_register_observer(int fd);
 int game_execute_command(int fd, char *cmd, char *arg);
+int game_execute_obs_action(int fd, char *cmd, char *arg);
 
 int game_get_client_count();
 int game_get_team_count();

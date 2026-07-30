@@ -51,6 +51,7 @@ int time_api_process_client_events(time_api *_api, event_buffer *buffer);
 int time_api_schedule_single_event(time_api* _api, event* event, int delay, int (*callback)(void *, void *), void *data, void *arg);
 int time_api_process_single_event(time_api *_api, event *ev);
 
+int time_api_update_t(time_api *_api, int t);
 
 void time_api_run(time_api *_api);
 void time_api_pause(time_api *_api);
